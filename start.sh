@@ -39,6 +39,12 @@ if grep -qE '^GROQ_API_KEY\s*=\s*"your-groq-api-key"' "$ROOT/.env.local"; then
 fi
 echo "✓  .env.local configured"
 
+# ── Load .env.local into the current shell ────────────
+set -a
+# shellcheck disable=SC1091
+source "$ROOT/.env.local"
+set +a
+
 # ── 4. Run DB migration + seed if DB missing ─────────
 if [ ! -f "$ROOT/prisma/dev.db" ]; then
   echo ""
