@@ -1,5 +1,6 @@
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { EmergencyAlert } from '@/components/emergency/EmergencyAlert'
 
 interface Props {
   department: string
@@ -26,11 +27,7 @@ export function SymptomSummary({
 }: Props) {
   return (
     <div className="space-y-4">
-      {isEmergency && (
-        <div className="bg-red-600 text-white px-4 py-3 rounded-lg text-center font-bold text-lg animate-pulse">
-          EMERGENCY DETECTED — Scroll down for immediate guidance
-        </div>
-      )}
+      {isEmergency && <EmergencyAlert department={department} />}
 
       <Card>
         <CardHeader>
