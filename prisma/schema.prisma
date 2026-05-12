@@ -1,0 +1,169 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  PATIENT
+  DOCTOR
+  ADMIN
+}
+
+enum VerificationStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  REFUNDED
+}
+
+enum SeverityLevel {
+  ROUTINE
+  URGENT
+  CRITICAL
+}
+
+enum EscrowStatus {
+  HELD
+  RELEASED
+  REFUNDED
+}
+
+model User {
+  id            String             @id @default(cuid())
+  email         String             @unique
+  phone         String             @unique
+  passwordHash  String
+  role          UserRole
+  cnicNumber    String?            @unique
+  medIntelCode  String?            @unique
+  kycStatus     VerificationStatus @default(PENDING)
+  kycVerifiedAt DateTime?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  patient  Patient?
+  doctor   Doctor?
+  sessions Session[]
+}
+
+model Patient {
+  id               String  @id @default(cuid())
+  userId           String  @unique
+  user             User    @relation(fields: [userId], references: [id])
+  dateOfBirth      DateTime?
+  gender           String?
+  address          String?
+  emergencyContact String?
+
+  medicalRecords MedicalRecord[]
+  appointments   Appointment[]
+}
+
+model Doctor {
+  id              String             @id @default(cuid())
+  userId          String             @unique
+  user            User               @relation(fields: [userId], references: [id])
+  licenseNumber   String             @unique
+  specialization  String
+  qualifications  String[]
+  yearsExperience Int
+  bio             String?
+  consultationFee Decimal            @db.Decimal(10, 2)
+  stripeAccountId String?
+  kydStatus       VerificationStatus @default(PENDING)
+  kydTier1At      DateTime?
+  kydTier2At      DateTime?
+  kydTier3At      DateTime?
+  trustBadge      Boolean            @default(false)
+  rating          Decimal?           @db.Decimal(3, 2)
+  reviewCount     Int                @default(0)
+
+  appointments Appointment[]
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  expires      DateTime
+}
+
+model MedicalRecord {
+  id          String   @id @default(cuid())
+  patientId   String
+  patient     Patient  @relation(fields: [patientId], references: [id])
+  type        String
+  title       String
+  content     String   @db.Text
+  fileUrl     String?
+  ocrText     String?  @db.Text
+  recordedAt  DateTime
+  createdAt   DateTime @default(now())
+
+  @@index([patientId, recordedAt(sort: Desc)])
+}
+
+model Appointment {
+  id           String            @id @default(cuid())
+  patientId    String
+  patient      Patient           @relation(fields: [patientId], references: [id])
+  doctorId     String
+  doctor       Doctor            @relation(fields: [doctorId], references: [id])
+  status       AppointmentStatus @default(SCHEDULED)
+  scheduledAt  DateTime
+  completedAt  DateTime?
+
+  voiceFileUrl     String?
+  transcript       String?  @db.Text
+  aiSummary        String?  @db.Text
+  severityScore    Int?
+  severityLevel    SeverityLevel?
+  department       String?
+
+  prescriptionUrl  String?
+  prescriptionText String?  @db.Text
+
+  escrow    Escrow?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([patientId])
+  @@index([doctorId])
+}
+
+model Escrow {
+  id                    String      @id @default(cuid())
+  appointmentId         String      @unique
+  appointment           Appointment @relation(fields: [appointmentId], references: [id])
+  amount                Decimal     @db.Decimal(10, 2)
+  currency              String      @default("USD")
+  status                EscrowStatus @default(HELD)
+  stripePaymentIntentId String      @unique
+  heldAt                DateTime    @default(now())
+  releasedAt            DateTime?
+  refundedAt            DateTime?
+}
+
+model MedicalResource {
+  id          String   @id @default(cuid())
+  name        String
+  type        String
+  address     String
+  latitude    Decimal  @db.Decimal(10, 8)
+  longitude   Decimal  @db.Decimal(11, 8)
+  phone       String?
+  isAvailable Boolean  @default(true)
+  updatedAt   DateTime @updatedAt
+}
