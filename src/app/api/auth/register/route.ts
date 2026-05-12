@@ -45,12 +45,13 @@ export async function POST(req: NextRequest) {
       email,
       phone,
       passwordHash,
+      name: fullName,
       role: 'PATIENT',
       cnicNumber,
       medIntelCode,
       kycStatus: 'VERIFIED',
       kycVerifiedAt: new Date(),
-      patient: { create: {} },
+      patient: { create: { dateOfBirth: new Date(dateOfBirth) } },
     },
   })
 
