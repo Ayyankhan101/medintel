@@ -1,11 +1,20 @@
 import OpenAI from 'openai'
 import type { TriageResult } from '@/types'
 
-let _openai: OpenAI | null = null
+let _client: OpenAI | null = null
 function getClient(): OpenAI {
-  if (!_openai) _openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
-  return _openai
+  if (!_client) {
+    const useGroq = !!process.env.GROQ_API_KEY
+    _client = new OpenAI({
+      apiKey:  useGroq ? process.env.GROQ_API_KEY : process.env.OPENAI_API_KEY,
+      baseURL: useGroq ? (process.env.GROQ_BASE_URL ?? 'https://api.groq.com/openai/v1') : undefined,
+    })
+  }
+  return _client
 }
+
+const CHAT_MODEL      = process.env.GROQ_API_KEY ? 'llama-3.3-70b-versatile' : 'gpt-4o'
+const WHISPER_MODEL   = process.env.GROQ_API_KEY ? 'whisper-large-v3'        : 'whisper-1'
 
 const DEPARTMENT_KEYWORDS: Record<string, string[]> = {
   Cardiology:       ['chest', 'heart', 'pulse', 'troponin', 'palpitation', 'diaphoresis'],
@@ -60,7 +69,7 @@ export async function transcribeAudio(audioBuffer: Buffer, filename: string): Pr
   const file = new File([audioBuffer], filename, { type: 'audio/webm' })
   const transcription = await getClient().audio.transcriptions.create({
     file,
-    model: 'whisper-1',
+    model: WHISPER_MODEL,
     language: 'ur',
     response_format: 'text',
   })
@@ -74,7 +83,7 @@ export async function generateMedicalSummary(transcript: string): Promise<{
   severityScore: number
 }> {
   const completion = await getClient().chat.completions.create({
-    model: 'gpt-4o',
+    model: CHAT_MODEL,
     messages: [{ role: 'user', content: buildMedicalSummaryPrompt(transcript) }],
     temperature: 0.1,
     max_tokens: 500,
@@ -88,7 +97,7 @@ export async function generateMedicalSummary(transcript: string): Promise<{
     structured = { medicalTermSummary: raw }
   }
 
-  const summaryText = (structured.medicalTermSummary as string) ?? transcript
+  const summaryText   = (structured.medicalTermSummary as string) ?? transcript
   const department    = parseDepartmentFromSummary(summaryText + ' ' + transcript)
   const severityScore = parseSeverityFromText(summaryText + ' ' + transcript)
 
@@ -102,18 +111,10 @@ export async function runFullIntakePipeline(
   const transcript = await transcribeAudio(audioBuffer, filename)
   const { structured, department, severityScore } = await generateMedicalSummary(transcript)
 
-  const summary = (structured.medicalTermSummary as string) ?? transcript
-  const severityLevel =
-    severityScore <= 4 ? 'ROUTINE' : severityScore <= 7 ? 'URGENT' : 'CRITICAL'
+  const summary       = (structured.medicalTermSummary as string) ?? transcript
+  const severityLevel = severityScore <= 4 ? 'ROUTINE' : severityScore <= 7 ? 'URGENT' : 'CRITICAL'
 
-  return {
-    transcript,
-    summary,
-    department,
-    severityScore,
-    severityLevel,
-    isEmergency: severityScore >= 8,
-  }
+  return { transcript, summary, department, severityScore, severityLevel, isEmergency: severityScore >= 8 }
 }
 
 export async function runTextIntakePipeline(
@@ -121,16 +122,8 @@ export async function runTextIntakePipeline(
 ): Promise<TriageResult & { transcript: string; summary: string }> {
   const { structured, department, severityScore } = await generateMedicalSummary(text)
 
-  const summary = (structured.medicalTermSummary as string) ?? text
-  const severityLevel =
-    severityScore <= 4 ? 'ROUTINE' : severityScore <= 7 ? 'URGENT' : 'CRITICAL'
+  const summary       = (structured.medicalTermSummary as string) ?? text
+  const severityLevel = severityScore <= 4 ? 'ROUTINE' : severityScore <= 7 ? 'URGENT' : 'CRITICAL'
 
-  return {
-    transcript: text,
-    summary,
-    department,
-    severityScore,
-    severityLevel,
-    isEmergency: severityScore >= 8,
-  }
+  return { transcript: text, summary, department, severityScore, severityLevel, isEmergency: severityScore >= 8 }
 }
