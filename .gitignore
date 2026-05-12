@@ -39,6 +39,10 @@ prisma/dev.db
 prisma/dev.db-journal
 prisma/migrations/
 
+# Dev server runtime files
+.dev.pid
+.dev.log
+
 # vercel
 .vercel
 
