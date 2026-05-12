@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-set -e
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 PID_FILE="$ROOT/.dev.pid"
@@ -39,11 +38,9 @@ if grep -qE '^GROQ_API_KEY\s*=\s*"your-groq-api-key"' "$ROOT/.env.local"; then
 fi
 echo "✓  .env.local configured"
 
-# ── Load .env.local into the current shell ────────────
-set -a
-# shellcheck disable=SC1091
-source "$ROOT/.env.local"
-set +a
+# Next.js reads .env.local automatically — we only need DATABASE_URL
+# exported here for the Prisma CLI commands below.
+export DATABASE_URL="file:$ROOT/prisma/dev.db"
 
 # ── 4. Run DB migration + seed if DB missing ─────────
 if [ ! -f "$ROOT/prisma/dev.db" ]; then
