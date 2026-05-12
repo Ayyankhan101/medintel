@@ -50,7 +50,18 @@ else
   echo "✓  Database ready"
 fi
 
-# ── 5. Start dev server in background ────────────────
+# ── 5. Free port 3000 if occupied ────────────────────
+PORT=3000
+BLOCKING=$(lsof -ti :$PORT 2>/dev/null)
+if [ -n "$BLOCKING" ]; then
+  echo ""
+  echo "▶  Port $PORT in use (PID $BLOCKING) — killing..."
+  kill "$BLOCKING" 2>/dev/null || kill -9 "$BLOCKING" 2>/dev/null || true
+  sleep 1
+  echo "✓  Port $PORT freed"
+fi
+
+# ── 6. Start dev server in background ────────────────
 echo ""
 echo "▶  Starting Next.js dev server..."
 cd "$ROOT"
