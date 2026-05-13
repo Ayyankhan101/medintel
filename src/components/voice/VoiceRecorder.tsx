@@ -2,7 +2,15 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { Mic, Square, Loader2, AlertCircle } from 'lucide-react'
 
-interface Props { onRecordingComplete: (blob: Blob, filename: string) => void }
+interface Props { onRecordingComplete: (blob: Blob, filename: string, language: string) => void }
+
+const LANGUAGES = [
+  { code: 'ur', label: 'اردو',  english: 'Urdu' },
+  { code: 'ps', label: 'پښتو',   english: 'Pashto' },
+  { code: 'pa', label: 'ਪੰਜਾਬੀ',   english: 'Punjabi' },
+  { code: 'sd', label: 'سنڌي',   english: 'Sindhi' },
+  { code: 'en', label: 'English', english: 'English' },
+]
 type State = 'idle' | 'recording' | 'processing' | 'error'
 
 // Pick a mime type the browser actually supports.
@@ -35,6 +43,7 @@ export function VoiceRecorder({ onRecordingComplete }: Props) {
   const [seconds, setSeconds] = useState(0)
   const [level,   setLevel]   = useState(0) // 0..1 — live mic loudness
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  const [language, setLanguage] = useState('ur')
 
   const recorderRef = useRef<MediaRecorder | null>(null)
   const streamRef   = useRef<MediaStream | null>(null)
@@ -89,7 +98,7 @@ export function VoiceRecorder({ onRecordingComplete }: Props) {
           return
         }
         setState('processing')
-        onRecordingComplete(blob, `recording-${Date.now()}.${extFromMime(recorder.mimeType || mimeType)}`)
+        onRecordingComplete(blob, `recording-${Date.now()}.${extFromMime(recorder.mimeType || mimeType)}`, language)
       }
 
       // Live audio level for the visualizer.
@@ -152,6 +161,27 @@ export function VoiceRecorder({ onRecordingComplete }: Props) {
         </p>
         <p className="text-sm text-slate-400">Urdu یا English میں بولیں — ہم سمجھتے ہیں</p>
       </div>
+
+      {/* ── Language picker (idle only) ─────────────────────────────────── */}
+      {(state === 'idle' || state === 'error') && (
+        <div className="flex flex-wrap items-center justify-center gap-1.5">
+          {LANGUAGES.map(l => (
+            <button
+              key={l.code}
+              onClick={() => setLanguage(l.code)}
+              className={`text-xs px-3 py-1 rounded-full border transition-colors ${
+                language === l.code
+                  ? 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 border-slate-900 dark:border-slate-100'
+                  : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-slate-400'
+              }`}
+              aria-pressed={language === l.code}
+            >
+              <span className="font-semibold mr-1">{l.label}</span>
+              <span className="text-[10px] opacity-70">({l.english})</span>
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* ── IDLE ───────────────────────────────────────────────────────────── */}
       {(state === 'idle' || state === 'error') && (

@@ -38,7 +38,7 @@ export default function RegisterPage() {
   async function onSubmit(data: FormData) {
     setLoading(true); setError(null)
     try {
-      const res  = await fetch('/api/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })
+      const res  = await fetch('/api/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role: 'PATIENT', ...data }) })
       const json = await res.json()
       if (!res.ok) { setError(typeof json.error === 'string' ? json.error : 'Registration failed'); return }
       router.push(`/login?registered=true&code=${json.medIntelCode}`)
@@ -108,6 +108,10 @@ export default function RegisterPage() {
         <p className="text-center text-sm text-slate-500 mt-5">
           Already have an account?{' '}
           <Link href="/login" className="text-blue-600 font-medium hover:underline">Sign in</Link>
+        </p>
+        <p className="text-center text-sm text-slate-500 mt-2">
+          Are you a doctor?{' '}
+          <Link href="/register/doctor" className="text-blue-600 font-medium hover:underline">Join as a doctor</Link>
         </p>
       </div>
     </div>

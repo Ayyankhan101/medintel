@@ -84,7 +84,7 @@ Severity scoring guide:
 Be conservative: when in doubt, score higher.`
 }
 
-export async function transcribeAudio(audioBuffer: Buffer, filename: string): Promise<string> {
+export async function transcribeAudio(audioBuffer: Buffer, filename: string, language = 'ur'): Promise<string> {
   // Copy exactly this Buffer's bytes into a fresh ArrayBuffer. Using `audioBuffer.buffer`
   // directly would leak pooled bytes for small audio clips (Buffer.concat returns a slice
   // of an internal 8 KB pool for sizes ≤ ~4 KB).
@@ -94,7 +94,7 @@ export async function transcribeAudio(audioBuffer: Buffer, filename: string): Pr
   const transcription = await getClient().audio.transcriptions.create({
     file,
     model: WHISPER_MODEL,
-    language: 'ur',
+    language,
     response_format: 'text',
   })
   return transcription as unknown as string
@@ -137,9 +137,10 @@ export async function generateMedicalSummary(transcript: string): Promise<{
 
 export async function runFullIntakePipeline(
   audioBuffer: Buffer,
-  filename: string
+  filename: string,
+  language = 'ur',
 ): Promise<TriageResult & { transcript: string; summary: string }> {
-  const transcript = await transcribeAudio(audioBuffer, filename)
+  const transcript = await transcribeAudio(audioBuffer, filename, language)
   const { structured, department, severityScore } = await generateMedicalSummary(transcript)
 
   const summary       = (structured.medicalTermSummary as string) ?? transcript

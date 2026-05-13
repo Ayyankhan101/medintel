@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { MedicalTimeline } from '@/components/records/MedicalTimeline'
 import { RecordUploader } from '@/components/records/RecordUploader'
 import { Button } from '@/components/ui/button'
-import { Plus, X } from 'lucide-react'
+import { Plus, X, Download, FileText } from 'lucide-react'
 
 interface MedicalRecord {
   id: string
@@ -12,6 +12,31 @@ interface MedicalRecord {
   content: string
   recordedAt: string
   fileUrl?: string | null
+}
+
+interface Appointment {
+  id:               string
+  scheduledAt:      string
+  completedAt:      string | null
+  status:           string
+  department:       string | null
+  severityLevel:    string | null
+  severityScore:    number | null
+  prescriptionText: string | null
+  doctor: { specialization: string; user: { email: string; name: string | null } } | null
+}
+
+const STATUS_LABELS: Record<string, string> = {
+  SCHEDULED:   'Scheduled',
+  IN_PROGRESS: 'In progress',
+  COMPLETED:   'Completed',
+  CANCELLED:   'Cancelled',
+  REFUNDED:    'Refunded',
+}
+const SEVERITY_TINT: Record<string, string> = {
+  ROUTINE:  'bg-green-100  text-green-800  dark:bg-green-900/40  dark:text-green-300',
+  URGENT:   'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300',
+  CRITICAL: 'bg-red-100    text-red-800    dark:bg-red-900/40    dark:text-red-300',
 }
 
 const TYPE_LABELS: Record<string, string> = {
@@ -24,22 +49,27 @@ const TYPE_LABELS: Record<string, string> = {
 }
 
 export default function HistoryPage() {
-  const [records, setRecords]       = useState<MedicalRecord[]>([])
-  const [loading, setLoading]       = useState(true)
-  const [showUpload, setShowUpload] = useState(false)
-  const [filter, setFilter]         = useState('ALL')
+  const [records, setRecords]           = useState<MedicalRecord[]>([])
+  const [appointments, setAppointments] = useState<Appointment[]>([])
+  const [loading, setLoading]           = useState(true)
+  const [showUpload, setShowUpload]     = useState(false)
+  const [filter, setFilter]             = useState('ALL')
 
-  async function loadRecords() {
+  async function loadAll() {
     setLoading(true)
     try {
-      const res = await fetch('/api/records')
-      if (res.ok) setRecords(await res.json())
+      const [r1, r2] = await Promise.all([fetch('/api/records'), fetch('/api/appointments')])
+      if (r1.ok) setRecords(await r1.json())
+      if (r2.ok) {
+        const d = await r2.json()
+        setAppointments(d.appointments ?? [])
+      }
     } finally {
       setLoading(false)
     }
   }
 
-  useEffect(() => { loadRecords() }, [])
+  useEffect(() => { loadAll() }, [])
 
   const filtered = filter === 'ALL' ? records : records.filter(r => r.type === filter)
 
@@ -60,7 +90,7 @@ export default function HistoryPage() {
       </div>
 
       {showUpload && (
-        <RecordUploader onUploaded={() => { loadRecords(); setShowUpload(false) }} />
+        <RecordUploader onUploaded={() => { loadAll(); setShowUpload(false) }} />
       )}
 
       {/* Filter chips */}
@@ -83,11 +113,55 @@ export default function HistoryPage() {
       {loading ? (
         <div className="space-y-3">
           {Array(3).fill(0).map((_, i) => (
-            <div key={i} className="h-24 bg-gray-100 rounded-xl animate-pulse" />
+            <div key={i} className="h-24 bg-gray-100 dark:bg-slate-800 rounded-xl animate-pulse" />
           ))}
         </div>
       ) : (
         <MedicalTimeline records={filtered} />
+      )}
+
+      {!loading && appointments.length > 0 && (
+        <section className="pt-4">
+          <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-3 flex items-center gap-2">
+            <FileText className="w-4 h-4 text-blue-600" />
+            Past consultations
+          </h2>
+          <ul className="space-y-2">
+            {appointments.map(a => (
+              <li
+                key={a.id}
+                className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 flex items-start gap-3 justify-between"
+              >
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-medium text-slate-800 dark:text-slate-100 truncate">
+                      {a.doctor?.specialization ?? a.department ?? 'Consultation'}
+                    </span>
+                    {a.severityLevel && (
+                      <span className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded ${SEVERITY_TINT[a.severityLevel] ?? ''}`}>
+                        AI: {a.severityLevel}
+                      </span>
+                    )}
+                    <span className="text-[10px] uppercase font-medium text-slate-500 dark:text-slate-400">
+                      {STATUS_LABELS[a.status] ?? a.status}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    {new Date(a.scheduledAt).toLocaleString('en-PK', { dateStyle: 'medium', timeStyle: 'short' })}
+                  </p>
+                </div>
+                <a
+                  href={`/api/appointments/${a.id}/prescription.pdf`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="shrink-0 inline-flex items-center gap-1 text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline"
+                >
+                  <Download className="w-3 h-3" /> PDF
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
     </div>
   )

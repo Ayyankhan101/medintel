@@ -21,30 +21,52 @@ const VISION_MODEL = process.env.GROQ_API_KEY
   : 'gpt-4o'
 
 function buildPrompt(originalTranscript: string, originalSummary: string): string {
-  return `You are a clinical triage assistant. A patient previously described their symptoms; now they have uploaded supporting documents (lab reports, prescriptions, scans, photos). Re-evaluate severity and department based on the original complaint PLUS the uploaded evidence.
+  return `You are a clinical triage assistant analysing patient-uploaded medical documents (lab reports, imaging, prescriptions, doctor notes, symptom photos).
 
-ORIGINAL TRANSCRIPT:
+ORIGINAL COMPLAINT:
 "${originalTranscript}"
 
 ORIGINAL AI SUMMARY:
 "${originalSummary}"
 
-Look at every uploaded image. Extract any relevant clinical findings (lab values out of range, medication names, doctor notes, visible symptoms). Then return ONLY a valid JSON object in this exact format:
+Task: read every uploaded image. Identify the document type (lab report, imaging report, ECG, prescription, photo of symptom, etc.). Extract concrete clinical metrics where present. Decide if findings change the triage severity and the recommended specialty.
+
+Return ONLY valid JSON in this exact shape (no markdown, no commentary):
 {
-  "extractedFindings": "1-3 sentences summarising what you found in the documents",
-  "updatedSummary": "professional clinical summary combining original complaint + findings, 3-4 sentences",
-  "urgencyFlags": ["any new red flags surfaced by the documents"],
+  "documentTypes": ["lab_report" | "imaging_report" | "ecg" | "prescription" | "discharge_note" | "symptom_photo" | "other", …],
+  "keyFindings": [
+    {
+      "metric": "short label, e.g. 'LAD blockage', 'HbA1c', 'Hemoglobin', 'Blood pressure', 'Ejection fraction'",
+      "value":  "as written, e.g. '70%', '9.1%', '8.4 g/dL', '160/100 mmHg', '40%'",
+      "interpretation": "1-line clinical meaning, e.g. 'severe stenosis — likely intervention needed', 'poorly controlled diabetes', 'moderate anaemia'",
+      "isAbnormal": true
+    }
+  ],
+  "suggestedInterventions": [
+    "concrete next steps a clinician might order, e.g. 'angiography with PCI consideration', '1-2 drug-eluting stents likely', 'iron supplementation', 'urgent cardiology referral'"
+  ],
+  "extractedFindings": "2-4 sentence plain-language summary of what the documents show",
+  "updatedSummary": "professional clinical summary combining original complaint + new findings, 3-5 sentences",
+  "urgencyFlags": ["any new red flags surfaced by these documents"],
   "severityScore": <integer 1-10>,
-  "department": "one of: General Medicine, Cardiology, Neurology, Pulmonology, Gastroenterology, Orthopedics, Dermatology, Psychiatry, Emergency Medicine"
+  "department": "one of: General Medicine, Cardiology, Neurology, Pulmonology, Gastroenterology, Orthopedics, Dermatology, Psychiatry, Endocrinology, Nephrology, Oncology, Emergency Medicine"
 }
 
 Scoring guide:
 - 1-3: Minor
 - 4-5: Moderate, see a doctor soon
 - 6-7: Urgent, today
-- 8-10: Emergency
+- 8-10: Emergency / hospital admission
 
-Be conservative — when documents reveal serious findings (e.g. abnormal lab values, concerning imaging), score higher.`
+Extraction rules:
+- Always report numeric values exactly as written in the document.
+- If you see imaging mentioning stenosis or blockage with a percentage, list it under keyFindings with metric = the vessel name (e.g. "LAD", "RCA", "Carotid") and value = the percentage.
+- For ECG: capture rate, rhythm, and any flagged abnormality (ST elevation, ischaemia, etc.).
+- For lab panels: capture the OUT-OF-RANGE values only, not normal ones.
+- For prescriptions: list each medication name + dose under keyFindings (metric = drug, value = dose).
+- suggestedInterventions must be specific (drug names, procedure names, referral specialty). Avoid vague advice.
+- Be conservative on severity — when in doubt, score higher.
+- Empty arrays are valid for keyFindings / suggestedInterventions / urgencyFlags if nothing relevant is present.`
 }
 
 export async function POST(
@@ -146,13 +168,16 @@ export async function POST(
   })
 
   return NextResponse.json({
-    triageId:          updated.id,
-    transcript:        updated.transcript,
-    summary:           updated.summary,
-    department:        updated.department,
-    severityScore:     updated.severityScore,
-    severityLevel:     updated.severityLevel,
-    extractedFindings: findings,
-    isEmergency:       severityScore >= 8,
+    triageId:               updated.id,
+    transcript:             updated.transcript,
+    summary:                updated.summary,
+    department:             updated.department,
+    severityScore:          updated.severityScore,
+    severityLevel:          updated.severityLevel,
+    extractedFindings:      findings,
+    keyFindings:            Array.isArray(structured.keyFindings)            ? structured.keyFindings            : [],
+    suggestedInterventions: Array.isArray(structured.suggestedInterventions) ? structured.suggestedInterventions : [],
+    documentTypes:          Array.isArray(structured.documentTypes)          ? structured.documentTypes          : [],
+    isEmergency:            severityScore >= 8,
   })
 }

@@ -4,59 +4,125 @@ import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
 import { verifyPatientCNIC, generateMedIntelCode } from '@/lib/kyc'
 
-const registerSchema = z.object({
-  email: z.string().email(),
-  phone: z.string().min(10),
-  password: z.string().min(8),
-  fullName: z.string().min(2),
-  cnicNumber: z.string().length(13),
+const patientSchema = z.object({
+  role:        z.literal('PATIENT').default('PATIENT'),
+  email:       z.string().email(),
+  phone:       z.string().min(10),
+  password:    z.string().min(8),
+  fullName:    z.string().min(2),
+  cnicNumber:  z.string().length(13),
   dateOfBirth: z.string(),
 })
 
+const doctorSchema = z.object({
+  role:            z.literal('DOCTOR'),
+  email:           z.string().email(),
+  phone:           z.string().min(10),
+  password:        z.string().min(8),
+  fullName:        z.string().min(2),
+  licenseNumber:   z.string().min(3),
+  specialization:  z.string().min(2),
+  yearsExperience: z.coerce.number().int().min(0).max(80),
+  consultationFee: z.coerce.number().min(0).max(1_000_000),
+  qualifications:  z.array(z.string()).default([]),
+  bio:             z.string().optional(),
+})
+
+const schema = z.discriminatedUnion('role', [patientSchema, doctorSchema])
+
 export async function POST(req: NextRequest) {
   const body = await req.json()
-  const parsed = registerSchema.safeParse(body)
+  const parsed = schema.safeParse(body)
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
   }
 
-  const { email, phone, password, fullName, cnicNumber, dateOfBirth } = parsed.data
+  // ── Doctor signup ─────────────────────────────────────────────────────────
+  if (parsed.data.role === 'DOCTOR') {
+    const d = parsed.data
 
-  const existing = await prisma.user.findFirst({
-    where: { OR: [{ email }, { phone }, { cnicNumber }] },
-  })
-  if (existing) {
+    const existing = await prisma.user.findFirst({
+      where: { OR: [{ email: d.email }, { phone: d.phone }] },
+    })
+    if (existing) {
+      return NextResponse.json({ error: 'Account already exists with this email or phone' }, { status: 409 })
+    }
+    const licenseTaken = await prisma.doctor.findUnique({ where: { licenseNumber: d.licenseNumber } })
+    if (licenseTaken) {
+      return NextResponse.json({ error: 'A doctor with this license number already exists' }, { status: 409 })
+    }
+
+    const passwordHash = await bcrypt.hash(d.password, 12)
+
+    // KYD lives in lib/kyd.ts — but for MVP we accept the license and mark
+    // Tier 1 verified immediately. Tier 2/3 (manual document review,
+    // peer cross-check) happen out-of-band. Doctors can't take bookings until
+    // they finish Stripe Connect onboarding (the booking route already checks
+    // stripeAccountId), so they aren't dangerous on the platform until then.
+    const user = await prisma.user.create({
+      data: {
+        email:         d.email,
+        phone:         d.phone,
+        passwordHash,
+        name:          d.fullName,
+        role:          'DOCTOR',
+        kycStatus:     'PENDING',
+        doctor: {
+          create: {
+            licenseNumber:   d.licenseNumber,
+            specialization:  d.specialization,
+            qualifications:  d.qualifications,
+            yearsExperience: d.yearsExperience,
+            consultationFee: d.consultationFee,
+            bio:             d.bio,
+            kydStatus:       'PENDING',
+            kydTier1At:      new Date(),
+          },
+        },
+      },
+    })
+
     return NextResponse.json(
-      { error: 'Account already exists with this email, phone, or CNIC' },
-      { status: 409 }
+      { message: 'Doctor account created. Connect Stripe to start accepting patients.', userId: user.id },
+      { status: 201 },
     )
   }
 
-  const kyc = await verifyPatientCNIC({ cnicNumber, fullName, dateOfBirth })
+  // ── Patient signup (unchanged behaviour) ──────────────────────────────────
+  const p = parsed.data
+
+  const existing = await prisma.user.findFirst({
+    where: { OR: [{ email: p.email }, { phone: p.phone }, { cnicNumber: p.cnicNumber }] },
+  })
+  if (existing) {
+    return NextResponse.json({ error: 'Account already exists with this email, phone, or CNIC' }, { status: 409 })
+  }
+
+  const kyc = await verifyPatientCNIC({ cnicNumber: p.cnicNumber, fullName: p.fullName, dateOfBirth: p.dateOfBirth })
   if (!kyc.verified) {
     return NextResponse.json({ error: kyc.reason ?? 'CNIC verification failed' }, { status: 422 })
   }
 
-  const passwordHash = await bcrypt.hash(password, 12)
+  const passwordHash = await bcrypt.hash(p.password, 12)
   const medIntelCode = kyc.medIntelCode || generateMedIntelCode()
 
   const user = await prisma.user.create({
     data: {
-      email,
-      phone,
+      email:         p.email,
+      phone:         p.phone,
       passwordHash,
-      name: fullName,
-      role: 'PATIENT',
-      cnicNumber,
+      name:          p.fullName,
+      role:          'PATIENT',
+      cnicNumber:    p.cnicNumber,
       medIntelCode,
-      kycStatus: 'VERIFIED',
+      kycStatus:     'VERIFIED',
       kycVerifiedAt: new Date(),
-      patient: { create: { dateOfBirth: new Date(dateOfBirth) } },
+      patient: { create: { dateOfBirth: new Date(p.dateOfBirth) } },
     },
   })
 
   return NextResponse.json(
     { message: 'Account created', medIntelCode: user.medIntelCode },
-    { status: 201 }
+    { status: 201 },
   )
 }

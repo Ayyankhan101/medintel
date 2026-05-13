@@ -19,11 +19,12 @@ export default function IntakePage() {
   const [loading,   setLoading]   = useState(false)
   const [error,     setError]     = useState<string | null>(null)
 
-  async function handleVoiceComplete(blob: Blob, filename: string) {
+  async function handleVoiceComplete(blob: Blob, filename: string, language: string) {
     setLoading(true); setError(null)
     try {
       const form = new FormData()
       form.append('audio', blob, filename)
+      form.append('language', language)
       const res  = await fetch('/api/voice/transcribe', { method: 'POST', body: form })
       const raw  = await res.text()
       const data = raw ? JSON.parse(raw) : {}

@@ -2,17 +2,26 @@
 import { useRef, useState } from 'react'
 import { Paperclip, Loader2, FileImage, AlertCircle, CheckCircle2 } from 'lucide-react'
 
+export interface KeyFinding {
+  metric:         string
+  value:          string
+  interpretation: string
+  isAbnormal:     boolean
+}
 interface Props {
   triageId: string
   onRefined: (updated: {
-    triageId:          string
-    transcript:        string
-    summary:           string
-    department:        string
-    severityScore:     number
-    severityLevel:     'ROUTINE' | 'URGENT' | 'CRITICAL'
-    extractedFindings: string
-    isEmergency:       boolean
+    triageId:               string
+    transcript:             string
+    summary:                string
+    department:             string
+    severityScore:          number
+    severityLevel:          'ROUTINE' | 'URGENT' | 'CRITICAL'
+    extractedFindings:      string
+    keyFindings?:           KeyFinding[]
+    suggestedInterventions?: string[]
+    documentTypes?:         string[]
+    isEmergency:            boolean
   }) => void
 }
 

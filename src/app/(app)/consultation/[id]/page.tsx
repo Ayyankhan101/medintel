@@ -23,14 +23,15 @@ interface AppointmentData {
   }
 }
 
+interface PatientHistoryRecord { id: string; title: string; content?: string; recordedAt?: string }
 interface PatientHistory {
   recordCount: number
   grouped: {
-    ALLERGY:      { id: string; title: string }[]
-    CHRONIC_MED:  { id: string; title: string }[]
-    SURGERY:      { id: string; title: string }[]
-    LAB_REPORT:   { id: string; title: string }[]
-    PRESCRIPTION: { id: string; title: string }[]
+    ALLERGY:      PatientHistoryRecord[]
+    CHRONIC_MED:  PatientHistoryRecord[]
+    SURGERY:      PatientHistoryRecord[]
+    LAB_REPORT:   PatientHistoryRecord[]
+    PRESCRIPTION: PatientHistoryRecord[]
   }
 }
 
@@ -87,54 +88,48 @@ function DoctorConsultation({ appointmentId }: { appointmentId: string }) {
     )
   }
 
-  return (
-    <div className="max-w-4xl mx-auto p-4 space-y-4">
-      <h1 className="text-xl font-bold">Doctor Console</h1>
-      {error && <div className="bg-red-50 text-red-600 p-3 rounded text-sm">{error}</div>}
+  const severityTint =
+    appointment?.severityLevel === 'CRITICAL' ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300' :
+    appointment?.severityLevel === 'URGENT'   ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300' :
+                                                'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300'
 
-      {(history || appointment?.aiSummary) && (
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm space-y-1">
+  function HistoryGroup({ label, color, icon, records }: { label: string; color: string; icon: string; records: PatientHistoryRecord[] }) {
+    if (records.length === 0) return null
+    return (
+      <div>
+        <p className={`text-xs font-bold uppercase tracking-wider ${color} mb-1.5`}>{icon} {label}</p>
+        <ul className="space-y-1 text-sm">
+          {records.map(r => (
+            <li key={r.id} className="text-slate-700 dark:text-slate-200">
+              <span className="font-medium">{r.title}</span>
+              {r.content && <span className="text-slate-500 dark:text-slate-400"> — {r.content}</span>}
+            </li>
+          ))}
+        </ul>
+      </div>
+    )
+  }
+
+  return (
+    <div className="max-w-6xl mx-auto p-4">
+      <h1 className="text-xl font-bold mb-4">Doctor Console</h1>
+      {error && <div className="bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-300 p-3 rounded text-sm mb-4">{error}</div>}
+
+      <div className="grid lg:grid-cols-[1fr_320px] gap-4">
+        {/* ── Main consultation column ─────────────────────────────────── */}
+        <div className="space-y-4 min-w-0">
           {appointment?.aiSummary && (
-            <p className="text-gray-700">
-              <strong>AI Summary:</strong> {appointment.aiSummary}
-              {appointment.severityLevel && (
-                <span className={`ml-2 px-2 py-0.5 rounded text-xs font-semibold ${
-                  appointment.severityLevel === 'CRITICAL' ? 'bg-red-100 text-red-700' :
-                  appointment.severityLevel === 'URGENT'   ? 'bg-yellow-100 text-yellow-700' :
-                                                             'bg-green-100 text-green-700'
-                }`}>
-                  {appointment.severityLevel} ({appointment.severityScore}/10)
-                </span>
-              )}
-            </p>
-          )}
-          {history && (
-            <>
-              <p className="text-gray-500 text-xs font-medium mt-2">
-                PATIENT HISTORY — {history.recordCount} records
+            <div className="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-xl p-3 text-sm">
+              <p className="text-slate-700 dark:text-slate-200">
+                <strong className="text-amber-700 dark:text-amber-300">AI suggestion (verify clinically):</strong> {appointment.aiSummary}
+                {appointment.severityLevel && (
+                  <span className={`ml-2 px-2 py-0.5 rounded text-xs font-semibold ${severityTint}`}>
+                    {appointment.severityLevel} ({appointment.severityScore}/10)
+                  </span>
+                )}
               </p>
-              {history.grouped.ALLERGY.length > 0 && (
-                <p className="text-red-700">
-                  ⚠️ <strong>Allergies:</strong>{' '}
-                  {history.grouped.ALLERGY.map(r => r.title).join(', ')}
-                </p>
-              )}
-              {history.grouped.CHRONIC_MED.length > 0 && (
-                <p className="text-amber-700">
-                  💊 <strong>Chronic Meds:</strong>{' '}
-                  {history.grouped.CHRONIC_MED.map(r => r.title).join(', ')}
-                </p>
-              )}
-              {history.grouped.SURGERY.length > 0 && (
-                <p className="text-gray-700">
-                  🔪 <strong>Surgeries:</strong>{' '}
-                  {history.grouped.SURGERY.map(r => r.title).join(', ')}
-                </p>
-              )}
-            </>
+            </div>
           )}
-        </div>
-      )}
 
       {phase === 'pre' && (
         <button
@@ -167,6 +162,51 @@ function DoctorConsultation({ appointmentId }: { appointmentId: string }) {
           </a>
         </div>
       )}
+
+          {/* PDF download for doctor too */}
+          {appointment && (phase === 'prescription' || phase === 'done') && (
+            <a
+              href={`/api/appointments/${appointmentId}/prescription.pdf`}
+              target="_blank" rel="noreferrer"
+              className="inline-flex items-center gap-1.5 text-sm text-blue-600 dark:text-blue-400 hover:underline"
+            >
+              📄 Download consultation summary (PDF)
+            </a>
+          )}
+        </div>
+
+        {/* ── Sidebar: full patient record ─────────────────────────────── */}
+        <aside className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-4 space-y-4 h-fit lg:sticky lg:top-4">
+          <div>
+            <p className="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Patient</p>
+            <p className="font-semibold text-slate-900 dark:text-slate-100">
+              {appointment?.patient?.user?.email}
+            </p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 font-mono">
+              {appointment?.patient?.user?.medIntelCode ?? '—'}
+            </p>
+          </div>
+
+          <div className="border-t border-slate-100 dark:border-slate-800 pt-3">
+            <p className="text-[10px] uppercase tracking-wider text-slate-400 font-bold mb-2">
+              Medical history {history && `(${history.recordCount})`}
+            </p>
+            {!history && <p className="text-xs text-slate-500">Loading…</p>}
+            {history && history.recordCount === 0 && (
+              <p className="text-xs text-slate-500">No prior records.</p>
+            )}
+            {history && (
+              <div className="space-y-3">
+                <HistoryGroup label="Allergies"     icon="⚠️" color="text-red-600 dark:text-red-400"    records={history.grouped.ALLERGY} />
+                <HistoryGroup label="Chronic meds"  icon="💊" color="text-amber-600 dark:text-amber-400" records={history.grouped.CHRONIC_MED} />
+                <HistoryGroup label="Surgeries"     icon="🔪" color="text-slate-600 dark:text-slate-400" records={history.grouped.SURGERY} />
+                <HistoryGroup label="Lab reports"   icon="🧪" color="text-blue-600 dark:text-blue-400"   records={history.grouped.LAB_REPORT} />
+                <HistoryGroup label="Prescriptions" icon="📋" color="text-green-600 dark:text-green-400" records={history.grouped.PRESCRIPTION} />
+              </div>
+            )}
+          </div>
+        </aside>
+      </div>
     </div>
   )
 }

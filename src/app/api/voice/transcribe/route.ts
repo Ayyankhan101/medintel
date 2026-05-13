@@ -16,8 +16,12 @@ export async function POST(req: NextRequest) {
 
   let audioBuffer: Buffer
   let filename = 'recording.webm'
+  let language = 'ur'
+  const ALLOWED_LANG = new Set(['ur', 'ps', 'pa', 'sd', 'en'])
   try {
     const form = await req.formData()
+    const lang = form.get('language')
+    if (typeof lang === 'string' && ALLOWED_LANG.has(lang)) language = lang
     const file = form.get('audio')
     if (!(file instanceof Blob)) {
       return NextResponse.json({ error: 'Missing audio file' }, { status: 400 })
@@ -37,7 +41,7 @@ export async function POST(req: NextRequest) {
 
   let result
   try {
-    result = await runFullIntakePipeline(audioBuffer, filename)
+    result = await runFullIntakePipeline(audioBuffer, filename, language)
   } catch (e) {
     console.error('[transcribe] AI pipeline error:', e)
     return NextResponse.json({ error: 'Transcription failed' }, { status: 502 })
