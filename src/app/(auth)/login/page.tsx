@@ -21,9 +21,19 @@ function LoginForm() {
     setLoading(true)
     setError(null)
     const result = await signIn('credentials', { email, password, redirect: false })
+    if (result?.error) { setLoading(false); setError('Invalid email or password'); return }
+
+    // Read the freshly-issued session to route by role.
+    let role: string | undefined
+    try {
+      const session = await fetch('/api/auth/session').then(r => r.json())
+      role = session?.user?.role
+    } catch { /* fall through to default */ }
     setLoading(false)
-    if (result?.error) { setError('Invalid email or password'); return }
-    router.push('/intake')
+
+    if (role === 'DOCTOR')     router.push('/doctor/dashboard')
+    else if (role === 'ADMIN') router.push('/admin')
+    else                       router.push('/intake')
   }
 
   return (
