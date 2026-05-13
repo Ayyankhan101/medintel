@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
+import { SeverityLevel } from '@prisma/client'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { runTextIntakePipeline } from '@/lib/openai'
@@ -39,7 +40,7 @@ export async function POST(req: NextRequest) {
       transcript:    result.transcript,
       summary:       result.summary,
       severityScore: result.severityScore,
-      severityLevel: result.severityLevel,
+      severityLevel: result.severityLevel as SeverityLevel,
       department:    result.department,
     },
   })

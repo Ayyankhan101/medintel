@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3'
+import { SeverityLevel } from '@prisma/client'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { runFullIntakePipeline } from '@/lib/openai'
@@ -50,7 +51,7 @@ export async function POST(req: NextRequest) {
       transcript:    result.transcript,
       summary:       result.summary,
       severityScore: result.severityScore,
-      severityLevel: result.severityLevel,
+      severityLevel: result.severityLevel as SeverityLevel,
       department:    result.department,
       voiceFileUrl:  s3Key,
     },
