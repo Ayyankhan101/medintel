@@ -98,8 +98,11 @@ export function AppointmentQueue() {
                 <div className="flex flex-wrap gap-2 items-center">
                   {a.department && <Badge variant="outline" className="text-xs">{a.department}</Badge>}
                   {a.severityLevel && (
-                    <span className={`text-xs px-2 py-0.5 rounded font-semibold ${SEVERITY_COLORS[a.severityLevel] ?? ''}`}>
-                      {a.severityLevel} {a.severityScore != null && `(${a.severityScore}/10)`}
+                    <span
+                      className={`text-xs px-2 py-0.5 rounded font-semibold ${SEVERITY_COLORS[a.severityLevel] ?? ''}`}
+                      title="AI suggestion — your clinical judgement decides"
+                    >
+                      AI: {a.severityLevel} {a.severityScore != null && `(${a.severityScore}/10)`}
                     </span>
                   )}
                   <Badge variant={a.status === 'COMPLETED' ? 'default' : 'secondary'} className="text-xs">
@@ -109,8 +112,8 @@ export function AppointmentQueue() {
               </div>
 
               {a.aiSummary && (
-                <p className="text-sm text-slate-600 leading-snug bg-amber-50 border border-amber-200 rounded px-3 py-2">
-                  <strong className="text-amber-700">AI:</strong> {a.aiSummary}
+                <p className="text-sm text-slate-600 dark:text-slate-300 leading-snug bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded px-3 py-2">
+                  <strong className="text-amber-700 dark:text-amber-300">AI suggestion (verify clinically):</strong> {a.aiSummary}
                 </p>
               )}
 

@@ -1,3 +1,4 @@
+import { Info } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { EmergencyAlert } from '@/components/emergency/EmergencyAlert'
@@ -39,14 +40,23 @@ export function SymptomSummary({ department, severityScore, severityLevel, summa
         </CardContent>
       </Card>
 
-      <Card className="bg-slate-50">
+      <Card className="bg-slate-50 dark:bg-slate-900">
         <CardHeader>
-          <CardTitle className="text-sm text-slate-500">Your Words (Transcript)</CardTitle>
+          <CardTitle className="text-sm text-slate-500 dark:text-slate-400">Your Words (Transcript)</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-slate-600 text-sm italic">&ldquo;{transcript}&rdquo;</p>
+          <p className="text-slate-600 dark:text-slate-300 text-sm italic">&ldquo;{transcript}&rdquo;</p>
         </CardContent>
       </Card>
+
+      <div className="flex items-start gap-2 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-200 rounded-xl px-4 py-3 text-sm">
+        <Info className="w-4 h-4 shrink-0 mt-0.5" />
+        <p>
+          <strong>AI suggestion — not a medical diagnosis.</strong> This summary is generated automatically
+          to help you describe your situation to a doctor. A licensed clinician will review your case and
+          make all clinical decisions.
+        </p>
+      </div>
     </div>
   )
 }

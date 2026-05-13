@@ -29,8 +29,9 @@ function DoctorListContent() {
   const [error, setError]     = useState<string | null>(null)
 
   useEffect(() => {
-    const trustOnly = severity === 'CRITICAL'
-    fetch(`/api/doctors?department=${encodeURIComponent(department)}&trustOnly=${trustOnly}`)
+    // Always show every verified specialist — never auto-filter on AI severity.
+    // The AI's suggestion is highlighted but the patient picks who they want.
+    fetch(`/api/doctors?department=${encodeURIComponent(department)}`)
       .then(r => r.json())
       .then(data => {
         if (Array.isArray(data)) setDoctors(data)
@@ -38,7 +39,7 @@ function DoctorListContent() {
         setLoading(false)
       })
       .catch(() => { setError('Failed to load doctors'); setLoading(false) })
-  }, [department, severity])
+  }, [department])
 
   function handleBook(doctorId: string) {
     const p = new URLSearchParams({
@@ -62,9 +63,14 @@ function DoctorListContent() {
       </div>
 
       {severity === 'CRITICAL' && (
-        <div className="bg-red-50 border border-red-200 text-red-800 p-3 rounded text-sm font-medium">
-          ⚠️ High severity detected — showing only fully KYD-verified specialists.
-          If this is a life-threatening emergency, call 1122 immediately.
+        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200 p-3 rounded text-sm">
+          <p className="font-medium">⚠️ The AI flagged this as potentially urgent.</p>
+          <p className="mt-0.5">If this is a life-threatening emergency, call <strong>1122</strong> immediately. Otherwise, picking a trust-badged specialist is recommended — but the choice is yours.</p>
+        </div>
+      )}
+      {severity && severity !== 'CRITICAL' && (
+        <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-200 p-3 rounded text-sm">
+          AI suggestion only — pick any doctor you prefer. They make the clinical decisions.
         </div>
       )}
 
