@@ -87,6 +87,101 @@ async function main() {
     },
   })
   console.log(`✔ Demo doctor  ready: ${DOCTOR_EMAIL} / ${PASSWORD}`)
+
+  // ── Demo medical history for the patient ───────────────────────────────────
+  const patient = await prisma.patient.findUnique({ where: { userId: patientUser.id } })
+  const doctor  = await prisma.doctor.findUnique({ where: { userId: doctorUser.id } })
+  if (!patient || !doctor) throw new Error('patient/doctor row missing after upsert')
+
+  const records = [
+    { id: 'seed-record-allergy',     type: 'ALLERGY',     title: 'Penicillin allergy',           content: 'Severe rash with penicillin-class antibiotics. Use macrolides instead.' },
+    { id: 'seed-record-chronic-htn', type: 'CHRONIC_MED', title: 'Hypertension — Amlodipine 5mg', content: 'Daily 5mg amlodipine since 2024. BP usually 130/85.' },
+  ]
+  for (const r of records) {
+    await prisma.medicalRecord.upsert({
+      where:  { id: r.id },
+      update: {},
+      create: { ...r, patientId: patient.id, recordedAt: new Date('2025-08-01') },
+    })
+  }
+  console.log(`✔ Seeded ${records.length} medical records`)
+
+  // ── Demo appointments at three different stages ────────────────────────────
+  const now = new Date()
+  const dayMs = 24 * 60 * 60 * 1000
+
+  const appts: Array<Parameters<typeof prisma.appointment.upsert>[0]> = [
+    {
+      where:  { id: 'seed-appt-completed' },
+      update: {},
+      create: {
+        id:               'seed-appt-completed',
+        patientId:        patient.id,
+        doctorId:         doctor.id,
+        status:           'COMPLETED',
+        scheduledAt:      new Date(now.getTime() - 7 * dayMs),
+        completedAt:      new Date(now.getTime() - 7 * dayMs + 30 * 60 * 1000),
+        transcript:       'Headache for 3 days, occasional nausea, no fever. Trying to sleep less because of work.',
+        aiSummary:        'Patient reports persistent tension-type headache with mild nausea, likely stress-related. No red-flag symptoms.',
+        severityScore:    4,
+        severityLevel:    'ROUTINE',
+        department:       'General Medicine',
+        prescriptionText: 'Paracetamol 500mg, take 1 tablet every 6 hours as needed for pain. Hydrate well. Follow up in 7 days if symptoms persist.',
+      },
+    },
+    {
+      where:  { id: 'seed-appt-inprogress' },
+      update: {},
+      create: {
+        id:            'seed-appt-inprogress',
+        patientId:     patient.id,
+        doctorId:      doctor.id,
+        status:        'IN_PROGRESS',
+        scheduledAt:   new Date(now.getTime() - 15 * 60 * 1000),
+        transcript:    'Sore throat and cough for two days. Voice gone hoarse since yesterday morning.',
+        aiSummary:     'Likely acute viral pharyngitis. Symptoms compatible with common URTI; no red flags described.',
+        severityScore: 5,
+        severityLevel: 'URGENT',
+        department:    'General Medicine',
+      },
+    },
+    {
+      where:  { id: 'seed-appt-scheduled' },
+      update: {},
+      create: {
+        id:            'seed-appt-scheduled',
+        patientId:     patient.id,
+        doctorId:      doctor.id,
+        status:        'SCHEDULED',
+        scheduledAt:   new Date(now.getTime() + 2 * dayMs),
+        transcript:    'Routine follow-up for blood pressure.',
+        aiSummary:     'Stable hypertensive patient on amlodipine; routine follow-up.',
+        severityScore: 3,
+        severityLevel: 'ROUTINE',
+        department:    'General Medicine',
+      },
+    },
+  ]
+
+  for (const a of appts) await prisma.appointment.upsert(a)
+  console.log(`✔ Seeded ${appts.length} appointments (1 COMPLETED, 1 IN_PROGRESS, 1 SCHEDULED)`)
+
+  // Escrow for the completed appointment so the doctor dashboard shows earnings
+  await prisma.escrow.upsert({
+    where:  { appointmentId: 'seed-appt-completed' },
+    update: {},
+    create: {
+      appointmentId:         'seed-appt-completed',
+      amount:                1500,
+      currency:              'PKR',
+      status:                'RELEASED',
+      stripePaymentIntentId: 'pi_demo_completed_001',
+      heldAt:                new Date(now.getTime() - 7 * dayMs - 60 * 1000),
+      releasedAt:            new Date(now.getTime() - 7 * dayMs + 30 * 60 * 1000),
+    },
+  })
+  console.log('✔ Seeded escrow for completed appointment')
+
   console.log()
   console.log('Log in at /login with either account to verify role-based routing works.')
 }
