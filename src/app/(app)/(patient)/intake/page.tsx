@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { VoiceRecorder } from '@/components/voice/VoiceRecorder'
 import { SymptomSummary } from '@/components/intake/SymptomSummary'
+import { UploadDocs } from '@/components/intake/UploadDocs'
 import { NearbyHospitals } from '@/components/resources/NearbyHospitals'
 import { Mic, Keyboard, ChevronLeft, Loader2, ArrowRight } from 'lucide-react'
 import type { TriageResult } from '@/types'
@@ -59,6 +60,10 @@ export default function IntakePage() {
     return (
       <div className="max-w-2xl mx-auto px-4 space-y-4">
         <SymptomSummary {...result} />
+        <UploadDocs
+          triageId={result.triageId}
+          onRefined={updated => setResult({ ...result, ...updated })}
+        />
         <button
           onClick={() => router.push(`/doctors?${params.toString()}`)}
           className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
