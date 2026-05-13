@@ -4,7 +4,7 @@ import { z } from 'zod'
 const schema = z.object({
   lat:    z.coerce.number().min(-90).max(90),
   lng:    z.coerce.number().min(-180).max(180),
-  radius: z.coerce.number().min(500).max(20000).default(5000),
+  radius: z.coerce.number().min(500).max(50000).default(5000),
 })
 
 interface OverpassElement {

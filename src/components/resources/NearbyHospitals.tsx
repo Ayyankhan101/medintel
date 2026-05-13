@@ -30,9 +30,12 @@ const TYPE_COLORS: Record<string, string> = {
   PHARMACY: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300',
 }
 
+const RADIUS_LADDER_M = [5_000, 15_000, 30_000, 50_000]
+
 export function NearbyHospitals() {
   const [coords,  setCoords]  = useState<{ lat: number; lng: number } | null>(null)
   const [places,  setPlaces]  = useState<NearbyPlace[]>([])
+  const [radiusKm, setRadiusKm] = useState<number | null>(null)
   const [loading, setLoading] = useState(false)
   const [error,   setError]   = useState<string | null>(null)
 
@@ -55,21 +58,43 @@ export function NearbyHospitals() {
 
   useEffect(() => {
     if (!coords) return
-    fetch(`/api/resources/overpass?lat=${coords.lat}&lng=${coords.lng}&radius=5000`)
-      .then(r => r.json())
-      .then(data => {
-        if (Array.isArray(data.places)) setPlaces(data.places)
-        else setError(data.error ?? 'Could not load nearby places')
-        setLoading(false)
-      })
-      .catch(() => { setLoading(false); setError('Could not load nearby places') })
+    let cancelled = false
+    async function run() {
+      setLoading(true); setError(null)
+      try {
+        for (const r of RADIUS_LADDER_M) {
+          const res  = await fetch(`/api/resources/overpass?lat=${coords!.lat}&lng=${coords!.lng}&radius=${r}`)
+          const data = await res.json().catch(() => ({}))
+          if (cancelled) return
+          if (!Array.isArray(data.places)) {
+            setError(data.error ?? 'Could not load nearby places')
+            return
+          }
+          if (data.places.length > 0) {
+            setPlaces(data.places)
+            setRadiusKm(r / 1000)
+            return
+          }
+        }
+        // Ladder exhausted with zero results.
+        setPlaces([])
+        setRadiusKm(RADIUS_LADDER_M[RADIUS_LADDER_M.length - 1] / 1000)
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+    run()
+    return () => { cancelled = true }
   }, [coords])
 
   return (
     <div className="overflow-hidden">
       <div className="px-5 pt-3 pb-3 flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
         <MapPin className="w-3 h-3 text-blue-600" />
-        Within 5 km of your current location · data from OpenStreetMap
+        {coords
+          ? <>Within {radiusKm ?? 5} km of <span className="font-mono">{coords.lat.toFixed(3)}, {coords.lng.toFixed(3)}</span> · OpenStreetMap</>
+          : <>Locating you…</>
+        }
       </div>
 
       {loading && (
@@ -120,7 +145,10 @@ export function NearbyHospitals() {
       )}
 
       {!loading && !error && coords && places.length === 0 && (
-        <p className="px-5 pb-5 text-sm text-slate-500 dark:text-slate-400">No hospitals or pharmacies found within 5 km.</p>
+        <div className="px-5 pb-5 text-sm text-slate-500 dark:text-slate-400 space-y-1">
+          <p>No hospitals, clinics, or pharmacies found within {radiusKm ?? 50} km of <span className="font-mono">{coords.lat.toFixed(3)}, {coords.lng.toFixed(3)}</span>.</p>
+          <p className="text-xs">If that location looks wrong, your browser may have used a coarse IP-based estimate (common on desktop or VPN). Try opening this page on your phone with location services enabled.</p>
+        </div>
       )}
     </div>
   )
