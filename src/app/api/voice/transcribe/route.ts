@@ -1,41 +1,39 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { z } from 'zod'
-import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3'
 import { SeverityLevel } from '@prisma/client'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { runFullIntakePipeline } from '@/lib/openai'
 
-const schema = z.object({
-  s3Key: z.string().min(1),
-})
-
-const s3 = new S3Client({
-  region: process.env.AWS_REGION!,
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
-  },
-})
+// 25 MB — well above a few minutes of webm/opus, but bounded to avoid abuse.
+const MAX_BYTES = 25 * 1024 * 1024
 
 export async function POST(req: NextRequest) {
   const session = await auth()
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const body = await req.json()
-  const parsed = schema.safeParse(body)
-  if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
-
-  const { s3Key } = parsed.data
-
   const patient = await prisma.patient.findUnique({ where: { userId: session.user.id } })
   if (!patient) return NextResponse.json({ error: 'Patient profile not found' }, { status: 404 })
 
-  const obj = await s3.send(new GetObjectCommand({ Bucket: process.env.AWS_S3_BUCKET!, Key: s3Key }))
-  const chunks: Uint8Array[] = []
-  for await (const chunk of obj.Body as AsyncIterable<Uint8Array>) chunks.push(chunk)
-  const audioBuffer = Buffer.concat(chunks)
-  const filename = s3Key.split('/').pop() ?? 'audio.webm'
+  let audioBuffer: Buffer
+  let filename = 'recording.webm'
+  try {
+    const form = await req.formData()
+    const file = form.get('audio')
+    if (!(file instanceof Blob)) {
+      return NextResponse.json({ error: 'Missing audio file' }, { status: 400 })
+    }
+    if (file.size === 0) {
+      return NextResponse.json({ error: 'Empty audio file' }, { status: 400 })
+    }
+    if (file.size > MAX_BYTES) {
+      return NextResponse.json({ error: 'Audio file too large' }, { status: 413 })
+    }
+    if (file instanceof File && file.name) filename = file.name
+    audioBuffer = Buffer.from(await file.arrayBuffer())
+  } catch (e) {
+    console.error('[transcribe] form parse error:', e)
+    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
+  }
 
   let result
   try {
@@ -53,7 +51,6 @@ export async function POST(req: NextRequest) {
       severityScore: result.severityScore,
       severityLevel: result.severityLevel as SeverityLevel,
       department:    result.department,
-      voiceFileUrl:  s3Key,
     },
   })
 

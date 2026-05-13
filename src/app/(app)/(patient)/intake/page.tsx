@@ -20,11 +20,9 @@ export default function IntakePage() {
   async function handleVoiceComplete(blob: Blob, filename: string) {
     setLoading(true); setError(null)
     try {
-      const presignRes = await fetch('/api/voice/presign', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ filename, contentType: 'audio/webm' }) })
-      if (!presignRes.ok) throw new Error('Voice upload not available (AWS S3 not configured)')
-      const { uploadUrl, s3Key } = await presignRes.json()
-      await fetch(uploadUrl, { method: 'PUT', body: blob, headers: { 'Content-Type': 'audio/webm' } })
-      const res  = await fetch('/api/voice/transcribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ s3Key }) })
+      const form = new FormData()
+      form.append('audio', blob, filename)
+      const res  = await fetch('/api/voice/transcribe', { method: 'POST', body: form })
       const raw  = await res.text()
       const data = raw ? JSON.parse(raw) : {}
       if (!res.ok) throw new Error(data.error ?? 'Transcription failed')
