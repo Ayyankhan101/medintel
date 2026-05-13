@@ -1,0 +1,32 @@
+services:
+  medintel:
+    build: .
+    ports:
+      - "3000:3000"
+    volumes:
+      # SQLite data persists across container restarts
+      - medintel_data:/data
+    environment:
+      DATABASE_URL: file:/data/medintel.db
+      NEXTAUTH_URL: http://localhost:3000
+      # ── Required secrets — set these in .env or export before running ──────
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+      # ── AI (pick one) ───────────────────────────────────────────────────────
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      # ── Optional — leave blank to skip those features in demo ──────────────
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      STRIPE_PLATFORM_ACCOUNT_ID: ${STRIPE_PLATFORM_ACCOUNT_ID:-}
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID:-}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN:-}
+      TWILIO_API_KEY_SID: ${TWILIO_API_KEY_SID:-}
+      TWILIO_API_KEY_SECRET: ${TWILIO_API_KEY_SECRET:-}
+      AWS_REGION: ${AWS_REGION:-}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_S3_BUCKET: ${AWS_S3_BUCKET:-}
+    restart: unless-stopped
+
+volumes:
+  medintel_data:

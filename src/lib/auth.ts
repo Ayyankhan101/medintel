@@ -1,6 +1,5 @@
 import NextAuth from 'next-auth'
 import Credentials from 'next-auth/providers/credentials'
-import { PrismaAdapter } from '@auth/prisma-adapter'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
 import { z } from 'zod'
@@ -11,7 +10,6 @@ const loginSchema = z.object({
 })
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
-  adapter: PrismaAdapter(prisma),
   session: { strategy: 'jwt' },
   providers: [
     Credentials({
@@ -28,11 +26,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         if (!passwordValid) return null
 
         return {
-          id: user.id,
-          email: user.email,
-          role: user.role,
-          medIntelCode: user.medIntelCode,
-          kycStatus: user.kycStatus,
+          id:           user.id,
+          email:        user.email,
+          role:         user.role,
+          medIntelCode: user.medIntelCode ?? '',
+          kycStatus:    user.kycStatus,
         }
       },
     }),
@@ -47,9 +45,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       return token
     },
     session({ session, token }) {
-      session.user.role = token.role as string
-      session.user.medIntelCode = token.medIntelCode as string
-      session.user.kycStatus = token.kycStatus as string
+      session.user.id           = token.sub!
+      session.user.role         = token.role
+      session.user.medIntelCode = token.medIntelCode
+      session.user.kycStatus    = token.kycStatus
       return session
     },
   },

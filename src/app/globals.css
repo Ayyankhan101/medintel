@@ -128,3 +128,95 @@
     @apply font-sans;
   }
 }
+
+/* ── Dark mode overrides for hardcoded Tailwind color classes ─────────────── */
+/* Allows all pages to respect dark mode without per-file edits               */
+
+.dark .bg-white                    { background-color: oklch(0.205 0 0); }
+.dark .bg-slate-50                 { background-color: oklch(0.165 0 0); }
+.dark .bg-slate-100                { background-color: oklch(0.22 0 0); }
+.dark .bg-slate-200                { background-color: oklch(0.28 0 0); }
+
+.dark .border-slate-100            { border-color: oklch(1 0 0 / 7%); }
+.dark .border-slate-200            { border-color: oklch(1 0 0 / 10%); }
+
+.dark .text-slate-900              { color: oklch(0.97 0 0); }
+.dark .text-slate-800              { color: oklch(0.90 0 0); }
+.dark .text-slate-700              { color: oklch(0.82 0 0); }
+.dark .text-slate-600              { color: oklch(0.72 0 0); }
+.dark .text-slate-500              { color: oklch(0.62 0 0); }
+.dark .text-slate-400              { color: oklch(0.52 0 0); }
+
+.dark .hover\:bg-slate-50:hover    { background-color: oklch(0.22 0 0); }
+.dark .hover\:bg-slate-100:hover   { background-color: oklch(0.25 0 0); }
+.dark .hover\:text-slate-900:hover { color: oklch(0.97 0 0); }
+.dark .hover\:shadow-sm:hover      { --tw-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.4); }
+.dark .hover\:shadow-md:hover      { --tw-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.5); }
+
+/* Input fields */
+.dark input, .dark textarea, .dark select {
+  background-color: oklch(0.22 0 0);
+  border-color: oklch(1 0 0 / 12%);
+  color: oklch(0.97 0 0);
+}
+.dark input::placeholder, .dark textarea::placeholder {
+  color: oklch(0.52 0 0);
+}
+
+/* Coloured tint backgrounds */
+.dark .bg-blue-50                  { background-color: oklch(0.2 0.04 264); }
+.dark .bg-green-50                 { background-color: oklch(0.2 0.04 145); }
+.dark .bg-red-50                   { background-color: oklch(0.2 0.04 27); }
+.dark .bg-amber-50                 { background-color: oklch(0.2 0.03 80); }
+.dark .bg-violet-50                { background-color: oklch(0.2 0.04 290); }
+.dark .bg-purple-50                { background-color: oklch(0.2 0.04 300); }
+.dark .bg-emerald-50               { background-color: oklch(0.2 0.04 160); }
+.dark .bg-orange-50                { background-color: oklch(0.2 0.04 50); }
+
+.dark .border-blue-200             { border-color: oklch(0.45 0.1 264); }
+.dark .border-green-200            { border-color: oklch(0.45 0.1 145); }
+.dark .border-red-200              { border-color: oklch(0.45 0.1 27); }
+.dark .border-amber-200            { border-color: oklch(0.45 0.08 80); }
+
+/* Gray (not slate) — used in several components */
+.dark .bg-gray-50                  { background-color: oklch(0.165 0 0); }
+.dark .bg-gray-100                 { background-color: oklch(0.22 0 0); }
+.dark .bg-gray-200                 { background-color: oklch(0.28 0 0); }
+.dark .bg-gray-700                 { background-color: oklch(0.38 0 0); }
+.dark .bg-gray-800                 { background-color: oklch(0.22 0 0); }
+.dark .bg-gray-900                 { background-color: oklch(0.12 0 0); }
+.dark .border-gray-100             { border-color: oklch(1 0 0 / 7%); }
+.dark .border-gray-200             { border-color: oklch(1 0 0 / 10%); }
+.dark .text-gray-400               { color: oklch(0.52 0 0); }
+.dark .text-gray-500               { color: oklch(0.62 0 0); }
+.dark .text-gray-600               { color: oklch(0.72 0 0); }
+.dark .text-gray-700               { color: oklch(0.82 0 0); }
+.dark .text-gray-800               { color: oklch(0.90 0 0); }
+.dark .text-gray-900               { color: oklch(0.97 0 0); }
+.dark .hover\:bg-gray-100:hover    { background-color: oklch(0.25 0 0); }
+
+/* Medium-weight tints (avatars, badges) */
+.dark .bg-blue-100                 { background-color: oklch(0.26 0.07 264); }
+.dark .bg-purple-100               { background-color: oklch(0.26 0.07 300); }
+.dark .bg-emerald-100              { background-color: oklch(0.26 0.07 160); }
+.dark .bg-amber-100                { background-color: oklch(0.26 0.06 80); }
+.dark .bg-red-100                  { background-color: oklch(0.26 0.07 27); }
+.dark .bg-green-100                { background-color: oklch(0.26 0.07 145); }
+.dark .border-blue-100             { border-color: oklch(0.38 0.08 264); }
+
+/* Coloured text — keep readable in dark */
+.dark .text-blue-700               { color: oklch(0.72 0.15 264); }
+.dark .text-purple-700             { color: oklch(0.72 0.15 300); }
+.dark .text-emerald-700            { color: oklch(0.72 0.15 160); }
+.dark .text-amber-700              { color: oklch(0.8 0.14 80); }
+.dark .text-green-700              { color: oklch(0.72 0.15 145); }
+.dark .text-red-700                { color: oklch(0.72 0.15 27); }
+.dark .text-orange-700             { color: oklch(0.72 0.15 50); }
+.dark .text-blue-600               { color: oklch(0.65 0.18 264); }
+.dark .text-green-800              { color: oklch(0.78 0.13 145); }
+.dark .text-green-600              { color: oklch(0.65 0.16 145); }
+.dark .text-red-800                { color: oklch(0.78 0.13 27); }
+.dark .text-red-600                { color: oklch(0.65 0.18 27); }
+
+/* Auth pages */
+.dark .bg-slate-50.flex-1          { background-color: oklch(0.145 0 0); }

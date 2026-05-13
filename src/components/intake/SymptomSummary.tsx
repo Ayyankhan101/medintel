@@ -17,14 +17,7 @@ const severityColor: Record<string, string> = {
   CRITICAL: 'bg-red-100 text-red-800',
 }
 
-export function SymptomSummary({
-  department,
-  severityScore,
-  severityLevel,
-  summary,
-  transcript,
-  isEmergency,
-}: Props) {
+export function SymptomSummary({ department, severityScore, severityLevel, summary, transcript, isEmergency }: Props) {
   return (
     <div className="space-y-4">
       {isEmergency && <EmergencyAlert department={department} />}
@@ -42,16 +35,16 @@ export function SymptomSummary({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-gray-700 leading-relaxed">{summary}</p>
+          <p className="text-slate-700 leading-relaxed">{summary}</p>
         </CardContent>
       </Card>
 
-      <Card className="bg-gray-50">
+      <Card className="bg-slate-50">
         <CardHeader>
-          <CardTitle className="text-sm text-gray-500">Your Words (Transcript)</CardTitle>
+          <CardTitle className="text-sm text-slate-500">Your Words (Transcript)</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-gray-600 text-sm italic">&ldquo;{transcript}&rdquo;</p>
+          <p className="text-slate-600 text-sm italic">&ldquo;{transcript}&rdquo;</p>
         </CardContent>
       </Card>
     </div>

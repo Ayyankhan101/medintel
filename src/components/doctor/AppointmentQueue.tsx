@@ -1,28 +1,23 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { RefreshCw, User, AlertTriangle } from 'lucide-react'
+import { RefreshCw, AlertTriangle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 
 interface QueueAppointment {
-  id:            string
-  scheduledAt:   string
-  status:        string
-  department?:   string | null
+  id:             string
+  scheduledAt:    string
+  status:         string
+  department?:    string | null
   severityScore?: number | null
   severityLevel?: string | null
-  aiSummary?:    string | null
-  patient: {
-    user: { name: string | null; email: string; medIntelCode: string | null }
-  }
+  aiSummary?:     string | null
+  patient: { user: { name: string | null; email: string; medIntelCode: string | null } }
   escrow?: { status: string } | null
 }
 
 const STATUS_LABELS: Record<string, string> = {
-  SCHEDULED:   'Scheduled',
-  IN_PROGRESS: 'In Progress',
-  COMPLETED:   'Completed',
-  CANCELLED:   'Cancelled',
+  SCHEDULED: 'Scheduled', IN_PROGRESS: 'In Progress', COMPLETED: 'Completed', CANCELLED: 'Cancelled',
 }
 
 const SEVERITY_COLORS: Record<string, string> = {
@@ -32,7 +27,7 @@ const SEVERITY_COLORS: Record<string, string> = {
 }
 
 export function AppointmentQueue() {
-  const [filter,       setFilter]       = useState<string>('')
+  const [filter,       setFilter]       = useState('')
   const [appointments, setAppointments] = useState<QueueAppointment[]>([])
   const [loading,      setLoading]      = useState(true)
 
@@ -49,16 +44,15 @@ export function AppointmentQueue() {
 
   return (
     <div className="space-y-4">
-      {/* Filter tabs */}
       <div className="flex flex-wrap gap-2 items-center">
-        {['', 'SCHEDULED', 'IN_PROGRESS', 'COMPLETED'].map(s => (
+        {(['', 'SCHEDULED', 'IN_PROGRESS', 'COMPLETED'] as const).map(s => (
           <button
             key={s}
             onClick={() => setFilter(s)}
             className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
               filter === s
                 ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
             }`}
           >
             {s ? STATUS_LABELS[s] : 'All'}
@@ -70,7 +64,7 @@ export function AppointmentQueue() {
       </div>
 
       {!loading && appointments.length === 0 && (
-        <div className="text-center py-12 text-gray-400">No appointments found.</div>
+        <div className="text-center py-12 text-slate-400">No appointments found.</div>
       )}
 
       <ul className="space-y-3">
@@ -81,56 +75,48 @@ export function AppointmentQueue() {
             <li
               key={a.id}
               className={`border rounded-xl p-4 space-y-2 bg-white hover:shadow-sm transition-shadow ${
-                isCritical ? 'border-red-400 bg-red-50' : ''
+                isCritical ? 'border-red-400 bg-red-50' : 'border-slate-200'
               }`}
             >
               <div className="flex items-start justify-between gap-3 flex-wrap">
                 <div>
                   <div className="flex items-center gap-2">
                     {isCritical && <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" />}
-                    <p className="font-semibold text-gray-900">
+                    <p className="font-semibold text-slate-900">
                       {a.patient.user.name ?? a.patient.user.email}
                     </p>
                     {a.patient.user.medIntelCode && (
-                      <span className="text-xs text-gray-400 font-mono">{a.patient.user.medIntelCode}</span>
+                      <span className="text-xs text-slate-400 font-mono">{a.patient.user.medIntelCode}</span>
                     )}
                   </div>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-slate-500">
                     {scheduledAt.toLocaleDateString('en-PK', { weekday: 'short', month: 'short', day: 'numeric' })}
                     {' · '}
                     {scheduledAt.toLocaleTimeString('en-PK', { hour: '2-digit', minute: '2-digit' })}
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2 items-center">
-                  {a.department && (
-                    <Badge variant="outline" className="text-xs">{a.department}</Badge>
-                  )}
+                  {a.department && <Badge variant="outline" className="text-xs">{a.department}</Badge>}
                   {a.severityLevel && (
                     <span className={`text-xs px-2 py-0.5 rounded font-semibold ${SEVERITY_COLORS[a.severityLevel] ?? ''}`}>
                       {a.severityLevel} {a.severityScore != null && `(${a.severityScore}/10)`}
                     </span>
                   )}
-                  <Badge
-                    variant={a.status === 'COMPLETED' ? 'default' : 'secondary'}
-                    className="text-xs"
-                  >
+                  <Badge variant={a.status === 'COMPLETED' ? 'default' : 'secondary'} className="text-xs">
                     {STATUS_LABELS[a.status] ?? a.status}
                   </Badge>
                 </div>
               </div>
 
               {a.aiSummary && (
-                <p className="text-sm text-gray-600 leading-snug bg-amber-50 border border-amber-200 rounded px-3 py-2">
-                  <strong className="text-amber-800">AI:</strong> {a.aiSummary}
+                <p className="text-sm text-slate-600 leading-snug bg-amber-50 border border-amber-200 rounded px-3 py-2">
+                  <strong className="text-amber-700">AI:</strong> {a.aiSummary}
                 </p>
               )}
 
               <div className="flex gap-3 pt-1">
                 {(a.status === 'SCHEDULED' || a.status === 'IN_PROGRESS') && (
-                  <a
-                    href={`/consultation/${a.id}`}
-                    className="text-sm text-blue-600 hover:underline font-medium"
-                  >
+                  <a href={`/consultation/${a.id}`} className="text-sm text-blue-600 hover:underline font-medium">
                     {a.status === 'IN_PROGRESS' ? 'Rejoin Call →' : 'Start Consultation →'}
                   </a>
                 )}

@@ -3,7 +3,7 @@ import Stripe from 'stripe'
 let _stripe: Stripe | null = null
 export function getStripe(): Stripe {
   if (!_stripe) {
-    _stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2024-06-20' })
+    _stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
   }
   return _stripe
 }
@@ -11,12 +11,14 @@ export function getStripe(): Stripe {
 // Named export alias for route handlers that import `stripe` directly
 export { getStripe as stripe }
 
-export function formatAmountForStripe(dollarAmount: number): number {
-  return Math.round(dollarAmount * 100)
+// PKR is a zero-decimal currency in Stripe — 1500 PKR is sent as `1500`, not `150000`.
+// See: https://stripe.com/docs/currencies#zero-decimal
+export function formatAmountForStripe(amount: number): number {
+  return Math.round(amount)
 }
 
-export function formatAmountFromStripe(cents: number): number {
-  return cents / 100
+export function formatAmountFromStripe(units: number): number {
+  return units
 }
 
 export function isAutoRefundEligible(
@@ -30,13 +32,13 @@ export function isAutoRefundEligible(
 }
 
 export async function createEscrowPaymentIntent(
-  amountDollars: number,
+  amount: number,
   doctorStripeAccountId: string,
   appointmentId: string,
-  currency = 'usd'
+  currency = 'pkr'
 ): Promise<Stripe.PaymentIntent> {
   return getStripe().paymentIntents.create({
-    amount: formatAmountForStripe(amountDollars),
+    amount: formatAmountForStripe(amount),
     currency,
     capture_method: 'manual',
     metadata: { appointmentId, doctorStripeAccountId },
@@ -47,14 +49,15 @@ export async function createEscrowPaymentIntent(
 export async function releaseEscrowToDoctor(
   paymentIntentId: string,
   doctorStripeAccountId: string,
-  amountDollars: number
+  amount: number,
+  currency = 'pkr'
 ): Promise<void> {
   await getStripe().paymentIntents.capture(paymentIntentId)
 
-  const doctorAmount = Math.floor(formatAmountForStripe(amountDollars) * 0.9)
+  const doctorAmount = Math.floor(formatAmountForStripe(amount) * 0.9)
   await getStripe().transfers.create({
     amount: doctorAmount,
-    currency: 'usd',
+    currency,
     destination: doctorStripeAccountId,
     source_transaction: paymentIntentId,
   })

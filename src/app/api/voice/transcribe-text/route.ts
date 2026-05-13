@@ -6,7 +6,6 @@ import { runTextIntakePipeline } from '@/lib/openai'
 
 const schema = z.object({
   text: z.string().min(3),
-  appointmentId: z.string().min(1),
 })
 
 export async function POST(req: NextRequest) {
@@ -17,15 +16,28 @@ export async function POST(req: NextRequest) {
   const parsed = schema.safeParse(body)
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
 
-  const { text, appointmentId } = parsed.data
+  const { text } = parsed.data
 
-  const result = await runTextIntakePipeline(text)
+  let result
+  try {
+    result = await runTextIntakePipeline(text)
+  } catch (e) {
+    console.error('[transcribe-text] AI pipeline error:', e)
+    const { parseDepartmentFromSummary, parseSeverityFromText } = await import('@/lib/openai')
+    const severityScore = parseSeverityFromText(text)
+    const department    = parseDepartmentFromSummary(text)
+    const severityLevel = severityScore <= 4 ? 'ROUTINE' : severityScore <= 7 ? 'URGENT' : 'CRITICAL'
+    result = { transcript: text, summary: text, department, severityScore, severityLevel, isEmergency: severityScore >= 8 }
+  }
 
-  await prisma.appointment.update({
-    where: { id: appointmentId },
+  const patient = await prisma.patient.findUnique({ where: { userId: session.user.id } })
+  if (!patient) return NextResponse.json({ error: 'Patient profile not found' }, { status: 404 })
+
+  const triage = await prisma.triage.create({
     data: {
+      patientId:     patient.id,
       transcript:    result.transcript,
-      aiSummary:     result.summary,
+      summary:       result.summary,
       severityScore: result.severityScore,
       severityLevel: result.severityLevel,
       department:    result.department,
@@ -33,6 +45,7 @@ export async function POST(req: NextRequest) {
   })
 
   return NextResponse.json({
+    triageId:      triage.id,
     transcript:    result.transcript,
     summary:       result.summary,
     department:    result.department,

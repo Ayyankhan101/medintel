@@ -1,29 +1,60 @@
+// Production schema — PostgreSQL
+// To deploy: copy this file over schema.prisma, set DATABASE_URL to your PostgreSQL URL
+
 generator client {
   provider = "prisma-client-js"
 }
 
-// Dev/demo: SQLite (zero setup — just run `npm run setup`)
-// Production: see prisma/schema.production.prisma (PostgreSQL with enums)
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
+enum UserRole {
+  PATIENT
+  DOCTOR
+  ADMIN
+}
+
+enum VerificationStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  REFUNDED
+}
+
+enum SeverityLevel {
+  ROUTINE
+  URGENT
+  CRITICAL
+}
+
+enum EscrowStatus {
+  HELD
+  RELEASED
+  REFUNDED
+}
+
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  phone         String    @unique
+  id            String             @id @default(cuid())
+  email         String             @unique
+  phone         String             @unique
   passwordHash  String
   name          String?
-  // role: PATIENT | DOCTOR | ADMIN
-  role          String
-  cnicNumber    String?   @unique
-  medIntelCode  String?   @unique
-  // kycStatus: PENDING | VERIFIED | REJECTED
-  kycStatus     String    @default("PENDING")
+  role          UserRole
+  cnicNumber    String?            @unique
+  medIntelCode  String?            @unique
+  kycStatus     VerificationStatus @default(PENDING)
   kycVerifiedAt DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
 
   patient  Patient?
   doctor   Doctor?
@@ -41,27 +72,42 @@ model Patient {
 
   medicalRecords MedicalRecord[]
   appointments   Appointment[]
+  triages        Triage[]
+}
+
+model Triage {
+  id            String        @id @default(cuid())
+  patientId     String
+  patient       Patient       @relation(fields: [patientId], references: [id])
+  transcript    String        @db.Text
+  summary       String        @db.Text
+  severityScore Int
+  severityLevel SeverityLevel
+  department    String
+  voiceFileUrl  String?
+  createdAt     DateTime      @default(now())
+
+  @@index([patientId, createdAt(sort: Desc)])
 }
 
 model Doctor {
-  id              String    @id @default(cuid())
-  userId          String    @unique
-  user            User      @relation(fields: [userId], references: [id])
-  licenseNumber   String    @unique
+  id              String             @id @default(cuid())
+  userId          String             @unique
+  user            User               @relation(fields: [userId], references: [id])
+  licenseNumber   String             @unique
   specialization  String
-  qualifications  String    @default("[]")
+  qualifications  String[]
   yearsExperience Int
   bio             String?
-  consultationFee Decimal
+  consultationFee Decimal            @db.Decimal(10, 2)
   stripeAccountId String?
-  // kydStatus: PENDING | VERIFIED | REJECTED
-  kydStatus       String    @default("PENDING")
+  kydStatus       VerificationStatus @default(PENDING)
   kydTier1At      DateTime?
   kydTier2At      DateTime?
   kydTier3At      DateTime?
-  trustBadge      Boolean   @default(false)
-  rating          Decimal?
-  reviewCount     Int       @default(0)
+  trustBadge      Boolean            @default(false)
+  rating          Decimal?           @db.Decimal(3, 2)
+  reviewCount     Int                @default(0)
 
   appointments Appointment[]
 }
@@ -78,39 +124,36 @@ model MedicalRecord {
   id         String   @id @default(cuid())
   patientId  String
   patient    Patient  @relation(fields: [patientId], references: [id])
-  // type: ALLERGY | CHRONIC_MED | SURGERY | LAB_REPORT | PRESCRIPTION | NOTE
   type       String
   title      String
-  content    String
+  content    String   @db.Text
   fileUrl    String?
-  ocrText    String?
+  ocrText    String?  @db.Text
   recordedAt DateTime
   createdAt  DateTime @default(now())
 
-  @@index([patientId, recordedAt])
+  @@index([patientId, recordedAt(sort: Desc)])
 }
 
 model Appointment {
-  id          String    @id @default(cuid())
+  id          String            @id @default(cuid())
   patientId   String
-  patient     Patient   @relation(fields: [patientId], references: [id])
-  doctorId    String
-  doctor      Doctor    @relation(fields: [doctorId], references: [id])
-  // status: SCHEDULED | IN_PROGRESS | COMPLETED | CANCELLED | REFUNDED
-  status      String    @default("SCHEDULED")
+  patient     Patient           @relation(fields: [patientId], references: [id])
+  doctorId    String?
+  doctor      Doctor?           @relation(fields: [doctorId], references: [id])
+  status      AppointmentStatus @default(SCHEDULED)
   scheduledAt DateTime
   completedAt DateTime?
 
   voiceFileUrl     String?
-  transcript       String?
-  aiSummary        String?
+  transcript       String?  @db.Text
+  aiSummary        String?  @db.Text
   severityScore    Int?
-  // severityLevel: ROUTINE | URGENT | CRITICAL
-  severityLevel    String?
+  severityLevel    SeverityLevel?
   department       String?
 
   prescriptionUrl  String?
-  prescriptionText String?
+  prescriptionText String?  @db.Text
 
   escrow    Escrow?
   createdAt DateTime @default(now())
@@ -121,15 +164,14 @@ model Appointment {
 }
 
 model Escrow {
-  id                    String    @id @default(cuid())
-  appointmentId         String    @unique
-  appointment           Appointment @relation(fields: [appointmentId], references: [id])
-  amount                Decimal
-  currency              String    @default("USD")
-  // status: HELD | RELEASED | REFUNDED
-  status                String    @default("HELD")
-  stripePaymentIntentId String    @unique
-  heldAt                DateTime  @default(now())
+  id                    String       @id @default(cuid())
+  appointmentId         String       @unique
+  appointment           Appointment  @relation(fields: [appointmentId], references: [id])
+  amount                Decimal      @db.Decimal(10, 2)
+  currency              String       @default("PKR")
+  status                EscrowStatus @default(HELD)
+  stripePaymentIntentId String       @unique
+  heldAt                DateTime     @default(now())
   releasedAt            DateTime?
   refundedAt            DateTime?
 }
@@ -137,11 +179,10 @@ model Escrow {
 model MedicalResource {
   id          String   @id @default(cuid())
   name        String
-  // type: HOSPITAL | PHARMACY | OXYGEN | VENTILATOR | BLOOD_BANK | AMBULANCE
   type        String
   address     String
-  latitude    Decimal
-  longitude   Decimal
+  latitude    Decimal  @db.Decimal(10, 8)
+  longitude   Decimal  @db.Decimal(11, 8)
   phone       String?
   isAvailable Boolean  @default(true)
   updatedAt   DateTime @updatedAt

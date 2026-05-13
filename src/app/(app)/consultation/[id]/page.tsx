@@ -17,7 +17,7 @@ interface AppointmentData {
     specialization:  string
     consultationFee: string | number
     user: { email: string }
-  }
+  } | null
   patient: {
     user: { email: string; medIntelCode: string | null }
   }
@@ -224,7 +224,15 @@ function PatientConsultation({ appointmentId }: { appointmentId: string }) {
       <h1 className="text-xl font-bold">Your Consultation</h1>
       {error && <div className="bg-red-50 text-red-600 p-3 rounded text-sm">{error}</div>}
 
-      {phase === 'payment' && appointment && (
+      {phase === 'payment' && appointment && !appointment.doctor && (
+        <div className="bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-xl text-sm space-y-2">
+          <p className="font-semibold">No doctor assigned yet</p>
+          <p>Pick a doctor before continuing to payment.</p>
+          <a href="/intake" className="inline-block text-blue-600 hover:underline font-medium">Start triage →</a>
+        </div>
+      )}
+
+      {phase === 'payment' && appointment && appointment.doctor && (
         <PaymentFlow
           appointmentId={appointmentId}
           doctorName={appointment.doctor.specialization}

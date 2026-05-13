@@ -24,6 +24,7 @@ export async function POST(req: NextRequest) {
   })
 
   if (!appointment) return NextResponse.json({ error: 'Appointment not found' }, { status: 404 })
+  if (!appointment.doctor) return NextResponse.json({ error: 'No doctor assigned to this appointment' }, { status: 422 })
 
   const isPatient = appointment.patient.user.id === session.user.id
   const isDoctor  = appointment.doctor.user.id  === session.user.id

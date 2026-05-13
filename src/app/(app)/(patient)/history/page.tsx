@@ -48,7 +48,7 @@ export default function HistoryPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">My Medical History</h1>
-          <p className="text-sm text-gray-500">{records.length} records in your vault</p>
+          <p className="text-sm text-slate-500">{records.length} records in your vault</p>
         </div>
         <Button
           variant={showUpload ? 'outline' : 'default'}
@@ -71,8 +71,8 @@ export default function HistoryPage() {
             onClick={() => setFilter(value)}
             className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
               filter === value
-                ? 'bg-gray-900 text-white'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                ? 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900'
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
             }`}
           >
             {label}

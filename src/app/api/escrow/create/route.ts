@@ -23,6 +23,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Appointment not found' }, { status: 404 })
   if (appointment.patient.user.id !== session.user.id)
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  if (!appointment.doctor)
+    return NextResponse.json({ error: 'No doctor assigned to this appointment' }, { status: 422 })
   if (!appointment.doctor.stripeAccountId)
     return NextResponse.json({ error: 'Doctor payment account not set up' }, { status: 422 })
   if (appointment.escrow)

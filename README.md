@@ -1,36 +1,270 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# MedIntel
 
-## Getting Started
+> Voice-first telemedicine for Pakistan. Identity-verified patients describe their symptoms in Urdu or English, get AI-triaged in seconds, are matched to a credential-verified specialist, and consult over video — with consultation fees held in escrow until a prescription is delivered.
 
-First, run the development server:
+[![Built with Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?logo=typescript)](https://www.typescriptlang.org)
+[![Prisma](https://img.shields.io/badge/Prisma-5-2D3748?logo=prisma)](https://www.prisma.io)
+[![Deploy with Vercel](https://img.shields.io/badge/Deploy-Vercel-black?logo=vercel)](https://vercel.com/new)
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+---
+
+## What it does
+
+MedIntel is a full-stack healthcare MVP designed for low-trust, low-bandwidth markets. The core loop is:
+
+1. **Patient registers** with their CNIC (Pakistan national ID) — identity is verified against NADRA.
+2. **Patient describes symptoms** by voice (Urdu or English, Whisper-transcribed) or text.
+3. **AI triage** classifies severity (1–10) and routes to the right specialty using Llama 3.3 70B via Groq.
+4. **Doctor matching** surfaces only PMDC-licensed, KYD-verified specialists. Critical cases are filtered to a trust-badged subset.
+5. **Booking + escrow** — fee is captured into Stripe escrow at confirmation time.
+6. **Video consultation** runs over Twilio Video.
+7. **Prescription upload** by the doctor automatically releases escrow and writes the prescription to the patient's medical vault.
+
+The triage data, transcript, and AI summary are stored server-side keyed to the patient — never round-tripped through the client where they could be forged.
+
+---
+
+## Architecture
+
+```
+┌─────────────────────┐    ┌──────────────────────┐    ┌─────────────────────┐
+│  Next.js 16 App     │    │  PostgreSQL (Neon)   │    │  External services  │
+│  Router (App dir)   │◄───┤  via Prisma 5        │    │                     │
+│  React 19 + TW v4   │    │                      │    │  • Groq (AI)        │
+│                     │    │  • User / Patient    │    │  • Stripe (escrow)  │
+│  /api routes run    │    │  • Doctor / Triage   │    │  • Twilio Video     │
+│  on Fluid Compute   │    │  • Appointment       │    │  • AWS S3 (voice)   │
+│                     │    │  • Escrow / Records  │    │  • NADRA / PMDC     │
+└─────────────────────┘    └──────────────────────┘    └─────────────────────┘
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+**Stack**
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- **Frontend:** Next.js 16 App Router, React 19, Tailwind CSS v4, Lucide icons, light/dark theme
+- **Backend:** Next.js Route Handlers (Node.js runtime on Fluid Compute)
+- **Auth:** NextAuth v5 beta (JWT strategy, Credentials provider)
+- **Database:** PostgreSQL via Prisma 5
+- **AI:** Groq `llama-3.3-70b-versatile` + `whisper-large-v3`
+- **Payments:** Stripe Connect (escrow via manual-capture PaymentIntents)
+- **Video:** Twilio Programmable Video
+- **File storage:** AWS S3 (presigned uploads)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+## Project structure
 
-To learn more about Next.js, take a look at the following resources:
+```
+src/
+├── app/
+│   ├── api/                       Route handlers (REST endpoints)
+│   │   ├── appointments/          Create, list, fetch, PATCH (doctor assignment)
+│   │   ├── auth/                  NextAuth + custom register endpoint
+│   │   ├── consultation/token/    Twilio access token issuance
+│   │   ├── doctors/               Search + fetch by id
+│   │   ├── doctor/                Queue + earnings stats (doctor-only)
+│   │   ├── escrow/                Create / release / refund (server-authoritative)
+│   │   ├── kyc/                   Patient CNIC verification
+│   │   ├── kyd/                   Doctor license verification
+│   │   ├── prescriptions/         Doctor uploads → auto-releases escrow
+│   │   ├── records/               Medical vault (patient-owned, doctor read with consent)
+│   │   ├── resources/nearby/      Hospital / pharmacy / ambulance lookup
+│   │   ├── stripe/                Onboarding + webhook
+│   │   └── voice/                 Presign + transcribe (text & audio)
+│   ├── (app)/                     Authenticated app shell
+│   │   ├── (patient)/             Intake → Doctors → Book → Consultation → History
+│   │   └── (doctor)/              Dashboard, Patients queue, Settings
+│   ├── consultation/[id]/         Shared video-call page (role-switching)
+│   └── (auth)/                    Login + Register
+├── components/                    UI primitives + feature components
+├── lib/                           auth, prisma, openai, stripe, twilio, kyc/kyd, s3
+└── types/                         Shared TS types + NextAuth module augmentation
+prisma/
+├── schema.prisma                  PostgreSQL — used in production
+├── schema.sqlite.prisma           SQLite — kept for reference / local hacking
+├── seed.ts                        Medical resources for the nearby-hospitals feature
+└── migrations/                    Generated by `prisma migrate dev`
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Deploying to Vercel
 
-## Deploy on Vercel
+### Prerequisites
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- A Vercel account
+- A GitHub account with this repo imported
+- A Groq API key (free at <https://console.groq.com>)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### One-time setup
+
+#### 1. Provision Postgres
+
+In your Vercel project dashboard:
+
+1. Go to **Storage** → **Create Database** → **Neon** (or any Postgres provider in the Marketplace)
+2. Accept the integration — Vercel sets `DATABASE_URL` on the project automatically
+
+#### 2. Set required environment variables
+
+In **Settings → Environment Variables**, set these for *Production* (and *Preview* if you want PR previews to work):
+
+| Variable | Value |
+|----------|-------|
+| `NEXTAUTH_SECRET` | Generate with `openssl rand -base64 32` |
+| `NEXTAUTH_URL` | `https://your-app.vercel.app` (update after first deploy if using a custom domain) |
+| `GROQ_API_KEY` | From <https://console.groq.com> |
+| `MOCK_KYC` | `true` (only for demo — see "Going to real production" below) |
+
+`DATABASE_URL` is already set by the Neon integration.
+
+#### 3. Generate the initial migration locally
+
+Vercel runs `prisma migrate deploy` at build time, which applies migrations from `prisma/migrations/`. You need to create the initial migration once, locally:
+
+```bash
+git clone https://github.com/<you>/medintel.git
+cd medintel
+npm install
+
+# Use the same DATABASE_URL Vercel uses (pull it down with `vercel env pull`)
+vercel env pull .env.local
+
+npx prisma migrate dev --name init
+git add prisma/migrations
+git commit -m "feat: initial postgres migration"
+git push
+```
+
+The push triggers a Vercel deploy. The `vercel-build` script runs:
+
+```
+prisma generate && prisma migrate deploy && next build
+```
+
+#### 4. Seed demo data (optional)
+
+After the first deploy completes:
+
+```bash
+DATABASE_URL=$(grep DATABASE_URL .env.local | cut -d= -f2- | tr -d '"') npx tsx prisma/seed.ts
+```
+
+This populates the `MedicalResource` table with Lahore hospitals so the **Resources** page has content.
+
+### Subsequent deploys
+
+Every `git push` to the connected branch triggers a deploy. Migrations run automatically.
+
+### Switching to a custom domain
+
+1. **Settings → Domains** → add your domain
+2. Update `NEXTAUTH_URL` to match the new domain
+3. Redeploy (env-var change requires it)
+
+---
+
+## Local development
+
+```bash
+git clone https://github.com/<you>/medintel.git
+cd medintel
+npm install
+cp .env.example .env.local
+# Fill in DATABASE_URL, NEXTAUTH_SECRET, NEXTAUTH_URL, GROQ_API_KEY
+
+# Spin up a local Postgres (or point at any Postgres URL)
+docker run --rm -d --name medintel-pg -p 5432:5432 \
+  -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=medintel postgres:16
+
+# Apply migrations + seed
+npx prisma migrate dev
+npx tsx prisma/seed.ts
+
+# Start the dev server
+npm run dev
+```
+
+Open <http://localhost:3000>.
+
+### Demo accounts
+
+There's no doctor-registration UI yet — create doctors via `prisma studio` or a seed script. The patient registration flow (`/register`) works end-to-end with `MOCK_KYC=true`.
+
+---
+
+## Running with Docker (no Vercel)
+
+The repo includes a multi-stage `Dockerfile`, `docker-entrypoint.sh`, and `docker-compose.yml` that bundle the app with a persistent SQLite volume (uses `schema.sqlite.prisma`).
+
+```bash
+export NEXTAUTH_SECRET=$(openssl rand -base64 32)
+export GROQ_API_KEY=your_groq_key
+docker compose up --build
+```
+
+App is at <http://localhost:3000>; SQLite data persists in the `medintel_data` Docker volume.
+
+> The Docker path is the easiest way to demo the app on a single machine. For multi-user or production hosting, use the Vercel + Neon path above.
+
+---
+
+## Security model
+
+This app makes specific architectural choices to keep clinical and financial data trustworthy:
+
+- **Triage is server-authoritative.** Voice and text intake routes write the AI's severity score, transcript, and summary to a `Triage` table scoped to the patient's ID. The client only carries a `triageId` forward — it cannot forge a CRITICAL score to jump the queue.
+- **Escrow is locked once held.** `PATCH /api/appointments/[id]` (doctor reassignment) rejects with 409 if an escrow row exists or the appointment isn't still `SCHEDULED`. New doctors must also be `VERIFIED` and have a `stripeAccountId`.
+- **KYC fails closed.** Missing `NADRA_API_URL` in production refuses to mark a user verified. Mock mode is gated behind `NODE_ENV !== 'production'` or an explicit `MOCK_KYC=true`.
+- **Prescription release is atomic with payment.** Doctor uploads a prescription → escrow auto-releases via the same route. The release path verifies `appointment.doctor.stripeAccountId` and `appointment.escrow.amount` server-side; neither is client-controllable.
+- **Prisma errors are never reflected to the client.** All `try/catch` blocks return generic messages; full errors go to `console.error` for ops triage.
+
+---
+
+## Known limitations (MVP scope)
+
+- **Doctor signup is admin-only.** No self-serve doctor registration UI; seed via `prisma studio` or a script.
+- **KYD Tier 3 verification is a stub.** `trustBadge` is set manually or via direct DB update.
+- **No reschedule / cancel UI.** Cancellation is only possible via the auto-refund grace window (2 hours after `scheduledAt`).
+- **Notifications are not implemented.** No email/SMS for booking, prescription-ready, etc.
+- **Voice intake needs AWS S3.** Without S3 env vars configured, only text intake works.
+- **Doctor availability is binary.** No working-hours / on-call toggle.
+
+---
+
+## Going to real production
+
+If you're moving past the demo:
+
+1. **Remove `MOCK_KYC=true`** and wire up real NADRA + PMDC credentials.
+2. **Verify Stripe Connect** is in live mode and the platform account has the right capabilities for PKR payouts.
+3. **Tighten rate limiting** on `/api/auth/register` and `/api/auth/[...nextauth]` (consider Vercel BotID or Upstash rate-limit middleware).
+4. **Replace `Math.random()` MedIntel-code generation** with a uniqueness-checked sequence — collision probability is non-trivial past ~10k patients.
+5. **Add an audit log table** for escrow releases, prescription uploads, and KYC outcomes — required for dispute resolution.
+6. **Switch from JWT to database sessions** if you need server-side session revocation.
+
+---
+
+## Scripts reference
+
+| Command | Purpose |
+|---------|---------|
+| `npm run dev` | Start the Next.js dev server |
+| `npm run build` | Generate Prisma client + build for production |
+| `npm run vercel-build` | What Vercel runs — adds `prisma migrate deploy` |
+| `npm run start` | Run the production build |
+| `npm run db:migrate` | Create + apply a new migration (dev) |
+| `npm run db:deploy` | Apply pending migrations (prod) |
+| `npm run db:seed` | Populate `MedicalResource` with Lahore hospitals |
+| `npm run db:reset` | Drop, re-migrate, re-seed (destructive) |
+| `npm run lint` | Run ESLint |
+
+---
+
+## License
+
+Proprietary — all rights reserved. This codebase is an MVP demonstration; contact the author before reuse.
+
+---
+
+Built by [@Ayyankhan101](https://github.com/Ayyankhan101) with [Claude Code](https://claude.com/claude-code).

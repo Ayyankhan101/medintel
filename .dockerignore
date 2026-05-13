@@ -1,0 +1,14 @@
+.git
+.gitignore
+node_modules
+.next
+prisma/dev.db
+prisma/dev.db-*
+*.md
+.env*
+!.env.example
+tests
+docs
+scripts
+*.sh
+!docker-entrypoint.sh

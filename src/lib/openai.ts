@@ -21,9 +21,10 @@ const DEPARTMENT_KEYWORDS: Record<string, string[]> = {
   Neurology:        ['brain', 'numbness', 'seizure', 'headache', 'migraine', 'stroke', 'dizziness', 'confusion'],
   Orthopedics:      ['bone', 'joint', 'fracture', 'back pain', 'knee', 'shoulder'],
   Gastroenterology: ['stomach', 'abdomen', 'nausea', 'vomiting', 'diarrhea', 'liver'],
-  Pulmonology:      ['lung', 'breathing', 'shortness of breath', 'asthma', 'wheezing'],
+  Pulmonology:      ['lung', 'breath', 'breathing', 'shortness of breath', 'asthma', 'wheezing', 'respiratory'],
   Dermatology:      ['skin', 'rash', 'itching', 'eczema'],
-  Psychiatry:       ['anxiety', 'depression', 'mental', 'sleep', 'panic'],
+  Psychiatry:          ['anxiety', 'depression', 'mental', 'sleep', 'panic'],
+  'Emergency Medicine': ['emergency', 'life-threatening', 'critical', 'anaphylaxis', 'overdose'],
 }
 
 export function parseDepartmentFromSummary(text: string): string {
@@ -36,37 +37,60 @@ export function parseDepartmentFromSummary(text: string): string {
 
 export function parseSeverityFromText(text: string): number {
   const lower = text.toLowerCase()
-  const emergencyWords = ["crushing", "can't breathe", 'unconscious', 'troponin', 'heart attack', 'stroke']
-  const urgentWords    = ['severe', 'intense', 'unable to walk', 'high fever', 'vomiting blood']
-  const mildWords      = ['mild', 'slight', 'minor', 'occasional', 'little']
+  const criticalWords = [
+    "can't breathe", "cannot breathe", 'not able to breath', 'unable to breath',
+    'not breathing', 'crushing chest', 'heart attack', 'cardiac arrest',
+    'unconscious', 'unresponsive', 'stroke', 'seizure', 'anaphylaxis',
+    'choking', 'overdose', 'not able to speak', 'blacking out', 'passing out',
+    'troponin', 'haemorrhage', 'hemorrhage', 'arterial bleeding',
+  ]
+  const urgentWords = [
+    'severe', 'intense', 'unbearable', 'excruciating', 'worst pain',
+    'high fever', 'difficulty breathing', 'shortness of breath', 'breathless',
+    'vomiting blood', 'unable to walk', 'chest pain', 'chest tightness',
+    'rapid heartbeat', 'extreme pain', 'cannot move', 'paralysis',
+  ]
+  const mildWords = ['mild', 'slight', 'minor', 'occasional', 'little', 'bit of', 'a little']
 
-  if (emergencyWords.some(w => lower.includes(w))) return 9
-  if (urgentWords.some(w => lower.includes(w)))    return 6
-  if (mildWords.some(w => lower.includes(w)))      return 2
+  if (criticalWords.some(w => lower.includes(w))) return 9
+  if (urgentWords.some(w => lower.includes(w)))   return 6
+  if (mildWords.some(w => lower.includes(w)))     return 2
   return 4
 }
 
 export function buildMedicalSummaryPrompt(transcript: string): string {
-  return `You are a clinical AI assistant. Convert the following patient voice transcript into a structured medical summary.
+  return `You are a clinical AI triage assistant. Analyse the patient transcript and return a structured assessment.
 
 TRANSCRIPT:
 "${transcript}"
 
-Respond ONLY with a valid JSON object in this exact format:
+Respond ONLY with a valid JSON object in this exact format (no markdown, no extra text):
 {
-  "chiefComplaint": "one sentence",
+  "chiefComplaint": "one sentence chief complaint",
   "symptoms": ["symptom1", "symptom2"],
-  "duration": "e.g. 2 days",
-  "severity": "mild|moderate|severe",
+  "duration": "e.g. 2 days, or 'unknown'",
   "medicalTermSummary": "professional clinical summary in 2-3 sentences",
-  "urgencyFlags": ["any red flags like chest pain, breathing difficulty, etc."]
+  "urgencyFlags": ["list any red flags — e.g. respiratory distress, chest pain, altered consciousness"],
+  "severityScore": <integer 1-10 where 1=trivial, 4=routine, 6=urgent, 9-10=life-threatening>,
+  "department": "one of: General Medicine, Cardiology, Neurology, Pulmonology, Gastroenterology, Orthopedics, Dermatology, Psychiatry, Emergency Medicine"
 }
 
-Do not include any text outside the JSON object.`
+Severity scoring guide:
+- 1-3: Minor complaints (runny nose, mild rash, slight headache)
+- 4-5: Moderate symptoms needing attention soon (fever >38°C, moderate pain)
+- 6-7: Urgent — patient should be seen today (high fever, severe pain, vomiting blood)
+- 8-10: Emergency — life-threatening (inability to breathe, chest pain, loss of consciousness, stroke signs)
+
+Be conservative: when in doubt, score higher.`
 }
 
 export async function transcribeAudio(audioBuffer: Buffer, filename: string): Promise<string> {
-  const file = new File([audioBuffer], filename, { type: 'audio/webm' })
+  // Copy exactly this Buffer's bytes into a fresh ArrayBuffer. Using `audioBuffer.buffer`
+  // directly would leak pooled bytes for small audio clips (Buffer.concat returns a slice
+  // of an internal 8 KB pool for sizes ≤ ~4 KB).
+  const ab = new ArrayBuffer(audioBuffer.byteLength)
+  new Uint8Array(ab).set(audioBuffer)
+  const file = new File([ab], filename, { type: 'audio/webm' })
   const transcription = await getClient().audio.transcriptions.create({
     file,
     model: WHISPER_MODEL,
@@ -97,9 +121,16 @@ export async function generateMedicalSummary(transcript: string): Promise<{
     structured = { medicalTermSummary: raw }
   }
 
-  const summaryText   = (structured.medicalTermSummary as string) ?? transcript
-  const department    = parseDepartmentFromSummary(summaryText + ' ' + transcript)
-  const severityScore = parseSeverityFromText(summaryText + ' ' + transcript)
+  const summaryText = (structured.medicalTermSummary as string) ?? transcript
+
+  // Prefer AI-provided values; fall back to keyword heuristics only if missing/invalid
+  const aiScore      = typeof structured.severityScore === 'number' ? structured.severityScore : NaN
+  const severityScore = Number.isFinite(aiScore) && aiScore >= 1 && aiScore <= 10
+    ? Math.round(aiScore)
+    : parseSeverityFromText(summaryText + ' ' + transcript)
+
+  const aiDept    = typeof structured.department === 'string' ? structured.department.trim() : ''
+  const department = aiDept || parseDepartmentFromSummary(summaryText + ' ' + transcript)
 
   return { raw, structured, department, severityScore }
 }

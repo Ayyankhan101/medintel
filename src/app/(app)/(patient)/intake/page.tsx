@@ -7,14 +7,7 @@ import { Mic, Keyboard, ChevronLeft, Loader2, ArrowRight } from 'lucide-react'
 import type { TriageResult } from '@/types'
 
 type IntakeMode = 'choose' | 'voice' | 'text'
-interface IntakeResult extends TriageResult { transcript: string; summary: string; appointmentId: string }
-
-async function createDraftAppointment(): Promise<string> {
-  const res  = await fetch('/api/appointments', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ scheduledAt: new Date().toISOString() }) })
-  const data = await res.json()
-  if (!res.ok) throw new Error(data.error ?? 'Failed to create appointment')
-  return data.appointmentId
-}
+interface IntakeResult extends TriageResult { triageId: string; transcript: string; summary: string }
 
 export default function IntakePage() {
   const router = useRouter()
@@ -27,14 +20,15 @@ export default function IntakePage() {
   async function handleVoiceComplete(blob: Blob, filename: string) {
     setLoading(true); setError(null)
     try {
-      const appointmentId = await createDraftAppointment()
       const presignRes = await fetch('/api/voice/presign', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ filename, contentType: 'audio/webm' }) })
+      if (!presignRes.ok) throw new Error('Voice upload not available (AWS S3 not configured)')
       const { uploadUrl, s3Key } = await presignRes.json()
       await fetch(uploadUrl, { method: 'PUT', body: blob, headers: { 'Content-Type': 'audio/webm' } })
-      const res  = await fetch('/api/voice/transcribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ s3Key, appointmentId }) })
-      const data = await res.json()
+      const res  = await fetch('/api/voice/transcribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ s3Key }) })
+      const raw  = await res.text()
+      const data = raw ? JSON.parse(raw) : {}
       if (!res.ok) throw new Error(data.error ?? 'Transcription failed')
-      setResult({ ...data, appointmentId })
+      setResult(data)
     } catch (e) { setError(e instanceof Error ? e.message : 'Processing failed') }
     finally { setLoading(false) }
   }
@@ -43,21 +37,31 @@ export default function IntakePage() {
     if (!textInput.trim()) return
     setLoading(true); setError(null)
     try {
-      const appointmentId = await createDraftAppointment()
-      const res  = await fetch('/api/voice/transcribe-text', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: textInput, appointmentId }) })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error ?? 'Analysis failed')
-      setResult({ ...data, appointmentId })
+      const res  = await fetch('/api/voice/transcribe-text', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: textInput }),
+      })
+      const raw  = await res.text()
+      const data = raw ? JSON.parse(raw) : {}
+      if (!res.ok) throw new Error(data.error ?? `Server error ${res.status}`)
+      setResult(data)
     } catch (e) { setError(e instanceof Error ? e.message : 'Analysis failed') }
     finally { setLoading(false) }
   }
 
   if (result) {
+    const params = new URLSearchParams({
+      triageId: result.triageId,
+      dept:     result.department,
+      severity: result.severityLevel,
+      score:    String(result.severityScore),
+    })
     return (
       <div className="max-w-2xl mx-auto px-4 space-y-4">
         <SymptomSummary {...result} />
         <button
-          onClick={() => router.push(`/doctors?dept=${encodeURIComponent(result.department)}&appointmentId=${result.appointmentId}`)}
+          onClick={() => router.push(`/doctors?${params.toString()}`)}
           className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
         >
           Find a {result.department} Doctor <ArrowRight className="w-4 h-4" />
@@ -74,7 +78,6 @@ export default function IntakePage() {
 
   return (
     <div className="max-w-xl mx-auto px-4">
-      {/* Header */}
       <div className="text-center mb-8">
         <h1 className="text-2xl font-bold text-slate-900">How are you feeling?</h1>
         <p className="text-slate-500 mt-1.5">Describe your symptoms — we'll find the right doctor for you</p>
@@ -82,10 +85,7 @@ export default function IntakePage() {
 
       {mode === 'choose' && (
         <div className="grid grid-cols-2 gap-4">
-          <button
-            onClick={() => setMode('voice')}
-            className="group flex flex-col items-center gap-4 p-8 bg-white border-2 border-slate-200 hover:border-red-300 hover:bg-red-50/50 rounded-2xl transition-all"
-          >
+          <button onClick={() => setMode('voice')} className="group flex flex-col items-center gap-4 p-8 bg-white border-2 border-slate-200 hover:border-red-300 hover:bg-red-50/50 rounded-2xl transition-all">
             <div className="w-16 h-16 rounded-2xl bg-red-100 group-hover:bg-red-200 flex items-center justify-center transition-colors">
               <Mic className="w-8 h-8 text-red-600" />
             </div>
@@ -94,10 +94,7 @@ export default function IntakePage() {
               <p className="text-xs text-slate-400 mt-0.5">Urdu یا English</p>
             </div>
           </button>
-          <button
-            onClick={() => setMode('text')}
-            className="group flex flex-col items-center gap-4 p-8 bg-white border-2 border-slate-200 hover:border-blue-300 hover:bg-blue-50/50 rounded-2xl transition-all"
-          >
+          <button onClick={() => setMode('text')} className="group flex flex-col items-center gap-4 p-8 bg-white border-2 border-slate-200 hover:border-blue-300 hover:bg-blue-50/50 rounded-2xl transition-all">
             <div className="w-16 h-16 rounded-2xl bg-blue-100 group-hover:bg-blue-200 flex items-center justify-center transition-colors">
               <Keyboard className="w-8 h-8 text-blue-600" />
             </div>

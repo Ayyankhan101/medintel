@@ -19,10 +19,10 @@ interface Doctor {
 function DoctorListContent() {
   const router         = useRouter()
   const params         = useSearchParams()
-  const department     = params.get('dept') ?? 'General Medicine'
-  const appointmentId  = params.get('appointmentId')
-  const severity       = params.get('severity') as 'ROUTINE' | 'URGENT' | 'CRITICAL' | null
-  const severityScore  = Number(params.get('score') ?? 4)
+  const triageId     = params.get('triageId') ?? ''
+  const department   = params.get('dept') ?? 'General Medicine'
+  const severity     = params.get('severity') as 'ROUTINE' | 'URGENT' | 'CRITICAL' | null
+  const severityScore = Number(params.get('score') ?? 4)
 
   const [doctors, setDoctors] = useState<Doctor[]>([])
   const [loading, setLoading] = useState(true)
@@ -41,7 +41,14 @@ function DoctorListContent() {
   }, [department, severity])
 
   function handleBook(doctorId: string) {
-    router.push(`/book?doctorId=${doctorId}&appointmentId=${appointmentId ?? ''}`)
+    const p = new URLSearchParams({
+      doctorId,
+      triageId,
+      dept:     department,
+      severity: severity ?? '',
+      score:    String(severityScore),
+    })
+    router.push(`/book?${p.toString()}`)
   }
 
   return (

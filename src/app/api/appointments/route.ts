@@ -5,7 +5,8 @@ import { prisma } from '@/lib/prisma'
 
 const createSchema = z.object({
   scheduledAt: z.string().datetime(),
-  doctorId: z.string().optional(),
+  doctorId:    z.string().optional(),
+  triageId:    z.string().optional(),
 })
 
 export async function POST(req: NextRequest) {
@@ -19,32 +20,54 @@ export async function POST(req: NextRequest) {
   const patient = await prisma.patient.findUnique({ where: { userId: session.user.id } })
   if (!patient) return NextResponse.json({ error: 'Patient profile not found' }, { status: 404 })
 
-  if (parsed.data.doctorId) {
+  const { scheduledAt, doctorId, triageId } = parsed.data
+
+  // If a triageId is provided, copy its server-side fields onto the appointment.
+  // Never trust client-supplied severity / summary / transcript / department.
+  let triageFields: {
+    transcript?:    string
+    aiSummary?:     string
+    severityScore?: number
+    severityLevel?: string
+    department?:    string
+  } = {}
+
+  if (triageId) {
+    const triage = await prisma.triage.findUnique({ where: { id: triageId } })
+    if (!triage || triage.patientId !== patient.id) {
+      return NextResponse.json({ error: 'Triage not found' }, { status: 404 })
+    }
+    triageFields = {
+      transcript:    triage.transcript,
+      aiSummary:     triage.summary,
+      severityScore: triage.severityScore,
+      severityLevel: triage.severityLevel,
+      department:    triage.department,
+    }
+  }
+
+  // If a doctor is supplied, verify they're real, KYD-verified, and have Stripe wired up.
+  if (doctorId) {
+    const doctor = await prisma.doctor.findUnique({ where: { id: doctorId } })
+    if (!doctor || doctor.kydStatus !== 'VERIFIED' || !doctor.stripeAccountId) {
+      return NextResponse.json({ error: 'Doctor not bookable' }, { status: 422 })
+    }
+  }
+
+  try {
     const appointment = await prisma.appointment.create({
       data: {
-        patientId:   patient.id,
-        doctorId:    parsed.data.doctorId,
-        scheduledAt: new Date(parsed.data.scheduledAt),
+        patient:     { connect: { id: patient.id } },
+        scheduledAt: new Date(scheduledAt),
+        ...triageFields,
+        ...(doctorId ? { doctor: { connect: { id: doctorId } } } : {}),
       },
     })
     return NextResponse.json({ appointmentId: appointment.id }, { status: 201 })
+  } catch (e) {
+    console.error('[appointments POST]', e)
+    return NextResponse.json({ error: 'Failed to create appointment' }, { status: 500 })
   }
-
-  // Draft appointment without doctor — will be assigned after triage
-  const firstDoctor = await prisma.doctor.findFirst({ where: { kydStatus: 'VERIFIED' } })
-  if (!firstDoctor) {
-    return NextResponse.json({ error: 'No verified doctors available yet' }, { status: 503 })
-  }
-
-  const appointment = await prisma.appointment.create({
-    data: {
-      patientId:   patient.id,
-      doctorId:    firstDoctor.id,
-      scheduledAt: new Date(parsed.data.scheduledAt),
-    },
-  })
-
-  return NextResponse.json({ appointmentId: appointment.id }, { status: 201 })
 }
 
 export async function GET(req: NextRequest) {

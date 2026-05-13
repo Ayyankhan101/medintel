@@ -33,11 +33,12 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 !.env.local.example
+!.env.example
 
-# SQLite dev database
+# SQLite dev database (kept for reference, not used in prod)
 prisma/dev.db
 prisma/dev.db-journal
-prisma/migrations/
+prisma/prisma/
 
 # Dev server runtime files
 .dev.pid

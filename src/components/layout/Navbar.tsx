@@ -3,26 +3,29 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { signOut } from 'next-auth/react'
-import { Menu, X, Activity, LogOut, User, Stethoscope } from 'lucide-react'
+import { Menu, X, Activity, LogOut, User, Stethoscope, Sun, Moon } from 'lucide-react'
+import { useTheme } from '@/components/ThemeProvider'
 
 interface NavLink { label: string; href: string }
 
 const PATIENT_LINKS: NavLink[] = [
-  { label: 'Consult',   href: '/intake'     },
-  { label: 'History',   href: '/history'    },
-  { label: 'Resources', href: '/resources'  },
+  { label: 'Consult',   href: '/intake'    },
+  { label: 'History',   href: '/history'   },
+  { label: 'Resources', href: '/resources' },
 ]
 
 const DOCTOR_LINKS: NavLink[] = [
   { label: 'Dashboard', href: '/doctor/dashboard' },
   { label: 'Patients',  href: '/doctor/patients'  },
+  { label: 'Settings',  href: '/doctor/settings'  },
 ]
 
 export function Navbar() {
   const pathname = usePathname()
-  const [open,  setOpen]  = useState(false)
-  const [role,  setRole]  = useState<string | null>(null)
-  const [name,  setName]  = useState<string | null>(null)
+  const { theme, toggle } = useTheme()
+  const [open, setOpen] = useState(false)
+  const [role, setRole] = useState<string | null>(null)
+  const [name, setName] = useState<string | null>(null)
 
   useEffect(() => {
     fetch('/api/auth/session')
@@ -37,14 +40,14 @@ export function Navbar() {
   const links = role === 'DOCTOR' ? DOCTOR_LINKS : role === 'PATIENT' ? PATIENT_LINKS : []
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-slate-200 bg-white/90 backdrop-blur-sm">
+    <header className="sticky top-0 z-40 w-full border-b border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm">
       <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 shrink-0">
           <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center">
             <Activity className="w-4 h-4 text-white" />
           </div>
-          <span className="font-bold text-slate-900 text-base tracking-tight">MedIntel</span>
+          <span className="font-bold text-slate-900 dark:text-slate-100 text-base tracking-tight">MedIntel</span>
         </Link>
 
         {/* Desktop nav */}
@@ -56,8 +59,8 @@ export function Navbar() {
                 href={l.href}
                 className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                   pathname.startsWith(l.href)
-                    ? 'bg-blue-50 text-blue-700'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                    ? 'bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-400'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800'
                 }`}
               >
                 {l.label}
@@ -68,9 +71,21 @@ export function Navbar() {
 
         {/* Right side */}
         <div className="flex items-center gap-2">
+          {/* Dark mode toggle */}
+          <button
+            onClick={toggle}
+            className="p-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            aria-label="Toggle dark mode"
+          >
+            {theme === 'dark'
+              ? <Sun className="w-4 h-4" />
+              : <Moon className="w-4 h-4" />
+            }
+          </button>
+
           {role ? (
             <>
-              <div className="hidden sm:flex items-center gap-2 text-sm text-slate-500">
+              <div className="hidden sm:flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
                 {role === 'DOCTOR'
                   ? <Stethoscope className="w-3.5 h-3.5" />
                   : <User className="w-3.5 h-3.5" />}
@@ -78,7 +93,7 @@ export function Navbar() {
               </div>
               <button
                 onClick={() => signOut({ callbackUrl: '/' })}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-slate-600 hover:text-red-600 hover:bg-red-50 transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950 transition-colors"
               >
                 <LogOut className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Sign out</span>
@@ -86,7 +101,7 @@ export function Navbar() {
             </>
           ) : (
             <div className="flex items-center gap-2">
-              <Link href="/login" className="px-3 py-1.5 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">
+              <Link href="/login" className="px-3 py-1.5 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors">
                 Sign in
               </Link>
               <Link href="/register" className="px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
@@ -98,7 +113,7 @@ export function Navbar() {
           {/* Mobile menu toggle */}
           {links.length > 0 && (
             <button
-              className="sm:hidden p-1.5 rounded-lg text-slate-600 hover:bg-slate-100"
+              className="sm:hidden p-1.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
               onClick={() => setOpen(o => !o)}
             >
               {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -109,7 +124,7 @@ export function Navbar() {
 
       {/* Mobile drawer */}
       {open && links.length > 0 && (
-        <div className="sm:hidden border-t border-slate-200 bg-white px-4 py-3 space-y-1">
+        <div className="sm:hidden border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-3 space-y-1">
           {links.map(l => (
             <Link
               key={l.href}
@@ -117,8 +132,8 @@ export function Navbar() {
               onClick={() => setOpen(false)}
               className={`block px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                 pathname.startsWith(l.href)
-                  ? 'bg-blue-50 text-blue-700'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                  ? 'bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-400'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800'
               }`}
             >
               {l.label}

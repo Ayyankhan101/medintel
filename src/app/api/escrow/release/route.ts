@@ -22,6 +22,8 @@ export async function POST(req: NextRequest) {
 
   if (!appointment)
     return NextResponse.json({ error: 'Appointment not found' }, { status: 404 })
+  if (!appointment.doctor)
+    return NextResponse.json({ error: 'No doctor assigned to this appointment' }, { status: 422 })
   if (appointment.doctor.user.id !== session.user.id)
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   if (!appointment.escrow)

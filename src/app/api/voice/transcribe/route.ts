@@ -7,7 +7,6 @@ import { runFullIntakePipeline } from '@/lib/openai'
 
 const schema = z.object({
   s3Key: z.string().min(1),
-  appointmentId: z.string().min(1),
 })
 
 const s3 = new S3Client({
@@ -26,7 +25,10 @@ export async function POST(req: NextRequest) {
   const parsed = schema.safeParse(body)
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
 
-  const { s3Key, appointmentId } = parsed.data
+  const { s3Key } = parsed.data
+
+  const patient = await prisma.patient.findUnique({ where: { userId: session.user.id } })
+  if (!patient) return NextResponse.json({ error: 'Patient profile not found' }, { status: 404 })
 
   const obj = await s3.send(new GetObjectCommand({ Bucket: process.env.AWS_S3_BUCKET!, Key: s3Key }))
   const chunks: Uint8Array[] = []
@@ -34,21 +36,28 @@ export async function POST(req: NextRequest) {
   const audioBuffer = Buffer.concat(chunks)
   const filename = s3Key.split('/').pop() ?? 'audio.webm'
 
-  const result = await runFullIntakePipeline(audioBuffer, filename)
+  let result
+  try {
+    result = await runFullIntakePipeline(audioBuffer, filename)
+  } catch (e) {
+    console.error('[transcribe] AI pipeline error:', e)
+    return NextResponse.json({ error: 'Transcription failed' }, { status: 502 })
+  }
 
-  await prisma.appointment.update({
-    where: { id: appointmentId },
+  const triage = await prisma.triage.create({
     data: {
-      voiceFileUrl: s3Key,
-      transcript:   result.transcript,
-      aiSummary:    result.summary,
+      patientId:     patient.id,
+      transcript:    result.transcript,
+      summary:       result.summary,
       severityScore: result.severityScore,
       severityLevel: result.severityLevel,
-      department:   result.department,
+      department:    result.department,
+      voiceFileUrl:  s3Key,
     },
   })
 
   return NextResponse.json({
+    triageId:      triage.id,
     transcript:    result.transcript,
     summary:       result.summary,
     department:    result.department,

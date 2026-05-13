@@ -72,6 +72,22 @@ model Patient {
 
   medicalRecords MedicalRecord[]
   appointments   Appointment[]
+  triages        Triage[]
+}
+
+model Triage {
+  id            String        @id @default(cuid())
+  patientId     String
+  patient       Patient       @relation(fields: [patientId], references: [id])
+  transcript    String        @db.Text
+  summary       String        @db.Text
+  severityScore Int
+  severityLevel SeverityLevel
+  department    String
+  voiceFileUrl  String?
+  createdAt     DateTime      @default(now())
+
+  @@index([patientId, createdAt(sort: Desc)])
 }
 
 model Doctor {
@@ -123,8 +139,8 @@ model Appointment {
   id          String            @id @default(cuid())
   patientId   String
   patient     Patient           @relation(fields: [patientId], references: [id])
-  doctorId    String
-  doctor      Doctor            @relation(fields: [doctorId], references: [id])
+  doctorId    String?
+  doctor      Doctor?           @relation(fields: [doctorId], references: [id])
   status      AppointmentStatus @default(SCHEDULED)
   scheduledAt DateTime
   completedAt DateTime?
@@ -152,7 +168,7 @@ model Escrow {
   appointmentId         String       @unique
   appointment           Appointment  @relation(fields: [appointmentId], references: [id])
   amount                Decimal      @db.Decimal(10, 2)
-  currency              String       @default("USD")
+  currency              String       @default("PKR")
   status                EscrowStatus @default(HELD)
   stripePaymentIntentId String       @unique
   heldAt                DateTime     @default(now())
