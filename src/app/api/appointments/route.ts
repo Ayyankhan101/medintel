@@ -24,25 +24,12 @@ export async function POST(req: NextRequest) {
 
   // If a triageId is provided, copy its server-side fields onto the appointment.
   // Never trust client-supplied severity / summary / transcript / department.
-  let triageFields: {
-    transcript?:    string
-    aiSummary?:     string
-    severityScore?: number
-    severityLevel?: string
-    department?:    string
-  } = {}
+  let triage: Awaited<ReturnType<typeof prisma.triage.findUnique>> = null
 
   if (triageId) {
-    const triage = await prisma.triage.findUnique({ where: { id: triageId } })
+    triage = await prisma.triage.findUnique({ where: { id: triageId } })
     if (!triage || triage.patientId !== patient.id) {
       return NextResponse.json({ error: 'Triage not found' }, { status: 404 })
-    }
-    triageFields = {
-      transcript:    triage.transcript,
-      aiSummary:     triage.summary,
-      severityScore: triage.severityScore,
-      severityLevel: triage.severityLevel,
-      department:    triage.department,
     }
   }
 
@@ -59,7 +46,13 @@ export async function POST(req: NextRequest) {
       data: {
         patient:     { connect: { id: patient.id } },
         scheduledAt: new Date(scheduledAt),
-        ...triageFields,
+        ...(triage ? {
+          transcript:    triage.transcript,
+          aiSummary:     triage.summary,
+          severityScore: triage.severityScore,
+          severityLevel: triage.severityLevel,
+          department:    triage.department,
+        } : {}),
         ...(doctorId ? { doctor: { connect: { id: doctorId } } } : {}),
       },
     })
