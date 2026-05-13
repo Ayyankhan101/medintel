@@ -49,12 +49,19 @@ out center tags 30;`
   try {
     const res = await fetch('https://overpass-api.de/api/interpreter', {
       method:  'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        // Overpass returns 406 without a real User-Agent identifying the caller.
+        'User-Agent': 'MedIntel/1.0 (https://medintel-ten.vercel.app)',
+      },
       body:    `data=${encodeURIComponent(query)}`,
       // Overpass has free-tier rate limits; the response cache is also patient-friendly.
       next:    { revalidate: 300 },
     })
-    if (!res.ok) throw new Error(`overpass ${res.status}`)
+    if (!res.ok) {
+      console.error('[overpass] non-OK:', res.status, await res.text().catch(() => ''))
+      throw new Error(`overpass ${res.status}`)
+    }
     const data = await res.json()
     elements = (data.elements ?? []) as OverpassElement[]
   } catch (e) {
