@@ -66,15 +66,10 @@ export function NearbyHospitals() {
   }, [coords])
 
   return (
-    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl overflow-hidden">
-      <div className="px-5 pt-5 pb-3">
-        <h2 className="font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-          <MapPin className="w-4 h-4 text-blue-600" />
-          Nearby hospitals & pharmacies
-        </h2>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-          Within 5 km of your current location · data from OpenStreetMap
-        </p>
+    <div className="overflow-hidden">
+      <div className="px-5 pt-3 pb-3 flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+        <MapPin className="w-3 h-3 text-blue-600" />
+        Within 5 km of your current location · data from OpenStreetMap
       </div>
 
       {loading && (

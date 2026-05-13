@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import { VoiceRecorder } from '@/components/voice/VoiceRecorder'
 import { SymptomSummary } from '@/components/intake/SymptomSummary'
 import { UploadDocs } from '@/components/intake/UploadDocs'
-import { NearbyHospitals } from '@/components/resources/NearbyHospitals'
+import { NearbyHospitalsDialog } from '@/components/resources/NearbyHospitalsDialog'
 import { Mic, Keyboard, ChevronLeft, Loader2, ArrowRight } from 'lucide-react'
 import type { TriageResult } from '@/types'
 
@@ -70,7 +70,7 @@ export default function IntakePage() {
         >
           Find a {result.department} Doctor <ArrowRight className="w-4 h-4" />
         </button>
-        <NearbyHospitals />
+        <NearbyHospitalsDialog autoOpen />
         <button
           onClick={() => { setResult(null); setMode('choose') }}
           className="w-full py-3 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 font-medium rounded-xl transition-colors text-sm"
