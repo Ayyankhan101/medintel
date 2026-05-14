@@ -310,6 +310,7 @@ If you're moving past the demo:
 | `npm run db:deploy` | Apply pending migrations (prod, only if you switch away from `db push`) |
 | `npm run db:seed` | Populate `MedicalResource` with Lahore hospitals |
 | `npm run db:reset` | Drop, re-push, re-seed (destructive) |
+| `npm run eval:triage` | Run the triage agent evaluation harness — see `evals/README.md` |
 | `npm run lint` | Run ESLint |
 | `npx tsx scripts/seed-demo-accounts.ts` | Seed demo patient + doctor + records + appointments |
 

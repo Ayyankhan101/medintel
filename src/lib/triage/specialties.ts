@@ -120,14 +120,25 @@ export function normalizeSpecialty(input: string | null | undefined): string | n
   return null
 }
 
-/** Fallback: scan free text for specialty keywords. */
+/** Fallback: scan free text for specialty keywords using word-boundary matching
+ *  so 2-char keys like "mi", "bp", "tb" don't accidentally match "mild", "back". */
+const KEYWORD_REGEX_CACHE = new Map<string, RegExp>()
+function keywordRegex(k: string): RegExp {
+  let re = KEYWORD_REGEX_CACHE.get(k)
+  if (!re) {
+    // Escape regex metacharacters, then bracket with word boundaries.
+    const escaped = k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    re = new RegExp(`\\b${escaped}\\b`, 'i')
+    KEYWORD_REGEX_CACHE.set(k, re)
+  }
+  return re
+}
+
 export function inferSpecialtyFromKeywords(text: string): string {
-  const lower = text.toLowerCase()
-  // Score each specialty by keyword hit count; pick the highest.
   let best: { name: string; hits: number } = { name: 'General Medicine', hits: 0 }
   for (const s of SPECIALTIES) {
     if (s.name === 'General Medicine') continue
-    const hits = s.keywords.reduce((n, k) => n + (lower.includes(k) ? 1 : 0), 0)
+    const hits = s.keywords.reduce((n, k) => n + (keywordRegex(k).test(text) ? 1 : 0), 0)
     if (hits > best.hits) best = { name: s.name, hits }
   }
   return best.hits > 0 ? best.name : 'General Medicine'

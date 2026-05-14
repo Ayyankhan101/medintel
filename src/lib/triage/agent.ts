@@ -158,11 +158,15 @@ function deterministicFallback(input: string): TriageOutput {
     "can't breathe", 'cannot breathe', 'not able to breath', 'unable to breath', 'not breathing',
     'crushing chest', 'heart attack', 'cardiac arrest', 'unconscious', 'unresponsive',
     'stroke', 'seizure', 'anaphylaxis', 'choking', 'overdose', 'passing out', 'blacking out',
+    'lost consciousness', 'cannot speak', 'face drooped', 'throat is swelling',
+    'arterial bleeding', 'blood is spurting',
   ]
   const urgentWords = [
     'severe', 'intense', 'unbearable', 'excruciating', 'worst pain', 'high fever',
     'shortness of breath', 'difficulty breathing', 'vomiting blood', 'unable to walk',
     'chest pain', 'chest tightness', 'paralysis', 'extreme pain',
+    'wheezing', 'bleeding heavily', 'bleeding for', 'flashing lights', 'sudden blurred',
+    'lethargic', '40 degrees', '39 degrees', 'inhaler isn', 'kidney failure',
   ]
   const mildWords = ['mild', 'slight', 'minor', 'a little', 'bit of']
 
@@ -188,6 +192,31 @@ function deterministicFallback(input: string): TriageOutput {
   }
 }
 
+// ── retry-with-backoff for transient errors ──────────────────────────────────
+
+/**
+ * Retry a Groq/OpenAI call on 429 and 5xx with jittered exponential backoff.
+ * Daily token caps (TPD) return 429 too — backoff won't save you there, but
+ * burst-RPM limits clear in seconds, so it's worth the cheap retry.
+ */
+async function callWithBackoff<T>(fn: () => Promise<T>, attempts = 3): Promise<T> {
+  let lastErr: unknown
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await fn()
+    } catch (e) {
+      lastErr = e
+      const status = (e as { status?: number; statusCode?: number })?.status
+                  ?? (e as { statusCode?: number })?.statusCode
+      const retryable = status === 429 || (typeof status === 'number' && status >= 500)
+      if (!retryable || i === attempts - 1) throw e
+      const delayMs = 500 * Math.pow(2, i) + Math.floor(Math.random() * 250)
+      await new Promise(r => setTimeout(r, delayMs))
+    }
+  }
+  throw lastErr
+}
+
 // ── public API ────────────────────────────────────────────────────────────────
 
 export interface TriageAgentResult {
@@ -202,20 +231,21 @@ export async function runTriageAgent(input: string): Promise<TriageAgentResult> 
     throw new Error('Patient input is too short')
   }
 
-  // ── First call ──────────────────────────────────────────────────────────────
+  // ── First call (with backoff on transient 429/5xx) ──────────────────────────
   let raw1 = ''
   try {
-    const completion = await client().chat.completions.create({
-      model:       CHAT_MODEL,
-      temperature: 0.1,
-      max_tokens:  600,
-      response_format: { type: 'json_object' },
-      messages: [
-        { role: 'system', content: systemPrompt() },
-        { role: 'user',   content: userPrompt(input) },
-      ],
-    })
-    raw1 = completion.choices[0]?.message?.content ?? ''
+    raw1 = await callWithBackoff(() =>
+      client().chat.completions.create({
+        model:       CHAT_MODEL,
+        temperature: 0.1,
+        max_tokens:  800,
+        response_format: { type: 'json_object' },
+        messages: [
+          { role: 'system', content: systemPrompt() },
+          { role: 'user',   content: userPrompt(input) },
+        ],
+      }).then(c => c.choices[0]?.message?.content ?? ''),
+    )
   } catch (e) {
     console.error('[triage-agent] LLM call failed:', e)
     const fb = deterministicFallback(input)
@@ -234,7 +264,7 @@ export async function runTriageAgent(input: string): Promise<TriageAgentResult> 
     const completion = await client().chat.completions.create({
       model:       CHAT_MODEL,
       temperature: 0,
-      max_tokens:  600,
+      max_tokens:  800,
       response_format: { type: 'json_object' },
       messages: [
         { role: 'system', content: systemPrompt() },

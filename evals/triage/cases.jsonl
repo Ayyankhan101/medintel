@@ -1,0 +1,37 @@
+{"id":"crit-01-cant-breathe","input":"I cannot breathe properly, my chest feels tight and I am gasping","expect":{"minSeverity":8,"maxSeverity":10,"specialties":["Emergency Medicine","Pulmonology"],"isEmergency":true},"notes":"Regression: previously returned severity 4"}
+{"id":"crit-02-chest-radiating","input":"I have crushing chest pain radiating to my left arm with sweating and nausea","expect":{"minSeverity":8,"maxSeverity":10,"specialties":["Emergency Medicine","Cardiology"],"isEmergency":true}}
+{"id":"crit-03-stroke","input":"My father's face suddenly drooped on one side and he cannot speak properly","expect":{"minSeverity":8,"maxSeverity":10,"specialties":["Emergency Medicine","Neurology"],"isEmergency":true}}
+{"id":"crit-04-anaphylaxis","input":"My throat is swelling and I cannot swallow after eating peanuts","expect":{"minSeverity":8,"maxSeverity":10,"specialties":["Emergency Medicine"],"isEmergency":true}}
+{"id":"crit-05-overdose","input":"I took too many sleeping pills and feel very drowsy and confused","expect":{"minSeverity":8,"maxSeverity":10,"specialties":["Emergency Medicine"],"isEmergency":true}}
+{"id":"crit-06-seizure","input":"I just had a seizure and bit my tongue, I feel disoriented","expect":{"minSeverity":7,"maxSeverity":10,"specialties":["Emergency Medicine","Neurology"]}}
+{"id":"crit-07-bleeding","input":"Severe arterial bleeding from my leg after an accident, blood is spurting","expect":{"minSeverity":8,"maxSeverity":10,"specialties":["Emergency Medicine"],"isEmergency":true}}
+{"id":"crit-08-unconscious","input":"My grandmother lost consciousness for 30 seconds and is now confused","expect":{"minSeverity":7,"maxSeverity":10,"specialties":["Emergency Medicine","Neurology","Cardiology"]}}
+
+{"id":"urgent-01-severe-abdomen","input":"Sudden severe pain in my right lower abdomen, fever, cannot stand up straight","expect":{"minSeverity":6,"maxSeverity":9,"specialties":["Gastroenterology","Emergency Medicine","General Medicine"]}}
+{"id":"urgent-02-vomit-blood","input":"I have been vomiting bright red blood since this morning","expect":{"minSeverity":7,"maxSeverity":10,"specialties":["Gastroenterology","Emergency Medicine"]}}
+{"id":"urgent-03-high-fever-child","input":"My 6 month old has a fever of 40 degrees and is lethargic","expect":{"minSeverity":6,"maxSeverity":10,"specialties":["Pediatrics","Emergency Medicine"]}}
+{"id":"urgent-04-asthma-attack","input":"My asthma is flaring badly, my inhaler isn't helping and I'm wheezing loudly","expect":{"minSeverity":6,"maxSeverity":9,"specialties":["Pulmonology","Emergency Medicine"]}}
+{"id":"urgent-05-pregnant-bleeding","input":"I am 7 months pregnant and have been bleeding heavily for 2 hours","expect":{"minSeverity":7,"maxSeverity":10,"specialties":["Gynecology","Emergency Medicine"]}}
+{"id":"urgent-06-kidney-stone","input":"Excruciating pain in my left flank radiating to groin, blood in urine","expect":{"minSeverity":6,"maxSeverity":8,"specialties":["Urology","Emergency Medicine","Nephrology"]}}
+
+{"id":"routine-01-cold","input":"Runny nose, sneezing and mild sore throat for 2 days","expect":{"minSeverity":1,"maxSeverity":4,"specialties":["General Medicine","ENT"]}}
+{"id":"routine-02-acne","input":"I have persistent acne on my face and back for 6 months","expect":{"minSeverity":1,"maxSeverity":4,"specialties":["Dermatology"]}}
+{"id":"routine-03-back-pain","input":"Mild lower back pain after sitting at desk all week, no numbness","expect":{"minSeverity":2,"maxSeverity":5,"specialties":["Orthopedics","General Medicine"]}}
+{"id":"routine-04-eyes-dry","input":"My eyes feel dry and tired after long hours on the computer","expect":{"minSeverity":1,"maxSeverity":4,"specialties":["Ophthalmology","General Medicine"]}}
+{"id":"routine-05-anxiety","input":"I have been feeling anxious and not sleeping well for a month","expect":{"minSeverity":3,"maxSeverity":6,"specialties":["Psychiatry"]}}
+{"id":"routine-06-irregular-period","input":"My periods have been irregular for the last few months, sometimes 35 days apart","expect":{"minSeverity":2,"maxSeverity":5,"specialties":["Gynecology"]}}
+{"id":"routine-07-diabetes-followup","input":"My HbA1c was 7.8 last month and I want to discuss medication adjustment","expect":{"minSeverity":3,"maxSeverity":6,"specialties":["Endocrinology","General Medicine"]}}
+{"id":"routine-08-sinus","input":"Sinus congestion, facial pressure and yellow nasal discharge for 5 days","expect":{"minSeverity":2,"maxSeverity":5,"specialties":["ENT","General Medicine"]}}
+{"id":"routine-09-ear-pain","input":"My right ear has been painful for 2 days and hearing feels muffled","expect":{"minSeverity":2,"maxSeverity":5,"specialties":["ENT","General Medicine"]}}
+
+{"id":"specialty-01-uti","input":"Burning urination and frequent urge to urinate for 3 days","expect":{"minSeverity":3,"maxSeverity":6,"specialties":["Urology","General Medicine"]}}
+{"id":"specialty-02-thyroid","input":"Unexplained weight gain, cold intolerance and hair thinning","expect":{"minSeverity":3,"maxSeverity":6,"specialties":["Endocrinology"]}}
+{"id":"specialty-03-cancer-followup","input":"I finished chemotherapy 3 months ago and want a follow-up scan","expect":{"minSeverity":3,"maxSeverity":7,"specialties":["Oncology"]}}
+{"id":"specialty-04-kidney-disease","input":"My creatinine is 3.2 and the doctor said my kidneys are failing","expect":{"minSeverity":5,"maxSeverity":9,"specialties":["Nephrology","Emergency Medicine"]}}
+{"id":"specialty-05-eye-vision","input":"Sudden blurred vision in my left eye since this morning with flashing lights","expect":{"minSeverity":5,"maxSeverity":9,"specialties":["Ophthalmology","Emergency Medicine"]}}
+
+{"id":"peds-01-toddler-cough","input":"My 3 year old has been coughing for a week, no fever, eats and plays normally","expect":{"minSeverity":2,"maxSeverity":5,"specialties":["Pediatrics","General Medicine"]}}
+{"id":"peds-02-newborn-jaundice","input":"My newborn baby's skin and eyes look yellow on day 4 of life","expect":{"minSeverity":5,"maxSeverity":8,"specialties":["Pediatrics","Emergency Medicine"]}}
+
+{"id":"edge-01-vague","input":"I just don't feel well","expect":{"minSeverity":3,"maxSeverity":6,"specialties":["General Medicine"]}}
+{"id":"edge-02-multi-system","input":"I have a headache, stomach pain, joint pain and fever for 3 days","expect":{"minSeverity":4,"maxSeverity":7,"specialties":["General Medicine","Emergency Medicine"]}}
