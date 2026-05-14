@@ -14,6 +14,9 @@ function startsWithAny(path: string, prefixes: string[]): boolean {
   return prefixes.some(p => path === p || path.startsWith(p + '/'))
 }
 
+// Dynamic public routes: pattern-match prefixes that take params.
+const PUBLIC_PREFIXES = ['/clinic/invite/']
+
 export default auth(req => {
   const { nextUrl } = req
   const path = nextUrl.pathname
@@ -35,6 +38,9 @@ export default auth(req => {
     }
     return NextResponse.next()
   }
+
+  // 1b. Dynamic public prefixes (e.g. /clinic/invite/[token])
+  if (PUBLIC_PREFIXES.some(p => path.startsWith(p))) return NextResponse.next()
 
   // 2. Anything not public requires a session.
   if (!isLoggedIn) {

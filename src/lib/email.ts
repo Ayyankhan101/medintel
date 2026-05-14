@@ -276,6 +276,25 @@ export function sendEscrowReleased(args: {
   })
 }
 
+export function sendClinicInvite(args: { to: string; clinicName: string; inviterName: string; token: string }) {
+  const url = `${APP_URL}/clinic/invite/${encodeURIComponent(args.token)}`
+  return send({
+    to: args.to,
+    subject: `${args.inviterName} invited you to join ${args.clinicName} on MedIntel`,
+    html: layout(
+      `Join ${escapeHtml(args.clinicName)}`,
+      `<p style="margin:0 0 14px;font-size:14px;line-height:1.6;color:#334155;">
+         <strong>${escapeHtml(args.inviterName)}</strong> invited you to join
+         <strong>${escapeHtml(args.clinicName)}</strong> on MedIntel as a doctor.
+       </p>
+       <p style="margin:0 0 22px;">${button(url, 'Accept invite')}</p>
+       <p style="margin:0;font-size:12px;color:#64748b;">
+         The link expires in 7 days. If you didn't expect this, ignore the email.
+       </p>`,
+    ),
+  })
+}
+
 export function sendWelcomeClinic(args: { to: string; clinicName: string; ownerName: string; plan: string; slug: string }) {
   return send({
     to: args.to,

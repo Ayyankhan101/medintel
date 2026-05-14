@@ -121,6 +121,24 @@ model Clinic {
   members   User[]   @relation("ClinicMembers")
   doctors   Doctor[]
   usage     ClinicUsage[]
+  invites   ClinicInvite[]
+}
+
+model ClinicInvite {
+  id        String    @id @default(cuid())
+  clinicId  String
+  clinic    Clinic    @relation(fields: [clinicId], references: [id])
+  email     String
+  token     String    @unique
+  // Reserved for future role expansion (DOCTOR, CLINIC_STAFF, etc.)
+  role      String    @default("DOCTOR")
+  expiresAt DateTime
+  acceptedAt DateTime?
+  invitedBy String
+  createdAt DateTime  @default(now())
+
+  @@unique([clinicId, email])
+  @@index([clinicId, createdAt(sort: Desc)])
 }
 
 model ClinicUsage {
