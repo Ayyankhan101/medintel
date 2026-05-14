@@ -15,7 +15,9 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:reset": "prisma migrate reset --force && tsx prisma/seed.ts",
     "eval:triage": "tsx evals/triage/run.ts",
-    "eval:triage:fallback": "tsx evals/triage/fallback.test.ts"
+    "eval:triage:fallback": "tsx evals/triage/fallback.test.ts",
+    "e2e": "playwright test",
+    "e2e:install": "playwright install --with-deps chromium"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
