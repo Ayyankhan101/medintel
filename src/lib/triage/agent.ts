@@ -166,7 +166,9 @@ function deterministicFallback(input: string): TriageOutput {
     'shortness of breath', 'difficulty breathing', 'vomiting blood', 'unable to walk',
     'chest pain', 'chest tightness', 'paralysis', 'extreme pain',
     'wheezing', 'bleeding heavily', 'bleeding for', 'flashing lights', 'sudden blurred',
-    'lethargic', '40 degrees', '39 degrees', 'inhaler isn', 'kidney failure',
+    'lethargic', '40 degrees', '39 degrees', 'inhaler isn',
+    'kidney failure', 'kidneys are failing', 'kidneys failing', 'creatinine',
+    'newborn', 'jaundice', 'eyes look yellow', 'skin looks yellow',
   ]
   const mildWords = ['mild', 'slight', 'minor', 'a little', 'bit of']
 

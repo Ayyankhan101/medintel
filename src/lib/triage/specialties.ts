@@ -60,12 +60,12 @@ export const SPECIALTIES: readonly Specialty[] = [
   {
     name: 'Psychiatry',
     description: 'Mental health — depression, anxiety, panic attacks, sleep disorders, bipolar, addiction.',
-    keywords: ['anxiety', 'depression', 'mental', 'sleep', 'panic', 'bipolar', 'addiction', 'suicidal', 'stress', 'mood'],
+    keywords: ['anxiety', 'anxious', 'depression', 'depressed', 'mental', 'sleep', 'insomnia', 'panic', 'bipolar', 'addiction', 'suicidal', 'stress', 'mood'],
   },
   {
     name: 'Pediatrics',
     description: 'Children under 18 — any complaint where the patient is a child. Vaccinations, growth, childhood infections.',
-    keywords: ['child', 'baby', 'infant', 'kid', 'son', 'daughter', 'newborn', 'paediatric', 'pediatric', 'vaccination'],
+    keywords: ['child', 'children', 'baby', 'infant', 'toddler', 'kid', 'son', 'daughter', 'newborn', 'jaundice', 'paediatric', 'pediatric', 'vaccination', 'months old', 'years old'],
   },
   {
     name: 'Gynecology',
@@ -90,7 +90,7 @@ export const SPECIALTIES: readonly Specialty[] = [
   {
     name: 'Endocrinology',
     description: 'Hormones, diabetes, thyroid — high blood sugar, thyroid issues, weight changes, hormonal imbalance.',
-    keywords: ['diabetes', 'sugar', 'thyroid', 'goitre', 'hormone', 'insulin', 'hba1c', 'hypothyroid', 'hyperthyroid'],
+    keywords: ['diabetes', 'diabetic', 'sugar', 'thyroid', 'goitre', 'goiter', 'hormone', 'hormonal', 'insulin', 'hba1c', 'hypothyroid', 'hyperthyroid', 'cold intolerance', 'unexplained weight gain', 'unexplained weight loss'],
   },
   {
     name: 'Nephrology',
@@ -121,27 +121,69 @@ export function normalizeSpecialty(input: string | null | undefined): string | n
 }
 
 /** Fallback: scan free text for specialty keywords using word-boundary matching
- *  so 2-char keys like "mi", "bp", "tb" don't accidentally match "mild", "back". */
+ *  with light suffix tolerance, negation skip, and length-weighted scoring.
+ *
+ *  Why this is non-trivial:
+ *   - "period" should match "periods" → allow trailing -s/-es/-ing/-ed
+ *   - "numbness" must NOT match "no numbness" → skip when preceded by negation
+ *   - When a long-specific term ("back pain") and a short term ("numbness") tie
+ *     on hit count, the longer/more-specific match should win → score by
+ *     total matched-character length, not raw hit count
+ *   - Vague multi-system complaints route to General Medicine, not the loudest
+ *     single keyword. If 3+ specialties match, fall back to General. */
 const KEYWORD_REGEX_CACHE = new Map<string, RegExp>()
 function keywordRegex(k: string): RegExp {
   let re = KEYWORD_REGEX_CACHE.get(k)
   if (!re) {
     // Escape regex metacharacters, then bracket with word boundaries.
+    // Allow plural / -ing / -ed suffixes so "period" matches "periods",
+    // "kidney" matches "kidneys", "fail" matches "failing".
     const escaped = k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-    re = new RegExp(`\\b${escaped}\\b`, 'i')
+    re = new RegExp(`\\b${escaped}(?:s|es|ing|ed)?\\b`, 'gi')
     KEYWORD_REGEX_CACHE.set(k, re)
   }
   return re
 }
 
+const NEGATION_WINDOW = /\b(no|not|without|never|denies|denying|no signs of)\s+(?:\w+\s+){0,2}$/i
+
+/** Returns the matched keyword length, or 0 if no real match (or if negated). */
+function scoreKeyword(text: string, keyword: string): number {
+  const re = keywordRegex(keyword)
+  re.lastIndex = 0
+  let total = 0
+  let m: RegExpExecArray | null
+  while ((m = re.exec(text)) !== null) {
+    const before = text.slice(0, m.index)
+    if (NEGATION_WINDOW.test(before)) continue
+    total += keyword.length
+  }
+  return total
+}
+
 export function inferSpecialtyFromKeywords(text: string): string {
-  let best: { name: string; hits: number } = { name: 'General Medicine', hits: 0 }
+  const scored: { name: string; score: number }[] = []
   for (const s of SPECIALTIES) {
     if (s.name === 'General Medicine') continue
-    const hits = s.keywords.reduce((n, k) => n + (keywordRegex(k).test(text) ? 1 : 0), 0)
-    if (hits > best.hits) best = { name: s.name, hits }
+    let score = 0
+    for (const k of s.keywords) score += scoreKeyword(text, k)
+    if (score > 0) scored.push({ name: s.name, score })
   }
-  return best.hits > 0 ? best.name : 'General Medicine'
+  if (scored.length === 0) return 'General Medicine'
+  scored.sort((a, b) => b.score - a.score)
+
+  // 1. Clear winner — top score must dominate (≥ 1.5× the runner-up). Otherwise
+  //    the input is ambiguous and the human clinician should triage.
+  if (scored.length === 1) return scored[0].name
+  if (scored[0].score >= scored[1].score * 1.5) return scored[0].name
+
+  // 2. Multi-system complaint: ≥3 specialties competing on similar ground
+  //    → General Medicine handles the initial visit.
+  if (scored.length >= 3) return 'General Medicine'
+
+  // 3. Close 2-way tie: pick the longer-match specialty (already sorted by
+  //    score which is length-weighted, so this is just the top).
+  return scored[0].name
 }
 
 /** Human-readable list for prompts. */
