@@ -51,7 +51,7 @@ function BookingContent() {
       const raw  = await res.text()
       const data = raw ? JSON.parse(raw) : {}
       if (!res.ok) throw new Error(data.error ?? 'Booking failed')
-      router.push(`/consultation/${data.appointmentId}`)
+      router.push(`/booking/${data.appointmentId}`)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Booking failed')
       setBooking(false)

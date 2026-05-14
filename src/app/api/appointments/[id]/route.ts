@@ -18,8 +18,8 @@ export async function GET(
   const appointment = await prisma.appointment.findUnique({
     where:   { id },
     include: {
-      doctor:  { include: { user: { select: { email: true, medIntelCode: true } } } },
-      patient: { include: { user: { select: { email: true, medIntelCode: true } } } },
+      doctor:  { include: { user: { select: { name: true, email: true, medIntelCode: true } } } },
+      patient: { include: { user: { select: { name: true, email: true, medIntelCode: true } } } },
       escrow:  true,
     },
   })
