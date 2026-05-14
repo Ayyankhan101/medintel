@@ -1,5 +1,7 @@
 import OpenAI from 'openai'
 import type { TriageResult } from '@/types'
+import { runTriageAgent } from './triage/agent'
+import { inferSpecialtyFromKeywords } from './triage/specialties'
 
 let _client: OpenAI | null = null
 function getClient(): OpenAI {
@@ -28,11 +30,8 @@ const DEPARTMENT_KEYWORDS: Record<string, string[]> = {
 }
 
 export function parseDepartmentFromSummary(text: string): string {
-  const lower = text.toLowerCase()
-  for (const [dept, keywords] of Object.entries(DEPARTMENT_KEYWORDS)) {
-    if (keywords.some(kw => lower.includes(kw))) return dept
-  }
-  return 'General Medicine'
+  // Delegate to the canonical specialty registry — same logic, single source.
+  return inferSpecialtyFromKeywords(text)
 }
 
 export function parseSeverityFromText(text: string): number {
@@ -141,21 +140,27 @@ export async function runFullIntakePipeline(
   language = 'ur',
 ): Promise<TriageResult & { transcript: string; summary: string }> {
   const transcript = await transcribeAudio(audioBuffer, filename, language)
-  const { structured, department, severityScore } = await generateMedicalSummary(transcript)
-
-  const summary       = (structured.medicalTermSummary as string) ?? transcript
-  const severityLevel = severityScore <= 4 ? 'ROUTINE' : severityScore <= 7 ? 'URGENT' : 'CRITICAL'
-
-  return { transcript, summary, department, severityScore, severityLevel, isEmergency: severityScore >= 8 }
+  const { output } = await runTriageAgent(transcript)
+  return {
+    transcript,
+    summary:       output.medicalTermSummary,
+    department:    output.specialty,
+    severityScore: output.severityScore,
+    severityLevel: output.severityLevel,
+    isEmergency:   output.severityScore >= 8,
+  }
 }
 
 export async function runTextIntakePipeline(
-  text: string
+  text: string,
 ): Promise<TriageResult & { transcript: string; summary: string }> {
-  const { structured, department, severityScore } = await generateMedicalSummary(text)
-
-  const summary       = (structured.medicalTermSummary as string) ?? text
-  const severityLevel = severityScore <= 4 ? 'ROUTINE' : severityScore <= 7 ? 'URGENT' : 'CRITICAL'
-
-  return { transcript: text, summary, department, severityScore, severityLevel, isEmergency: severityScore >= 8 }
+  const { output } = await runTriageAgent(text)
+  return {
+    transcript:    text,
+    summary:       output.medicalTermSummary,
+    department:    output.specialty,
+    severityScore: output.severityScore,
+    severityLevel: output.severityLevel,
+    isEmergency:   output.severityScore >= 8,
+  }
 }

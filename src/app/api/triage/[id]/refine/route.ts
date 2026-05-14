@@ -4,6 +4,7 @@ import { SeverityLevel } from '@prisma/client'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { parseDepartmentFromSummary, parseSeverityFromText } from '@/lib/openai'
+import { normalizeSpecialty, SPECIALTY_NAMES } from '@/lib/triage/specialties'
 
 const MAX_BYTES = 8 * 1024 * 1024  // 8 MB per image
 const MAX_FILES = 3
@@ -49,7 +50,7 @@ Return ONLY valid JSON in this exact shape (no markdown, no commentary):
   "updatedSummary": "professional clinical summary combining original complaint + new findings, 3-5 sentences",
   "urgencyFlags": ["any new red flags surfaced by these documents"],
   "severityScore": <integer 1-10>,
-  "department": "one of: General Medicine, Cardiology, Neurology, Pulmonology, Gastroenterology, Orthopedics, Dermatology, Psychiatry, Endocrinology, Nephrology, Oncology, Emergency Medicine"
+  "department": "one of: ${SPECIALTY_NAMES.join(', ')}"
 }
 
 Scoring guide:
@@ -151,8 +152,9 @@ export async function POST(
                                      : severityScore <= 7 ? 'URGENT'
                                      : 'CRITICAL'
 
-  const aiDept    = typeof structured.department === 'string' ? structured.department.trim() : ''
-  const department = aiDept || parseDepartmentFromSummary(triage.transcript + ' ' + ((structured.updatedSummary as string) ?? ''))
+  const aiDeptRaw = typeof structured.department === 'string' ? structured.department.trim() : ''
+  const department = normalizeSpecialty(aiDeptRaw)
+                  ?? parseDepartmentFromSummary(triage.transcript + ' ' + ((structured.updatedSummary as string) ?? ''))
 
   const updatedSummary = (structured.updatedSummary as string) ?? triage.summary
   const findings = (structured.extractedFindings as string) ?? ''

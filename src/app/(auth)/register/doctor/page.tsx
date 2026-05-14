@@ -6,13 +6,9 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import Link from 'next/link'
 import { Stethoscope, Loader2, AlertCircle, ShieldCheck } from 'lucide-react'
+import { SPECIALTY_NAMES } from '@/lib/triage/specialties'
 
-const SPECIALTIES = [
-  'General Medicine', 'Cardiology', 'Neurology', 'Pulmonology',
-  'Gastroenterology', 'Orthopedics', 'Dermatology', 'Psychiatry',
-  'Pediatrics', 'Gynecology', 'ENT', 'Urology', 'Ophthalmology',
-  'Endocrinology', 'Nephrology', 'Oncology', 'Emergency Medicine',
-]
+const SPECIALTIES = SPECIALTY_NAMES
 
 const schema = z.object({
   fullName:        z.string().min(2,  'Full name required'),
