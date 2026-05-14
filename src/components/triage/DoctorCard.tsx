@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { Star, ShieldCheck, Clock, ArrowRight } from 'lucide-react'
 
 interface Doctor {
@@ -68,8 +69,13 @@ export function DoctorCard({ doctor, onBook }: Props) {
           )}
         </div>
       </div>
-      <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
-        <p className="text-xs text-slate-400">{doctor.user.email}</p>
+      <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between gap-2">
+        <Link
+          href={`/doctors/${doctor.id}`}
+          className="text-xs font-medium text-slate-500 hover:text-blue-600"
+        >
+          View profile →
+        </Link>
         <button
           onClick={() => onBook(doctor.id)}
           className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl transition-colors group-hover:shadow-md"

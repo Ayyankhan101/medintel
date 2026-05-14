@@ -8,7 +8,7 @@ export async function GET(
   const { id } = await params
   const doctor = await prisma.doctor.findUnique({
     where:   { id },
-    include: { user: { select: { email: true } } },
+    include: { user: { select: { name: true, email: true } } },
   })
   if (!doctor) return NextResponse.json({ error: 'Doctor not found' }, { status: 404 })
   return NextResponse.json(doctor)
