@@ -57,3 +57,6 @@ env.txt
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+
+# API inventory (shareable doc, not for repo)
+APIS.txt
