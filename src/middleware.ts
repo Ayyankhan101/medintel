@@ -18,7 +18,7 @@ export default auth(req => {
   const path = nextUrl.pathname
 
   // Skip Next.js internals + static assets up front (matcher already does most of this).
-  if (path.startsWith('/_next') || path.startsWith('/api/auth')) return NextResponse.next()
+  if (path.startsWith('/_next') || path.startsWith('/api/auth') || path.startsWith('/monitoring')) return NextResponse.next()
 
   const isLoggedIn = !!req.auth?.user
   const role       = req.auth?.user?.role as 'PATIENT' | 'DOCTOR' | 'ADMIN' | undefined

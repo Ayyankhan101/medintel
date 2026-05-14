@@ -183,6 +183,8 @@ In **Settings → Environment Variables**, set these for *Production* (and *Prev
 | `MOCK_KYC` | `true` (only for demo — see "Going to real production") |
 | `RESEND_API_KEY` | Optional — from <https://resend.com>. Without it, email notifications are silent no-ops. |
 | `RESEND_FROM` | Optional — e.g. `MedIntel <noreply@yourdomain.com>` (must be a verified Resend sending domain). Defaults to the `onboarding@resend.dev` sandbox sender. |
+| `SENTRY_DSN` / `NEXT_PUBLIC_SENTRY_DSN` | Optional — error tracking. No DSN = no-op. |
+| `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_AUTH_TOKEN` | Optional — enables source-map upload at build time. Skip to avoid build noise. |
 
 `DATABASE_URL` is already set by the Neon integration.
 
