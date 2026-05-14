@@ -109,6 +109,12 @@ model Clinic {
   voiceNumber     String?
   brandColor      String?
   active          Boolean    @default(true)
+
+  // Stripe subscription
+  stripeCustomerId     String?   @unique
+  stripeSubscriptionId String?   @unique
+  currentPeriodEnd     DateTime?
+
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
 

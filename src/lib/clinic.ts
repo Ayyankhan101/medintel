@@ -11,10 +11,31 @@ import { prisma } from './prisma'
 
 export type Channel = 'whatsapp' | 'voice' | 'web' | 'scribe'
 
-export const PLAN_QUOTA: Record<'STARTER' | 'STANDARD' | 'ENTERPRISE', number> = {
+export type Plan = 'STARTER' | 'STANDARD' | 'ENTERPRISE'
+
+export const PLAN_QUOTA: Record<Plan, number> = {
   STARTER:    2_000,
   STANDARD:   8_000,
   ENTERPRISE: 25_000,
+}
+
+/**
+ * Stripe price IDs per plan. Set in env when each plan's Price is
+ * created in the Stripe dashboard. ENTERPRISE is intentionally not
+ * self-serve — falls back to a sales contact.
+ */
+export const PLAN_PRICE_ID: Record<Plan, string | undefined> = {
+  STARTER:    process.env.STRIPE_PRICE_STARTER,
+  STANDARD:   process.env.STRIPE_PRICE_STANDARD,
+  ENTERPRISE: process.env.STRIPE_PRICE_ENTERPRISE,
+}
+
+export function planFromPriceId(priceId: string | null | undefined): Plan | null {
+  if (!priceId) return null
+  for (const [plan, id] of Object.entries(PLAN_PRICE_ID)) {
+    if (id === priceId) return plan as Plan
+  }
+  return null
 }
 
 export async function meter(
