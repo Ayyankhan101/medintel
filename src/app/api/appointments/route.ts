@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { sendBookingConfirmation, sendDoctorNewBooking } from '@/lib/email'
 
 const createSchema = z.object({
   scheduledAt: z.string().datetime(),
@@ -55,7 +56,33 @@ export async function POST(req: NextRequest) {
         } : {}),
         ...(doctorId ? { doctor: { connect: { id: doctorId } } } : {}),
       },
+      include: {
+        patient: { include: { user: true } },
+        doctor:  { include: { user: true } },
+      },
     })
+
+    if (appointment.doctor && appointment.patient.user.email) {
+      void sendBookingConfirmation({
+        to:            appointment.patient.user.email,
+        patientName:   appointment.patient.user.name ?? 'there',
+        doctorName:    appointment.doctor.user.name ?? 'your doctor',
+        specialty:     appointment.doctor.specialization,
+        scheduledAt:   appointment.scheduledAt,
+        appointmentId: appointment.id,
+      })
+    }
+    if (appointment.doctor?.user.email) {
+      void sendDoctorNewBooking({
+        to:            appointment.doctor.user.email,
+        doctorName:    appointment.doctor.user.name ?? 'Doctor',
+        patientCode:   appointment.patient.user.medIntelCode ?? appointment.patient.user.email,
+        scheduledAt:   appointment.scheduledAt,
+        severityLevel: appointment.severityLevel ?? 'ROUTINE',
+        appointmentId: appointment.id,
+      })
+    }
+
     return NextResponse.json({ appointmentId: appointment.id }, { status: 201 })
   } catch (e) {
     console.error('[appointments POST]', e)

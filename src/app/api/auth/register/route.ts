@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
 import { verifyPatientCNIC, generateMedIntelCode } from '@/lib/kyc'
 import { rateLimit } from '@/lib/rate-limit'
+import { sendWelcomePatient, sendWelcomeDoctor } from '@/lib/email'
 
 const patientSchema = z.object({
   role:        z.literal('PATIENT').default('PATIENT'),
@@ -86,6 +87,8 @@ export async function POST(req: NextRequest) {
       },
     })
 
+    void sendWelcomeDoctor({ to: d.email, name: d.fullName })
+
     return NextResponse.json(
       { message: 'Doctor account created. Connect Stripe to start accepting patients.', userId: user.id },
       { status: 201 },
@@ -124,6 +127,8 @@ export async function POST(req: NextRequest) {
       patient: { create: { dateOfBirth: new Date(p.dateOfBirth) } },
     },
   })
+
+  void sendWelcomePatient({ to: user.email, name: user.name ?? p.fullName, medIntelCode: user.medIntelCode! })
 
   return NextResponse.json(
     { message: 'Account created', medIntelCode: user.medIntelCode },

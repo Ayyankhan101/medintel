@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { releaseEscrowToDoctor } from '@/lib/stripe'
+import { sendPrescriptionReady, sendEscrowReleased } from '@/lib/email'
 
 const schema = z.object({
   appointmentId:    z.string().min(1),
@@ -24,7 +25,7 @@ export async function POST(req: NextRequest) {
     include: {
       escrow:  true,
       doctor:  { include: { user: true } },
-      patient: true,
+      patient: { include: { user: true } },
     },
   })
 
@@ -71,6 +72,24 @@ export async function POST(req: NextRequest) {
         data:  { status: 'COMPLETED', completedAt: new Date() },
       }),
     ])
+  }
+
+  // Fire-and-forget notifications. Never block the response on email.
+  if (appointment.patient.user.email) {
+    void sendPrescriptionReady({
+      to:            appointment.patient.user.email,
+      patientName:   appointment.patient.user.name ?? 'there',
+      doctorName:    appointment.doctor.user.name ?? 'your doctor',
+      appointmentId: appointment.id,
+    })
+  }
+  if (appointment.escrow?.status === 'HELD' && appointment.doctor.stripeAccountId && appointment.doctor.user.email) {
+    void sendEscrowReleased({
+      to:            appointment.doctor.user.email,
+      doctorName:    appointment.doctor.user.name ?? 'Doctor',
+      amount:        Number(appointment.escrow.amount),
+      appointmentId: appointment.id,
+    })
   }
 
   return NextResponse.json({ message: 'Prescription saved and payment released' })

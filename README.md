@@ -181,6 +181,8 @@ In **Settings → Environment Variables**, set these for *Production* (and *Prev
 | `AUTH_TRUST_HOST` | `true` |
 | `GROQ_API_KEY` | From <https://console.groq.com> |
 | `MOCK_KYC` | `true` (only for demo — see "Going to real production") |
+| `RESEND_API_KEY` | Optional — from <https://resend.com>. Without it, email notifications are silent no-ops. |
+| `RESEND_FROM` | Optional — e.g. `MedIntel <noreply@yourdomain.com>` (must be a verified Resend sending domain). Defaults to the `onboarding@resend.dev` sandbox sender. |
 
 `DATABASE_URL` is already set by the Neon integration.
 
