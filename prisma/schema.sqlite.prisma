@@ -138,11 +138,31 @@ model Appointment {
   prescriptionText String?
 
   escrow    Escrow?
+  note      ConsultationNote?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([patientId])
   @@index([doctorId])
+}
+
+model ConsultationNote {
+  id            String      @id @default(cuid())
+  appointmentId String      @unique
+  appointment   Appointment @relation(fields: [appointmentId], references: [id])
+  transcript    String
+  subjective    String
+  objective     String
+  assessment    String
+  plan          String
+  // JSON-encoded string[] (SQLite has no array)
+  icdHints      String      @default("[]")
+  language      String      @default("en")
+  modelUsed     String?
+  approvedAt    DateTime?
+  approvedBy    String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
 }
 
 model Escrow {

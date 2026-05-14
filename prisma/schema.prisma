@@ -184,11 +184,30 @@ model Appointment {
   prescriptionText String?  @db.Text
 
   escrow    Escrow?
+  note      ConsultationNote?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([patientId])
   @@index([doctorId])
+}
+
+model ConsultationNote {
+  id            String      @id @default(cuid())
+  appointmentId String      @unique
+  appointment   Appointment @relation(fields: [appointmentId], references: [id])
+  transcript    String      @db.Text
+  subjective    String      @db.Text
+  objective     String      @db.Text
+  assessment    String      @db.Text
+  plan          String      @db.Text
+  icdHints      String[]
+  language      String      @default("en")
+  modelUsed     String?
+  approvedAt    DateTime?
+  approvedBy    String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
 }
 
 model Escrow {
