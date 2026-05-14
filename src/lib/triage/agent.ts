@@ -15,7 +15,6 @@
 import OpenAI from 'openai'
 import { z } from 'zod'
 import {
-  SPECIALTIES,
   SPECIALTY_NAMES,
   normalizeSpecialty,
   inferSpecialtyFromKeywords,

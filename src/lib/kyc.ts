@@ -1,8 +1,13 @@
+import { randomBytes } from 'node:crypto'
 import type { KYCVerifyRequest, KYCVerifyResponse } from '@/types'
 
+const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789' // no 0/O/1/I — Crockford-ish, easy to read
+
 export function generateMedIntelCode(): string {
-  const suffix = Math.floor(1000 + Math.random() * 9000)
-  return `MED-PK-${suffix}`
+  const bytes = randomBytes(6)
+  let out = ''
+  for (const b of bytes) out += ALPHABET[b % ALPHABET.length]
+  return `MED-PK-${out.slice(0, 3)}-${out.slice(3, 6)}`
 }
 
 function isValidCNIC(cnic: string): boolean {

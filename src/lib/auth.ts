@@ -38,9 +38,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   callbacks: {
     jwt({ token, user }) {
       if (user) {
-        token.role = (user as any).role
-        token.medIntelCode = (user as any).medIntelCode
-        token.kycStatus = (user as any).kycStatus
+        token.role = user.role
+        token.medIntelCode = user.medIntelCode
+        token.kycStatus = user.kycStatus
       }
       return token
     },

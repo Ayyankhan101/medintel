@@ -8,7 +8,7 @@ const schema = z.object({ appointmentId: z.string().min(1) })
 
 export async function POST(req: NextRequest) {
   const session = await auth()
-  if (!session?.user || (session.user as any).role !== 'DOCTOR')
+  if (!session?.user || session.user.role !== 'DOCTOR')
     return NextResponse.json({ error: 'Only doctors can release escrow' }, { status: 403 })
 
   const body   = await req.json()

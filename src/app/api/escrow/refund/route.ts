@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Appointment not found' }, { status: 404 })
 
   const isPatient = appointment.patient.user.id === session.user.id
-  const isAdmin   = (session.user as any).role === 'ADMIN'
+  const isAdmin   = session.user.role === 'ADMIN'
   if (!isPatient && !isAdmin)
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   if (!appointment.escrow || appointment.escrow.status !== 'HELD')

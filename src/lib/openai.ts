@@ -18,17 +18,6 @@ function getClient(): OpenAI {
 const CHAT_MODEL      = process.env.GROQ_API_KEY ? 'llama-3.3-70b-versatile' : 'gpt-4o'
 const WHISPER_MODEL   = process.env.GROQ_API_KEY ? 'whisper-large-v3'        : 'whisper-1'
 
-const DEPARTMENT_KEYWORDS: Record<string, string[]> = {
-  Cardiology:       ['chest', 'heart', 'pulse', 'troponin', 'palpitation', 'diaphoresis'],
-  Neurology:        ['brain', 'numbness', 'seizure', 'headache', 'migraine', 'stroke', 'dizziness', 'confusion'],
-  Orthopedics:      ['bone', 'joint', 'fracture', 'back pain', 'knee', 'shoulder'],
-  Gastroenterology: ['stomach', 'abdomen', 'nausea', 'vomiting', 'diarrhea', 'liver'],
-  Pulmonology:      ['lung', 'breath', 'breathing', 'shortness of breath', 'asthma', 'wheezing', 'respiratory'],
-  Dermatology:      ['skin', 'rash', 'itching', 'eczema'],
-  Psychiatry:          ['anxiety', 'depression', 'mental', 'sleep', 'panic'],
-  'Emergency Medicine': ['emergency', 'life-threatening', 'critical', 'anaphylaxis', 'overdose'],
-}
-
 export function parseDepartmentFromSummary(text: string): string {
   // Delegate to the canonical specialty registry — same logic, single source.
   return inferSpecialtyFromKeywords(text)

@@ -1,6 +1,9 @@
 import 'next-auth'
 import 'next-auth/jwt'
 
+type Role = 'PATIENT' | 'DOCTOR' | 'ADMIN'
+type KycStatus = 'PENDING' | 'VERIFIED' | 'REJECTED'
+
 declare module 'next-auth' {
   interface Session {
     user: {
@@ -8,23 +11,23 @@ declare module 'next-auth' {
       email: string
       name?: string | null
       image?: string | null
-      role: string
+      role: Role
       medIntelCode: string
-      kycStatus: string
+      kycStatus: KycStatus
     }
   }
 
   interface User {
-    role: string
+    role: Role
     medIntelCode: string
-    kycStatus: string
+    kycStatus: KycStatus
   }
 }
 
 declare module 'next-auth/jwt' {
   interface JWT {
-    role: string
+    role: Role
     medIntelCode: string
-    kycStatus: string
+    kycStatus: KycStatus
   }
 }

@@ -5,7 +5,7 @@ import { getStripe } from '@/lib/stripe'
 
 export async function POST(req: NextRequest) {
   const session = await auth()
-  if (!session?.user || (session.user as any).role !== 'DOCTOR')
+  if (!session?.user || session.user.role !== 'DOCTOR')
     return NextResponse.json({ error: 'Doctors only' }, { status: 403 })
 
   const doctor = await prisma.doctor.findFirst({

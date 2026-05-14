@@ -25,7 +25,7 @@ export async function GET(
 
   const isPatient = appointment.patient.user.email === session.user.email
   const isDoctor  = appointment.doctor?.user.email  === session.user.email
-  const isAdmin   = (session.user as any).role === 'ADMIN'
+  const isAdmin   = session.user.role === 'ADMIN'
 
   if (!isPatient && !isDoctor && !isAdmin)
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })

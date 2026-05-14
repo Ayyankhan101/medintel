@@ -39,6 +39,23 @@ interface PatientHistory {
 
 type DoctorPhase = 'loading' | 'pre' | 'call' | 'prescription' | 'done'
 
+function HistoryGroup({ label, color, icon, records }: { label: string; color: string; icon: string; records: PatientHistoryRecord[] }) {
+  if (records.length === 0) return null
+  return (
+    <div>
+      <p className={`text-xs font-bold uppercase tracking-wider ${color} mb-1.5`}>{icon} {label}</p>
+      <ul className="space-y-1 text-sm">
+        {records.map(r => (
+          <li key={r.id} className="text-slate-700 dark:text-slate-200">
+            <span className="font-medium">{r.title}</span>
+            {r.content && <span className="text-slate-500 dark:text-slate-400"> — {r.content}</span>}
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
 function DoctorConsultation({ appointmentId }: { appointmentId: string }) {
   const [phase,       setPhase]       = useState<DoctorPhase>('loading')
   const [videoToken,  setVideoToken]  = useState<string | null>(null)
@@ -92,23 +109,6 @@ function DoctorConsultation({ appointmentId }: { appointmentId: string }) {
     appointment?.severityLevel === 'CRITICAL' ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300' :
     appointment?.severityLevel === 'URGENT'   ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300' :
                                                 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300'
-
-  function HistoryGroup({ label, color, icon, records }: { label: string; color: string; icon: string; records: PatientHistoryRecord[] }) {
-    if (records.length === 0) return null
-    return (
-      <div>
-        <p className={`text-xs font-bold uppercase tracking-wider ${color} mb-1.5`}>{icon} {label}</p>
-        <ul className="space-y-1 text-sm">
-          {records.map(r => (
-            <li key={r.id} className="text-slate-700 dark:text-slate-200">
-              <span className="font-medium">{r.title}</span>
-              {r.content && <span className="text-slate-500 dark:text-slate-400"> — {r.content}</span>}
-            </li>
-          ))}
-        </ul>
-      </div>
-    )
-  }
 
   return (
     <div className="max-w-6xl mx-auto p-4">

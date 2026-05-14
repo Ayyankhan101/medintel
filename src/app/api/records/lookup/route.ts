@@ -6,7 +6,7 @@ export async function GET(req: NextRequest) {
   const session = await auth()
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const role = (session.user as any).role
+  const role = session.user.role
   if (role !== 'DOCTOR' && role !== 'ADMIN') {
     return NextResponse.json({ error: 'Only doctors can look up patient records' }, { status: 403 })
   }
