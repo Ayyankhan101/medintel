@@ -22,6 +22,11 @@ model User {
   // kycStatus: PENDING | VERIFIED | REJECTED
   kycStatus     String    @default("PENDING")
   kycVerifiedAt DateTime?
+  emailVerified        DateTime?
+  emailVerifyToken     String?   @unique
+  emailVerifyExpires   DateTime?
+  passwordResetToken   String?   @unique
+  passwordResetExpires DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 

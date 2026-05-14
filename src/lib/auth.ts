@@ -25,6 +25,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const passwordValid = await bcrypt.compare(parsed.data.password, user.passwordHash)
         if (!passwordValid) return null
 
+        // Block login when an email verification is still outstanding.
+        // New signups get a token; legacy/seeded users without one are grandfathered.
+        if (user.emailVerifyToken && !user.emailVerified) {
+          throw new Error('EMAIL_NOT_VERIFIED')
+        }
+
         return {
           id:           user.id,
           email:        user.email,

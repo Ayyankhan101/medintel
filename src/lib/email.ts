@@ -276,6 +276,34 @@ export function sendEscrowReleased(args: {
   })
 }
 
+export function sendVerifyEmail(args: { to: string; name: string; token: string }) {
+  const url = `${APP_URL}/verify-email?token=${encodeURIComponent(args.token)}`
+  return send({
+    to: args.to,
+    subject: 'Verify your MedIntel email',
+    html: layout(
+      'Confirm your email',
+      `<p style="margin:0 0 14px;font-size:14px;line-height:1.6;color:#334155;">Hi ${escapeHtml(args.name)}, tap below to verify your email. The link expires in 24 hours.</p>
+       <p style="margin:0 0 22px;">${button(url, 'Verify email')}</p>
+       <p style="margin:0;font-size:12px;color:#64748b;">If you didn't sign up for MedIntel, ignore this email.</p>`,
+    ),
+  })
+}
+
+export function sendPasswordReset(args: { to: string; name: string; token: string }) {
+  const url = `${APP_URL}/reset-password?token=${encodeURIComponent(args.token)}`
+  return send({
+    to: args.to,
+    subject: 'Reset your MedIntel password',
+    html: layout(
+      'Password reset',
+      `<p style="margin:0 0 14px;font-size:14px;line-height:1.6;color:#334155;">Hi ${escapeHtml(args.name)}, we received a request to reset your password. The link expires in 1 hour.</p>
+       <p style="margin:0 0 22px;">${button(url, 'Reset password')}</p>
+       <p style="margin:0;font-size:12px;color:#64748b;">If you didn't request this, ignore this email — your password won't change.</p>`,
+    ),
+  })
+}
+
 // ── utils ────────────────────────────────────────────────────────────────────
 
 function escapeHtml(s: string): string {

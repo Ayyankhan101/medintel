@@ -71,6 +71,11 @@ model User {
   medIntelCode  String?            @unique
   kycStatus     VerificationStatus @default(PENDING)
   kycVerifiedAt DateTime?
+  emailVerified        DateTime?
+  emailVerifyToken     String?   @unique
+  emailVerifyExpires   DateTime?
+  passwordResetToken   String?   @unique
+  passwordResetExpires DateTime?
   createdAt     DateTime           @default(now())
   updatedAt     DateTime           @updatedAt
 

@@ -4,7 +4,8 @@ import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
 import { verifyPatientCNIC, generateMedIntelCode } from '@/lib/kyc'
 import { rateLimit } from '@/lib/rate-limit'
-import { sendWelcomePatient, sendWelcomeDoctor } from '@/lib/email'
+import { sendWelcomePatient, sendWelcomeDoctor, sendVerifyEmail } from '@/lib/email'
+import { randomToken, EMAIL_VERIFY_TTL_MS } from '@/lib/tokens'
 
 const patientSchema = z.object({
   role:        z.literal('PATIENT').default('PATIENT'),
@@ -58,6 +59,7 @@ export async function POST(req: NextRequest) {
     }
 
     const passwordHash = await bcrypt.hash(d.password, 12)
+    const verifyToken = randomToken()
 
     // KYD lives in lib/kyd.ts — but for MVP we accept the license and mark
     // Tier 1 verified immediately. Tier 2/3 (manual document review,
@@ -72,6 +74,8 @@ export async function POST(req: NextRequest) {
         name:          d.fullName,
         role:          'DOCTOR',
         kycStatus:     'PENDING',
+        emailVerifyToken:   verifyToken,
+        emailVerifyExpires: new Date(Date.now() + EMAIL_VERIFY_TTL_MS),
         doctor: {
           create: {
             licenseNumber:   d.licenseNumber,
@@ -88,9 +92,10 @@ export async function POST(req: NextRequest) {
     })
 
     void sendWelcomeDoctor({ to: d.email, name: d.fullName })
+    void sendVerifyEmail({ to: d.email, name: d.fullName, token: verifyToken })
 
     return NextResponse.json(
-      { message: 'Doctor account created. Connect Stripe to start accepting patients.', userId: user.id },
+      { message: 'Doctor account created. Check your email to verify.', userId: user.id },
       { status: 201 },
     )
   }
@@ -112,6 +117,7 @@ export async function POST(req: NextRequest) {
 
   const passwordHash = await bcrypt.hash(p.password, 12)
   const medIntelCode = kyc.medIntelCode || generateMedIntelCode()
+  const verifyToken = randomToken()
 
   const user = await prisma.user.create({
     data: {
@@ -124,14 +130,17 @@ export async function POST(req: NextRequest) {
       medIntelCode,
       kycStatus:     'VERIFIED',
       kycVerifiedAt: new Date(),
+      emailVerifyToken:   verifyToken,
+      emailVerifyExpires: new Date(Date.now() + EMAIL_VERIFY_TTL_MS),
       patient: { create: { dateOfBirth: new Date(p.dateOfBirth) } },
     },
   })
 
   void sendWelcomePatient({ to: user.email, name: user.name ?? p.fullName, medIntelCode: user.medIntelCode! })
+  void sendVerifyEmail({ to: user.email, name: user.name ?? p.fullName, token: verifyToken })
 
   return NextResponse.json(
-    { message: 'Account created', medIntelCode: user.medIntelCode },
+    { message: 'Account created. Check your email to verify.', medIntelCode: user.medIntelCode },
     { status: 201 },
   )
 }

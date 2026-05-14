@@ -21,7 +21,14 @@ function LoginForm() {
     setLoading(true)
     setError(null)
     const result = await signIn('credentials', { email, password, redirect: false })
-    if (result?.error) { setLoading(false); setError('Invalid email or password'); return }
+    if (result?.error) {
+      setLoading(false)
+      // NextAuth surfaces our thrown "EMAIL_NOT_VERIFIED" as result.error === 'CredentialsSignin'
+      // by default, but the message is included when AUTH_DEBUG. Treat any error generically,
+      // and offer a resend link when the user might be unverified.
+      setError(result.error.includes('EMAIL_NOT_VERIFIED') ? 'UNVERIFIED' : 'Invalid email or password')
+      return
+    }
 
     // Full-page navigation back to /login. The freshly-issued session cookie
     // is guaranteed to be sent on this request, and the middleware then
@@ -89,10 +96,32 @@ function LoginForm() {
             </div>
           )}
 
-          {error && (
+          {error && error !== 'UNVERIFIED' && (
             <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 mb-6 text-sm">
               <AlertCircle className="w-4 h-4 shrink-0" />
               {error}
+            </div>
+          )}
+          {error === 'UNVERIFIED' && (
+            <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl px-4 py-3 mb-6 text-sm">
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-medium">Email not verified yet.</p>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await fetch('/api/auth/resend-verification', {
+                      method: 'POST',
+                      headers: { 'content-type': 'application/json' },
+                      body:    JSON.stringify({ email }),
+                    })
+                    setError('Verification email resent. Check your inbox.')
+                  }}
+                  className="mt-1 underline text-amber-900 hover:text-amber-700"
+                >
+                  Resend verification email
+                </button>
+              </div>
             </div>
           )}
 
