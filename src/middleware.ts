@@ -15,7 +15,7 @@ function startsWithAny(path: string, prefixes: string[]): boolean {
 }
 
 // Dynamic public routes: pattern-match prefixes that take params.
-const PUBLIC_PREFIXES = ['/clinic/invite/']
+const PUBLIC_PREFIXES = ['/clinic/invite/', '/c/', '/api/clinics/']
 
 export default auth(req => {
   const { nextUrl } = req
