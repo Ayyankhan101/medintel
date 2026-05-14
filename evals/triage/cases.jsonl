@@ -35,3 +35,25 @@
 
 {"id":"edge-01-vague","input":"I just don't feel well","expect":{"minSeverity":3,"maxSeverity":6,"specialties":["General Medicine"]}}
 {"id":"edge-02-multi-system","input":"I have a headache, stomach pain, joint pain and fever for 3 days","expect":{"minSeverity":4,"maxSeverity":7,"specialties":["General Medicine","Emergency Medicine"]}}
+
+{"id":"ur-01-chest-pain","input":"میرے سینے میں شدید درد ہے اور سانس لینے میں دشواری ہو رہی ہے","expect":{"minSeverity":7,"maxSeverity":10,"specialties":["Emergency Medicine","Cardiology"],"isEmergency":true},"notes":"Urdu: severe chest pain with breathing difficulty"}
+{"id":"ur-02-fever","input":"مجھے کل سے بخار ہے اور سر درد ہو رہا ہے","expect":{"minSeverity":2,"maxSeverity":5,"specialties":["General Medicine","Neurology"]},"notes":"Urdu: fever since yesterday with headache"}
+{"id":"ur-03-baby-fever","input":"میرے بچے کو تیز بخار ہے اور وہ سست ہے","expect":{"minSeverity":5,"maxSeverity":9,"specialties":["Pediatrics","Emergency Medicine"]},"notes":"Urdu: child with high fever, lethargic"}
+{"id":"ur-04-period","input":"میری ماہواری بے قاعدہ ہو رہی ہے اور درد بہت ہوتا ہے","expect":{"minSeverity":2,"maxSeverity":5,"specialties":["Gynecology"]},"notes":"Urdu: irregular periods with pain"}
+{"id":"ur-05-cant-breathe","input":"میں سانس نہیں لے پا رہا، دم گھٹ رہا ہے","expect":{"minSeverity":8,"maxSeverity":10,"specialties":["Emergency Medicine","Pulmonology"],"isEmergency":true},"notes":"Urdu: cannot breathe, choking"}
+
+{"id":"roman-ur-01-stomach","input":"Pait mein bohat dard ho raha hai aur ulti aa rahi hai","expect":{"minSeverity":3,"maxSeverity":7,"specialties":["Gastroenterology","General Medicine","Emergency Medicine"]},"notes":"Roman Urdu: severe stomach pain with vomiting"}
+{"id":"roman-ur-02-eye","input":"Meri aankh mein dard hai aur dhundla nazar aa raha hai","expect":{"minSeverity":3,"maxSeverity":7,"specialties":["Ophthalmology","General Medicine"]},"notes":"Roman Urdu: eye pain with blurred vision"}
+{"id":"roman-ur-03-chest","input":"Seenay mein dard hai aur paseena bohat aa raha hai","expect":{"minSeverity":7,"maxSeverity":10,"specialties":["Cardiology","Emergency Medicine"]},"notes":"Roman Urdu: chest pain with profuse sweating — classic MI presentation"}
+{"id":"roman-ur-04-skin","input":"Mujhe khujli ho rahi hai aur jild par dane nikal aaye hain","expect":{"minSeverity":1,"maxSeverity":4,"specialties":["Dermatology"]},"notes":"Roman Urdu: itching with rash"}
+
+{"id":"ps-01-fever","input":"زه سخت تبه لرم او سر مې هم درد کوي","expect":{"minSeverity":2,"maxSeverity":5,"specialties":["General Medicine","Neurology"]},"notes":"Pashto: high fever and headache"}
+{"id":"ps-02-chest","input":"زما د سینې درد ډیر سخت دی او سا اخیستل سختیږي","expect":{"minSeverity":7,"maxSeverity":10,"specialties":["Cardiology","Emergency Medicine","Pulmonology"],"isEmergency":true},"notes":"Pashto: severe chest pain with breathing difficulty"}
+
+{"id":"pa-01-back-pain","input":"میری کمر وچ بہت درد ہے اتے ٹرنا مشکل ہو ریا اے","expect":{"minSeverity":3,"maxSeverity":6,"specialties":["Orthopedics","General Medicine"]},"notes":"Punjabi (Shahmukhi): severe back pain, hard to walk"}
+
+{"id":"sd-01-cough","input":"مون کي ڪافي ڏينهن کان کنگھ آھي ۽ سيني ۾ ڪجھ تڪليف به آھي","expect":{"minSeverity":3,"maxSeverity":6,"specialties":["Pulmonology","General Medicine","ENT"]},"notes":"Sindhi: persistent cough with chest discomfort"}
+
+{"id":"mix-01-code-switch","input":"Doctor sahib mujhe chest pain ho raha hai aur saans bhi short ho rahi hai, please help","expect":{"minSeverity":7,"maxSeverity":10,"specialties":["Cardiology","Emergency Medicine","Pulmonology"]},"notes":"Code-switched Urdu+English — extremely common in Pakistan"}
+{"id":"mix-02-typo","input":"i hve sevre stomak pain n vomting since morning, fever bhi hai","expect":{"minSeverity":4,"maxSeverity":8,"specialties":["Gastroenterology","Emergency Medicine","General Medicine"]},"notes":"Typo-heavy mixed input — real-world voice transcription output"}
+{"id":"mix-03-elderly","input":"My father is 75 years old, his sugar level was 380 this morning and he is feeling very weak","expect":{"minSeverity":5,"maxSeverity":9,"specialties":["Endocrinology","Emergency Medicine","General Medicine"]},"notes":"Elderly with hyperglycemia — severity must reflect age"}
