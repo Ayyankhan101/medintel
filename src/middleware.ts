@@ -7,7 +7,8 @@ const PUBLIC_PATHS = ['/', '/login', '/register', '/register/doctor']
 // Role-scoped prefixes.
 const DOCTOR_PREFIXES  = ['/doctor']
 const ADMIN_PREFIXES   = ['/admin']
-const PATIENT_PREFIXES = ['/intake', '/doctors', '/book', '/history', '/resources']
+const CLINIC_PREFIXES  = ['/clinic']
+const PATIENT_PREFIXES = ['/intake', '/doctors', '/book', '/booking', '/history', '/resources']
 
 function startsWithAny(path: string, prefixes: string[]): boolean {
   return prefixes.some(p => path === p || path.startsWith(p + '/'))
@@ -21,13 +22,14 @@ export default auth(req => {
   if (path.startsWith('/_next') || path.startsWith('/api/auth') || path.startsWith('/monitoring')) return NextResponse.next()
 
   const isLoggedIn = !!req.auth?.user
-  const role       = req.auth?.user?.role as 'PATIENT' | 'DOCTOR' | 'ADMIN' | undefined
+  const role       = req.auth?.user?.role as 'PATIENT' | 'DOCTOR' | 'ADMIN' | 'CLINIC_ADMIN' | undefined
 
   // 1. Public routes: if already logged in, push to their home; otherwise let through.
   if (PUBLIC_PATHS.includes(path)) {
     if (isLoggedIn && (path === '/login' || path === '/register')) {
-      const dest = role === 'DOCTOR' ? '/doctor/dashboard'
-                 : role === 'ADMIN'  ? '/admin/dashboard'
+      const dest = role === 'DOCTOR'       ? '/doctor/dashboard'
+                 : role === 'ADMIN'        ? '/admin/dashboard'
+                 : role === 'CLINIC_ADMIN' ? '/clinic/dashboard'
                  : '/intake'
       return NextResponse.redirect(new URL(dest, nextUrl))
     }
@@ -46,6 +48,9 @@ export default auth(req => {
     return NextResponse.redirect(new URL('/intake', nextUrl))
   }
   if (startsWithAny(path, ADMIN_PREFIXES) && role !== 'ADMIN') {
+    return NextResponse.redirect(new URL('/intake', nextUrl))
+  }
+  if (startsWithAny(path, CLINIC_PREFIXES) && role !== 'CLINIC_ADMIN' && role !== 'ADMIN') {
     return NextResponse.redirect(new URL('/intake', nextUrl))
   }
   if (startsWithAny(path, PATIENT_PREFIXES) && role !== 'PATIENT' && role !== 'ADMIN') {

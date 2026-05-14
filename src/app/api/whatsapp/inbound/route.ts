@@ -28,6 +28,8 @@ import twilio from 'twilio'
 import { rateLimit } from '@/lib/rate-limit'
 import { runTriageAgent } from '@/lib/triage/agent'
 import { transcribeAudio } from '@/lib/openai'
+import { prisma } from '@/lib/prisma'
+import { meter, quotaExceeded } from '@/lib/clinic'
 
 export const dynamic = 'force-dynamic'
 
@@ -91,7 +93,16 @@ export async function POST(req: NextRequest) {
   }
 
   const from     = params.From ?? ''
+  const to       = params.To   ?? ''
   const body     = (params.Body ?? '').trim()
+
+  // Match Twilio "To" number against any clinic-owned WhatsApp number.
+  // (Strip the "whatsapp:" prefix Twilio adds.)
+  const waNumber = to.replace(/^whatsapp:/, '')
+  const clinic   = waNumber ? await prisma.clinic.findFirst({ where: { whatsappNumber: waNumber, active: true } }) : null
+  if (clinic && await quotaExceeded(clinic.id)) {
+    return twiml('This clinic has exceeded its monthly quota. Please contact the clinic directly.')
+  }
   const numMedia = parseInt(params.NumMedia ?? '0', 10) || 0
   const mediaUrl = numMedia > 0 ? params.MediaUrl0      : null
   const mediaCt  = numMedia > 0 ? params.MediaContentType0 : ''
@@ -120,6 +131,8 @@ export async function POST(req: NextRequest) {
     const { output } = await runTriageAgent(symptomText)
     const baseUrl = process.env.APP_URL ?? process.env.NEXTAUTH_URL ?? 'https://medintel.app'
     console.info('[wa-inbound]', { from, score: output.severityScore, dept: output.specialty, source: 'triage' })
+
+    if (clinic) void meter(clinic.id, 'whatsapp', 1, { from, score: output.severityScore })
     return twiml(reply({
       severity:   output.severityLevel,
       department: output.specialty,

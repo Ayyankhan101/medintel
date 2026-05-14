@@ -1,7 +1,7 @@
 import 'next-auth'
 import 'next-auth/jwt'
 
-type Role = 'PATIENT' | 'DOCTOR' | 'ADMIN'
+type Role = 'PATIENT' | 'DOCTOR' | 'ADMIN' | 'CLINIC_ADMIN'
 type KycStatus = 'PENDING' | 'VERIFIED' | 'REJECTED'
 
 declare module 'next-auth' {

@@ -17,13 +17,14 @@ import { rateLimit } from '@/lib/rate-limit'
 import { transcribeAudio } from '@/lib/openai'
 import { generateSoapNote } from '@/lib/scribe'
 import { audit } from '@/lib/audit'
+import { meter } from '@/lib/clinic'
 
 export const dynamic = 'force-dynamic'
 
 async function loadGuarded(id: string, email: string, role: string) {
   const appt = await prisma.appointment.findUnique({
     where:   { id },
-    include: { doctor: { include: { user: { select: { id: true, email: true } } } } },
+    include: { doctor: { include: { user: { select: { id: true, email: true } }, clinic: true } } },
   })
   if (!appt)                                                       return { error: 'Not found',  status: 404 } as const
   if (role !== 'ADMIN' && appt.doctor?.user.email !== email)       return { error: 'Forbidden',  status: 403 } as const
@@ -124,6 +125,9 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
     usedFallback,
     transcriptChars: transcript.length,
   })
+  // Bill clinic for scribe minutes (rough heuristic: 150 wpm spoken).
+  const clinicId = appt.doctor?.clinicId ?? null
+  if (clinicId) void meter(clinicId, 'scribe', Math.ceil(transcript.split(/\s+/).length / 150), { appointmentId: id })
 
   return NextResponse.json({ note: saved, usedFallback })
 }

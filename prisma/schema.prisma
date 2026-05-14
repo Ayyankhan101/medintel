@@ -14,6 +14,13 @@ enum UserRole {
   PATIENT
   DOCTOR
   ADMIN
+  CLINIC_ADMIN
+}
+
+enum ClinicPlan {
+  STARTER
+  STANDARD
+  ENTERPRISE
 }
 
 enum VerificationStatus {
@@ -79,9 +86,49 @@ model User {
   createdAt     DateTime           @default(now())
   updatedAt     DateTime           @updatedAt
 
-  patient  Patient?
-  doctor   Doctor?
-  sessions Session[]
+  // CLINIC_ADMIN users belong to one clinic.
+  clinicId String?
+  clinic   Clinic? @relation("ClinicMembers", fields: [clinicId], references: [id])
+
+  patient    Patient?
+  doctor     Doctor?
+  sessions   Session[]
+  ownedClinic Clinic? @relation("ClinicOwner")
+}
+
+model Clinic {
+  id              String     @id @default(cuid())
+  name            String
+  slug            String     @unique
+  ownerUserId     String     @unique
+  owner           User       @relation("ClinicOwner", fields: [ownerUserId], references: [id])
+  plan            ClinicPlan @default(STARTER)
+  minutesQuota    Int        @default(2000)
+  minutesUsed     Int        @default(0)
+  whatsappNumber  String?
+  voiceNumber     String?
+  brandColor      String?
+  active          Boolean    @default(true)
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  members   User[]   @relation("ClinicMembers")
+  doctors   Doctor[]
+  usage     ClinicUsage[]
+}
+
+model ClinicUsage {
+  id        String   @id @default(cuid())
+  clinicId  String
+  clinic    Clinic   @relation(fields: [clinicId], references: [id])
+  // channel: whatsapp | voice | web | scribe
+  channel   String
+  minutes   Int
+  meta      Json?
+  createdAt DateTime @default(now())
+
+  @@index([clinicId, createdAt(sort: Desc)])
+  @@index([clinicId, channel])
 }
 
 model Patient {
@@ -136,7 +183,13 @@ model Doctor {
   // null = always available (the default for newly-onboarded doctors).
   availability Json?
 
+  // Doctor optionally belongs to a clinic (B2B model).
+  clinicId String?
+  clinic   Clinic? @relation(fields: [clinicId], references: [id])
+
   appointments Appointment[]
+
+  @@index([clinicId])
 }
 
 model Session {
