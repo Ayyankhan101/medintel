@@ -2,7 +2,7 @@ import { auth } from '@/lib/auth'
 import { NextResponse } from 'next/server'
 
 // Routes that anyone (even unauthenticated) can hit.
-const PUBLIC_PATHS = ['/', '/login', '/register', '/register/doctor']
+const PUBLIC_PATHS = ['/', '/login', '/register', '/register/doctor', '/clinic/register', '/forgot-password', '/reset-password', '/verify-email']
 
 // Role-scoped prefixes.
 const DOCTOR_PREFIXES  = ['/doctor']

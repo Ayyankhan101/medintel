@@ -276,6 +276,26 @@ export function sendEscrowReleased(args: {
   })
 }
 
+export function sendWelcomeClinic(args: { to: string; clinicName: string; ownerName: string; plan: string; slug: string }) {
+  return send({
+    to: args.to,
+    subject: `Welcome to MedIntel — ${args.clinicName}`,
+    html: layout(
+      `Welcome, ${escapeHtml(args.ownerName)}`,
+      `<p style="margin:0 0 14px;font-size:14px;line-height:1.6;color:#334155;">
+         Your clinic <strong>${escapeHtml(args.clinicName)}</strong> is set up on the
+         <strong>${escapeHtml(args.plan)}</strong> plan. You're the clinic admin — confirm your
+         email to access the dashboard.
+       </p>
+       <p style="margin:0 0 22px;">${button(`${APP_URL}/clinic/dashboard`, 'Open clinic dashboard')}</p>
+       <p style="margin:0;font-size:12px;color:#64748b;">
+         Public slug: <code>/c/${escapeHtml(args.slug)}</code>. To link a WhatsApp or
+         voice number, reply to this email and our team will provision it.
+       </p>`,
+    ),
+  })
+}
+
 export function sendVerifyEmail(args: { to: string; name: string; token: string }) {
   const url = `${APP_URL}/verify-email?token=${encodeURIComponent(args.token)}`
   return send({

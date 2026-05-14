@@ -189,9 +189,14 @@ export default function HomePage() {
             WhatsApp triage, voice booking, AI clinical scribe, and a single dashboard for every minute used.
             From <strong>2,000 minutes / mo</strong> on Starter to <strong>25,000</strong> on Enterprise with SLA.
           </p>
-          <Link href="mailto:partners@medintel.app?subject=MedIntel%20for%20Clinics" className="inline-flex items-center gap-2 px-6 py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-semibold rounded-xl hover:opacity-90 transition-opacity">
-            Talk to our team <ArrowRight className="w-4 h-4" />
-          </Link>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Link href="/clinic/register" className="inline-flex items-center gap-2 px-6 py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-semibold rounded-xl hover:opacity-90 transition-opacity">
+              Create clinic account <ArrowRight className="w-4 h-4" />
+            </Link>
+            <Link href="mailto:partners@medintel.app?subject=MedIntel%20for%20Clinics" className="inline-flex items-center gap-2 px-6 py-3 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-semibold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors">
+              Talk to sales
+            </Link>
+          </div>
         </div>
       </section>
 

@@ -40,6 +40,20 @@ export async function meter(
   }
 }
 
+/**
+ * Slugify a clinic name and append a 4-char random suffix to keep
+ * collisions vanishingly unlikely without a uniqueness loop.
+ */
+export function makeSlug(name: string): string {
+  const base = name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 40) || 'clinic'
+  const suffix = Math.random().toString(36).slice(2, 6)
+  return `${base}-${suffix}`
+}
+
 export async function quotaExceeded(clinicId: string): Promise<boolean> {
   const c = await prisma.clinic.findUnique({ where: { id: clinicId }, select: { minutesUsed: true, minutesQuota: true, active: true } })
   if (!c || !c.active) return true
