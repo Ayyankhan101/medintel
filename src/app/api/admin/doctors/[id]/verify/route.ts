@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { sendDoctorVerificationDecision } from '@/lib/email'
+import { audit } from '@/lib/audit'
 
 const schema = z.discriminatedUnion('decision', [
   z.object({ decision: z.literal('approve'),  trustBadge: z.boolean().optional() }),
@@ -38,6 +39,10 @@ export async function POST(
         trustBadge:   parsed.data.trustBadge ?? doctor.trustBadge,
       },
     })
+    await audit('kyd.approve', 'Doctor', id, {
+      actorId: session.user.id, actorRole: 'ADMIN',
+      trustBadge: parsed.data.trustBadge ?? false,
+    })
     void sendDoctorVerificationDecision({
       to:         doctor.user.email,
       doctorName: doctor.user.name ?? 'Doctor',
@@ -50,6 +55,10 @@ export async function POST(
   const updated = await prisma.doctor.update({
     where: { id },
     data:  { kydStatus: 'REJECTED' },
+  })
+  await audit('kyd.reject', 'Doctor', id, {
+    actorId: session.user.id, actorRole: 'ADMIN',
+    reason: parsed.data.reason,
   })
   void sendDoctorVerificationDecision({
     to:         doctor.user.email,

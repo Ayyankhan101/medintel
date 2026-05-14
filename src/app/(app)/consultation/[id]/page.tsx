@@ -82,6 +82,19 @@ function DoctorConsultation({ appointmentId }: { appointmentId: string }) {
   async function joinCall() {
     setError('')
     try {
+      // Flip status SCHEDULED -> IN_PROGRESS the moment the doctor commits to
+      // joining. Patient-side polling can use this to know the doctor's here.
+      // Server enforces 'only when SCHEDULED'; we ignore the 409 case (already
+      // started — e.g. dropped reconnect) and continue.
+      const statusRes = await fetch(`/api/appointments/${appointmentId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'start' }),
+      })
+      if (!statusRes.ok && statusRes.status !== 409) {
+        const err = await statusRes.json()
+        throw new Error(err.error ?? 'Could not start consultation')
+      }
       const res  = await fetch('/api/consultation/token', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -94,6 +107,22 @@ function DoctorConsultation({ appointmentId }: { appointmentId: string }) {
       setPhase('call')
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not connect to call')
+    }
+  }
+
+  async function completeWithoutRx() {
+    if (!confirm('End this consultation WITHOUT issuing a prescription? The patient will not be billed and any held payment can be refunded.')) return
+    setError('')
+    try {
+      const res = await fetch(`/api/appointments/${appointmentId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'complete' }),
+      })
+      if (!res.ok) throw new Error((await res.json()).error ?? `HTTP ${res.status}`)
+      setPhase('done')
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not mark complete')
     }
   }
 
@@ -150,7 +179,15 @@ function DoctorConsultation({ appointmentId }: { appointmentId: string }) {
       )}
 
       {phase === 'prescription' && (
-        <PrescriptionUploader appointmentId={appointmentId} onUploaded={() => setPhase('done')} />
+        <div className="space-y-3">
+          <PrescriptionUploader appointmentId={appointmentId} onUploaded={() => setPhase('done')} />
+          <button
+            onClick={completeWithoutRx}
+            className="w-full text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 underline"
+          >
+            End without prescription (no charge)
+          </button>
+        </div>
       )}
 
       {phase === 'done' && (

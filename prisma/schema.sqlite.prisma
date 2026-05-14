@@ -79,6 +79,8 @@ model Doctor {
   trustBadge      Boolean   @default(false)
   rating          Decimal?
   reviewCount     Int       @default(0)
+  // JSON string: { days: [1..7], startHour, endHour, timezone }
+  availability    String?
 
   appointments Appointment[]
 }
@@ -150,6 +152,21 @@ model Escrow {
   heldAt                DateTime  @default(now())
   releasedAt            DateTime?
   refundedAt            DateTime?
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  actorRole  String?
+  action     String
+  entityType String
+  entityId   String
+  metadata   String?  // JSON-stringified for sqlite
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId, createdAt])
+  @@index([actorId, createdAt])
+  @@index([action, createdAt])
 }
 
 model MedicalResource {

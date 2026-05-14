@@ -1,0 +1,91 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+# Cancel older runs of the same branch when a new commit lands.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Prisma client needs a URL to generate; the value never gets connected to.
+  DATABASE_URL: postgres://placeholder:placeholder@localhost:5432/placeholder
+
+jobs:
+  typecheck-lint:
+    name: Type check + lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npm run lint
+        continue-on-error: true   # lint is advisory until the React 19 set-state-in-effect warnings are refactored
+
+  triage-fallback:
+    name: Triage fallback eval (offline)
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Run fallback test
+        run: npm run eval:triage:fallback
+
+  # Optional: live triage eval, gated by a label so we don't burn Groq tokens
+  # on every PR. Apply the 'run-triage-eval' label to trigger.
+  triage-live:
+    name: Triage live eval (LLM)
+    if: contains(github.event.pull_request.labels.*.name, 'run-triage-eval')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Run triage eval
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          EVAL_CONCURRENCY: '1'
+          EVAL_PASS_THRESHOLD: '0.80'
+        run: npm run eval:triage

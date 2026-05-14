@@ -30,6 +30,24 @@ enum AppointmentStatus {
   REFUNDED
 }
 
+/// Audit trail for security-sensitive actions: escrow release/refund,
+/// prescription upload, KYC/KYD outcomes, doctor verification decisions,
+/// appointment cancellations. Required for dispute resolution.
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?           // user.id of whoever performed the action; null = system
+  actorRole  String?           // PATIENT | DOCTOR | ADMIN | SYSTEM
+  action     String            // e.g. "escrow.release", "kyd.approve"
+  entityType String            // e.g. "Appointment", "Doctor"
+  entityId   String
+  metadata   Json?             // small structured context (amounts, reason, IP)
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId, createdAt(sort: Desc)])
+  @@index([actorId, createdAt(sort: Desc)])
+  @@index([action, createdAt(sort: Desc)])
+}
+
 enum SeverityLevel {
   ROUTINE
   URGENT
@@ -108,6 +126,10 @@ model Doctor {
   trustBadge      Boolean            @default(false)
   rating          Decimal?           @db.Decimal(3, 2)
   reviewCount     Int                @default(0)
+
+  // Availability — { days: [1..7 mon-sun], startHour: 0-23, endHour: 1-24, timezone: 'Asia/Karachi' }
+  // null = always available (the default for newly-onboarded doctors).
+  availability Json?
 
   appointments Appointment[]
 }

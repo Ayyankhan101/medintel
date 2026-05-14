@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { releaseEscrowToDoctor } from '@/lib/stripe'
+import { audit } from '@/lib/audit'
 import { sendPrescriptionReady, sendEscrowReleased } from '@/lib/email'
 
 const schema = z.object({
@@ -72,6 +73,19 @@ export async function POST(req: NextRequest) {
         data:  { status: 'COMPLETED', completedAt: new Date() },
       }),
     ])
+  }
+
+  await audit('prescription.upload', 'Appointment', appointment.id, {
+    actorId: session.user.id, actorRole: 'DOCTOR',
+    appointmentId: appointment.id, patientId: appointment.patientId,
+    hasFile: !!parsed.data.fileUrl,
+  })
+  if (appointment.escrow?.status === 'HELD' && appointment.doctor.stripeAccountId) {
+    await audit('escrow.release', 'Appointment', appointment.id, {
+      actorId: session.user.id, actorRole: 'DOCTOR',
+      amount: Number(appointment.escrow.amount),
+      escrowId: appointment.escrow.id,
+    })
   }
 
   // Fire-and-forget notifications. Never block the response on email.

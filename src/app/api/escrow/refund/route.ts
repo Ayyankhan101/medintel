@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { refundEscrow, isAutoRefundEligible } from '@/lib/stripe'
+import { audit } from '@/lib/audit'
 
 const schema = z.object({ appointmentId: z.string().min(1) })
 
@@ -43,6 +44,12 @@ export async function POST(req: NextRequest) {
       data:  { status: 'REFUNDED' },
     }),
   ])
+
+  await audit('escrow.refund', 'Appointment', appointment.id, {
+    actorId: session.user.id, actorRole: session.user.role,
+    amount: Number(appointment.escrow.amount),
+    escrowId: appointment.escrow.id,
+  })
 
   return NextResponse.json({ message: 'Refund issued to patient' })
 }

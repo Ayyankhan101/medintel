@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { sendBookingConfirmation, sendDoctorNewBooking } from '@/lib/email'
+import { isAvailable, parseAvailability } from '@/lib/availability'
 
 const createSchema = z.object({
   scheduledAt: z.string().datetime(),
@@ -34,11 +35,16 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // If a doctor is supplied, verify they're real, KYD-verified, and have Stripe wired up.
+  // If a doctor is supplied, verify they're real, KYD-verified, have Stripe
+  // wired up, and the requested slot is inside their working window.
   if (doctorId) {
     const doctor = await prisma.doctor.findUnique({ where: { id: doctorId } })
     if (!doctor || doctor.kydStatus !== 'VERIFIED' || !doctor.stripeAccountId) {
       return NextResponse.json({ error: 'Doctor not bookable' }, { status: 422 })
+    }
+    const av = parseAvailability(doctor.availability)
+    if (!isAvailable(av, new Date(scheduledAt))) {
+      return NextResponse.json({ error: 'Selected time is outside the doctor\'s working hours' }, { status: 422 })
     }
   }
 

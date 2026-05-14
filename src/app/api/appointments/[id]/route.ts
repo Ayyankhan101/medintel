@@ -4,6 +4,7 @@ import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { refundEscrow } from '@/lib/stripe'
 import { sendAppointmentCancelled, sendAppointmentRescheduled } from '@/lib/email'
+import { audit } from '@/lib/audit'
 
 export async function GET(
   req: NextRequest,
@@ -43,6 +44,8 @@ const patchSchema = z.union([
   z.object({ doctorId: z.string().min(1) }),
   z.object({ scheduledAt: z.string().datetime() }),
   z.object({ action: z.literal('cancel') }),
+  z.object({ action: z.literal('start') }),     // doctor: SCHEDULED -> IN_PROGRESS
+  z.object({ action: z.literal('complete') }),  // doctor: IN_PROGRESS -> COMPLETED (without Rx; abandoned visit)
 ])
 
 const RESCHEDULE_MIN_LEAD_MS = 30 * 60_000   // can't reschedule into < 30 min
@@ -100,6 +103,10 @@ export async function PATCH(
 
     const oldAt = appointment.scheduledAt
     const updated = await prisma.appointment.update({ where: { id }, data: { scheduledAt: newAt } })
+    await audit('appointment.reschedule', 'Appointment', id, {
+      actorId: session.user.id, actorRole: session.user.role,
+      from: oldAt.toISOString(), to: newAt.toISOString(),
+    })
 
     if (appointment.patient.user.email) {
       void sendAppointmentRescheduled({
@@ -117,6 +124,21 @@ export async function PATCH(
         oldAt, newAt, appointmentId: id,
       })
     }
+    return NextResponse.json(updated)
+  }
+
+  // ── START / COMPLETE (doctor only) ──────────────────────────────────────
+  if ('action' in parsed.data && (parsed.data.action === 'start' || parsed.data.action === 'complete')) {
+    if (!isDoctor && !isAdmin) return NextResponse.json({ error: 'Only the assigned doctor can change consultation status' }, { status: 403 })
+    const want = parsed.data.action
+    if (want === 'start') {
+      if (appointment.status !== 'SCHEDULED') return NextResponse.json({ error: `Cannot start a ${appointment.status.toLowerCase()} consultation` }, { status: 409 })
+      const updated = await prisma.appointment.update({ where: { id }, data: { status: 'IN_PROGRESS' } })
+      return NextResponse.json(updated)
+    }
+    // want === 'complete'
+    if (appointment.status !== 'IN_PROGRESS') return NextResponse.json({ error: 'Only IN_PROGRESS consultations can be completed' }, { status: 409 })
+    const updated = await prisma.appointment.update({ where: { id }, data: { status: 'COMPLETED', completedAt: new Date() } })
     return NextResponse.json(updated)
   }
 
@@ -153,6 +175,10 @@ export async function PATCH(
   })
 
   const refunded = appointment.escrow?.status === 'HELD'
+  await audit('appointment.cancel', 'Appointment', id, {
+    actorId: session.user.id, actorRole: session.user.role,
+    refunded, amount: refunded ? Number(appointment.escrow!.amount) : 0,
+  })
   if (appointment.patient.user.email) {
     void sendAppointmentCancelled({
       to: appointment.patient.user.email,

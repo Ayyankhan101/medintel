@@ -23,6 +23,7 @@ const DOCTOR_LINKS: NavLink[] = [
 const ADMIN_LINKS: NavLink[] = [
   { label: 'Overview', href: '/admin/dashboard' },
   { label: 'Doctors',  href: '/admin/doctors'   },
+  { label: 'Audit',    href: '/admin/audit'     },
 ]
 
 export function Navbar() {
@@ -93,12 +94,16 @@ export function Navbar() {
 
           {role ? (
             <>
-              <div className="hidden sm:flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+              <Link
+                href="/profile"
+                className="hidden sm:flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors"
+                title="Profile"
+              >
                 {role === 'DOCTOR'
                   ? <Stethoscope className="w-3.5 h-3.5" />
                   : <User className="w-3.5 h-3.5" />}
                 <span className="truncate max-w-[120px]">{name}</span>
-              </div>
+              </Link>
               <button
                 onClick={() => signOut({ callbackUrl: '/' })}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950 transition-colors"

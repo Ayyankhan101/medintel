@@ -12,14 +12,6 @@ const RECORD_TYPES = [
   { value: 'CHRONIC_MED',  label: 'Chronic Medication' },
 ]
 
-const MIME_MAP: Record<string, string> = {
-  'image/jpeg': 'image/jpeg',
-  'image/jpg':  'image/jpeg',
-  'image/png':  'image/png',
-  'image/webp': 'image/webp',
-  'application/pdf': 'application/pdf',
-}
-
 interface Props { onUploaded: () => void }
 
 export function RecordUploader({ onUploaded }: Props) {
@@ -35,34 +27,22 @@ export function RecordUploader({ onUploaded }: Props) {
     if (!file || !title) return
     setLoading(true)
     setSaved(false)
-    setStatus('Uploading document...')
+    setStatus('Uploading document…')
 
     try {
-      const contentType = MIME_MAP[file.type] ?? 'image/jpeg'
+      const form = new FormData()
+      form.append('file',  file)
+      form.append('type',  type)
+      form.append('title', title)
 
-      const presignRes = await fetch('/api/voice/presign', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ filename: file.name, contentType }),
-      })
-      const { uploadUrl, s3Key } = await presignRes.json()
-
-      await fetch(uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': contentType } })
-
-      setStatus('Running OCR scan...')
-
-      const scanRes = await fetch('/api/records/scan', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ s3Key, type, title, recordedAt: new Date().toISOString() }),
-      })
-
-      if (!scanRes.ok) {
-        const err = await scanRes.json()
-        throw new Error(err.error ?? 'Scan failed')
+      const res = await fetch('/api/records/upload', { method: 'POST', body: form })
+      if (!res.ok) {
+        const err = await res.json()
+        throw new Error(err.error ?? `Upload failed (HTTP ${res.status})`)
       }
 
       setSaved(true)
+      setStatus('')
       setTitle('')
       setFile(null)
       onUploaded()
@@ -110,7 +90,7 @@ export function RecordUploader({ onUploaded }: Props) {
       </div>
 
       <Button type="submit" disabled={loading || !file || !title} className="w-full">
-        {loading ? status : 'Upload & Scan'}
+        {loading ? (status || 'Uploading…') : 'Upload to vault'}
       </Button>
 
       {saved && (
