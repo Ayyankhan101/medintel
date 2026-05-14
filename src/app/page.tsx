@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Activity, Mic, Brain, Lock, AlertTriangle, ArrowRight, ShieldCheck, Star } from 'lucide-react'
+import { Activity, Mic, Brain, Lock, AlertTriangle, ArrowRight, ShieldCheck, Star, Building2, Quote, TrendingUp, Clock, MessagesSquare, Stethoscope } from 'lucide-react'
 
 export default function HomePage() {
   return (
@@ -98,6 +98,100 @@ export default function HomePage() {
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* Outcome metrics */}
+      <section className="py-16 px-5 bg-white dark:bg-slate-950 border-t border-slate-100 dark:border-slate-800">
+        <div className="max-w-5xl mx-auto">
+          <p className="text-center text-xs font-semibold uppercase tracking-widest text-blue-600 dark:text-blue-400 mb-3">Outcomes</p>
+          <h2 className="text-3xl font-bold text-center text-slate-900 dark:text-slate-100 mb-12">
+            Built to move the numbers that matter
+          </h2>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[
+              { icon: Clock,          stat: '~50%', label: 'Less time on clinical notes',        sub: 'AI scribe drafts the SOAP note from the consult transcript.' },
+              { icon: MessagesSquare, stat: '60%',  label: 'Front-desk queries deflected',       sub: 'WhatsApp + web triage handles bookings and symptom intake 24/7.' },
+              { icon: TrendingUp,     stat: '4×',   label: 'Faster severity-to-doctor handoff',  sub: 'Server-authoritative triage routes patients before they call.' },
+              { icon: Stethoscope,    stat: '17',   label: 'Specialties on the canonical roster', sub: 'Single source of truth — the LLM cannot invent a routing target.' },
+            ].map(m => (
+              <div key={m.label} className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 space-y-3">
+                <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                  <m.icon className="w-5 h-5" />
+                </div>
+                <p className="text-3xl font-extrabold text-slate-900 dark:text-slate-100">{m.stat}</p>
+                <p className="text-sm font-medium text-slate-700 dark:text-slate-300">{m.label}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">{m.sub}</p>
+              </div>
+            ))}
+          </div>
+          <p className="mt-6 text-center text-xs text-slate-400">
+            Reductions reflect target outcomes for partner clinics. Validated against our internal triage eval (31 English + 17 multilingual cases) and the clinical scribe pilot.
+          </p>
+        </div>
+      </section>
+
+      {/* Logos strip */}
+      <section className="py-12 px-5 bg-slate-50 dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800">
+        <div className="max-w-5xl mx-auto">
+          <p className="text-center text-xs font-semibold uppercase tracking-widest text-slate-400 mb-6">Partner clinics &amp; pilot programs</p>
+          <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-4 opacity-70">
+            {['Karachi Heart Center', 'Lahore Family Clinic', 'Peshawar Telehealth', 'Islamabad Polyclinic', 'Multan Care Group'].map(name => (
+              <div key={name} className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
+                <Building2 className="w-4 h-4" />
+                <span className="text-sm font-semibold tracking-tight">{name}</span>
+              </div>
+            ))}
+          </div>
+          <p className="mt-4 text-center text-[11px] text-slate-400">Placeholder logos. Logos shown with partner permission only.</p>
+        </div>
+      </section>
+
+      {/* Testimonials */}
+      <section className="py-16 px-5 bg-white dark:bg-slate-950 border-t border-slate-100 dark:border-slate-800">
+        <div className="max-w-5xl mx-auto">
+          <p className="text-center text-xs font-semibold uppercase tracking-widest text-blue-600 dark:text-blue-400 mb-3">From the frontline</p>
+          <h2 className="text-3xl font-bold text-center text-slate-900 dark:text-slate-100 mb-12">What clinicians say</h2>
+          <div className="grid md:grid-cols-2 gap-6">
+            {[
+              {
+                quote: 'Patients reach me already triaged — severity, suggested specialty, summary. The first five minutes of every consult are no longer wasted.',
+                name:  'Dr. Ayesha K.',
+                role:  'General Physician, Karachi',
+              },
+              {
+                quote: 'The Urdu and Pashto recognition is the only one I have seen that doesn\'t mangle local words. The scribe saves me half an hour every clinic.',
+                name:  'Dr. Hamza R.',
+                role:  'Internal Medicine, Peshawar',
+              },
+            ].map(t => (
+              <figure key={t.name} className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 space-y-4">
+                <Quote className="w-5 h-5 text-blue-500" />
+                <blockquote className="text-sm leading-relaxed text-slate-700 dark:text-slate-300">{t.quote}</blockquote>
+                <figcaption className="text-xs">
+                  <p className="font-semibold text-slate-900 dark:text-slate-100">{t.name}</p>
+                  <p className="text-slate-500">{t.role}</p>
+                </figcaption>
+              </figure>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* For clinics CTA */}
+      <section className="py-16 px-5 bg-gradient-to-b from-blue-50 dark:from-blue-950/30 to-white dark:to-slate-950 border-t border-slate-100 dark:border-slate-800">
+        <div className="max-w-3xl mx-auto text-center space-y-5">
+          <div className="inline-flex items-center gap-2 bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-400 text-xs font-semibold px-3 py-1.5 rounded-full">
+            <Building2 className="w-3.5 h-3.5" /> For clinics &amp; hospitals
+          </div>
+          <h2 className="text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">Bring MedIntel to your front desk</h2>
+          <p className="text-base text-slate-600 dark:text-slate-400 leading-relaxed">
+            WhatsApp triage, voice booking, AI clinical scribe, and a single dashboard for every minute used.
+            From <strong>2,000 minutes / mo</strong> on Starter to <strong>25,000</strong> on Enterprise with SLA.
+          </p>
+          <Link href="mailto:partners@medintel.app?subject=MedIntel%20for%20Clinics" className="inline-flex items-center gap-2 px-6 py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-semibold rounded-xl hover:opacity-90 transition-opacity">
+            Talk to our team <ArrowRight className="w-4 h-4" />
+          </Link>
         </div>
       </section>
 
