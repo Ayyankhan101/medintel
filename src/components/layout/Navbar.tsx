@@ -20,6 +20,11 @@ const DOCTOR_LINKS: NavLink[] = [
   { label: 'Settings',  href: '/doctor/settings'  },
 ]
 
+const ADMIN_LINKS: NavLink[] = [
+  { label: 'Overview', href: '/admin/dashboard' },
+  { label: 'Doctors',  href: '/admin/doctors'   },
+]
+
 export function Navbar() {
   const pathname = usePathname()
   const { theme, toggle } = useTheme()
@@ -37,7 +42,10 @@ export function Navbar() {
       .catch(() => {})
   }, [pathname])
 
-  const links = role === 'DOCTOR' ? DOCTOR_LINKS : role === 'PATIENT' ? PATIENT_LINKS : []
+  const links = role === 'ADMIN'   ? ADMIN_LINKS
+              : role === 'DOCTOR'  ? DOCTOR_LINKS
+              : role === 'PATIENT' ? PATIENT_LINKS
+                                   : []
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm">

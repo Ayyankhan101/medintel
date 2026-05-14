@@ -27,7 +27,7 @@ export default auth(req => {
   if (PUBLIC_PATHS.includes(path)) {
     if (isLoggedIn && (path === '/login' || path === '/register')) {
       const dest = role === 'DOCTOR' ? '/doctor/dashboard'
-                 : role === 'ADMIN'  ? '/admin'
+                 : role === 'ADMIN'  ? '/admin/dashboard'
                  : '/intake'
       return NextResponse.redirect(new URL(dest, nextUrl))
     }

@@ -183,6 +183,80 @@ export function sendPrescriptionReady(args: {
   })
 }
 
+export function sendDoctorVerificationDecision(args: {
+  to: string
+  doctorName: string
+  approved: boolean
+  reason?: string
+}) {
+  if (args.approved) {
+    return send({
+      to: args.to,
+      subject: 'Your MedIntel account is verified',
+      html: layout(
+        'You are verified',
+        `<p style="margin:0 0 14px;font-size:14px;line-height:1.6;color:#334155;">Hi Dr. ${escapeHtml(args.doctorName)},</p>
+         <p style="margin:0 0 14px;font-size:14px;line-height:1.6;color:#334155;">Your PMDC license has been verified and your MedIntel account is now live. Patients can find and book you starting today.</p>
+         <p style="margin:0 0 22px;">${button(`${APP_URL}/doctor/dashboard`, 'Open your dashboard')}</p>`,
+      ),
+    })
+  }
+  return send({
+    to: args.to,
+    subject: 'MedIntel account — verification declined',
+    html: layout(
+      'Verification declined',
+      `<p style="margin:0 0 14px;font-size:14px;line-height:1.6;color:#334155;">Hi Dr. ${escapeHtml(args.doctorName)},</p>
+       <p style="margin:0 0 14px;font-size:14px;line-height:1.6;color:#334155;">We were unable to verify your credentials. Reason:</p>
+       <p style="margin:0 0 14px;font-size:14px;line-height:1.6;color:#334155;background:#fef2f2;border-left:3px solid #dc2626;padding:10px 14px;border-radius:6px;">${escapeHtml(args.reason ?? 'Not specified')}</p>
+       <p style="margin:0 0 14px;font-size:14px;line-height:1.6;color:#334155;">If you believe this is in error or you can provide additional documents, reply to this email to appeal.</p>`,
+    ),
+  })
+}
+
+export function sendAppointmentCancelled(args: {
+  to: string
+  recipientName: string
+  counterpartLabel: string
+  scheduledAt: Date
+  refundIssued: boolean
+}) {
+  const when = formatPK(args.scheduledAt)
+  return send({
+    to: args.to,
+    subject: `Appointment cancelled — ${when}`,
+    html: layout(
+      'Appointment cancelled',
+      `<p style="margin:0 0 14px;font-size:14px;line-height:1.6;color:#334155;">Hi ${escapeHtml(args.recipientName)},</p>
+       <p style="margin:0 0 14px;font-size:14px;line-height:1.6;color:#334155;">Your appointment with ${escapeHtml(args.counterpartLabel)} on <strong>${when}</strong> has been cancelled.</p>
+       ${args.refundIssued ? `<p style="margin:0 0 14px;font-size:14px;line-height:1.6;color:#334155;">Your held payment has been refunded. It typically takes 5–10 business days to appear on your statement.</p>` : ''}
+       <p style="margin:0 0 22px;">${button(`${APP_URL}/intake`, 'Book a new consultation')}</p>`,
+    ),
+  })
+}
+
+export function sendAppointmentRescheduled(args: {
+  to: string
+  recipientName: string
+  counterpartLabel: string
+  oldAt: Date
+  newAt: Date
+  appointmentId: string
+}) {
+  return send({
+    to: args.to,
+    subject: `Appointment rescheduled — now ${formatPK(args.newAt)}`,
+    html: layout(
+      'Appointment rescheduled',
+      `<p style="margin:0 0 14px;font-size:14px;line-height:1.6;color:#334155;">Hi ${escapeHtml(args.recipientName)},</p>
+       <p style="margin:0 0 14px;font-size:14px;line-height:1.6;color:#334155;">Your appointment with ${escapeHtml(args.counterpartLabel)} has been moved.</p>
+       <p style="margin:0 0 6px;font-size:14px;color:#64748b;text-decoration:line-through;">${formatPK(args.oldAt)}</p>
+       <p style="margin:0 0 22px;font-size:16px;font-weight:700;color:#16a34a;">${formatPK(args.newAt)}</p>
+       <p style="margin:0 0 22px;">${button(`${APP_URL}/consultation/${args.appointmentId}`, 'Open consultation room')}</p>`,
+    ),
+  })
+}
+
 export function sendEscrowReleased(args: {
   to: string
   doctorName: string

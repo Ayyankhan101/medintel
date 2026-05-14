@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { MedicalTimeline } from '@/components/records/MedicalTimeline'
 import { RecordUploader } from '@/components/records/RecordUploader'
 import { Button } from '@/components/ui/button'
-import { Plus, X, Download, FileText } from 'lucide-react'
+import { Plus, X, Download, FileText, Calendar, Trash2, Loader2 } from 'lucide-react'
 
 interface MedicalRecord {
   id: string
@@ -71,6 +71,39 @@ export default function HistoryPage() {
 
   useEffect(() => { loadAll() }, [])
 
+  const [rescheduling, setRescheduling] = useState<string | null>(null)
+  const [newAt, setNewAt]               = useState('')
+  const [actionBusy, setActionBusy]     = useState<string | null>(null)
+
+  async function reschedule(id: string) {
+    if (!newAt) return
+    setActionBusy(id)
+    try {
+      const res = await fetch(`/api/appointments/${id}`, {
+        method:  'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ scheduledAt: new Date(newAt).toISOString() }),
+      })
+      if (!res.ok) { alert((await res.json()).error ?? `HTTP ${res.status}`); return }
+      setRescheduling(null); setNewAt('')
+      loadAll()
+    } finally { setActionBusy(null) }
+  }
+
+  async function cancel(id: string) {
+    if (!confirm('Cancel this appointment? Held payment is refunded automatically.')) return
+    setActionBusy(id)
+    try {
+      const res = await fetch(`/api/appointments/${id}`, {
+        method:  'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'cancel' }),
+      })
+      if (!res.ok) { alert((await res.json()).error ?? `HTTP ${res.status}`); return }
+      loadAll()
+    } finally { setActionBusy(null) }
+  }
+
   const filtered = filter === 'ALL' ? records : records.filter(r => r.type === filter)
 
   return (
@@ -130,34 +163,83 @@ export default function HistoryPage() {
             {appointments.map(a => (
               <li
                 key={a.id}
-                className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 flex items-start gap-3 justify-between"
+                className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3"
               >
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-medium text-slate-800 dark:text-slate-100 truncate">
-                      {a.doctor?.specialization ?? a.department ?? 'Consultation'}
-                    </span>
-                    {a.severityLevel && (
-                      <span className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded ${SEVERITY_TINT[a.severityLevel] ?? ''}`}>
-                        AI: {a.severityLevel}
+                <div className="flex items-start gap-3 justify-between">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-medium text-slate-800 dark:text-slate-100 truncate">
+                        {a.doctor?.specialization ?? a.department ?? 'Consultation'}
                       </span>
-                    )}
-                    <span className="text-[10px] uppercase font-medium text-slate-500 dark:text-slate-400">
-                      {STATUS_LABELS[a.status] ?? a.status}
-                    </span>
+                      {a.severityLevel && (
+                        <span className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded ${SEVERITY_TINT[a.severityLevel] ?? ''}`}>
+                          AI: {a.severityLevel}
+                        </span>
+                      )}
+                      <span className="text-[10px] uppercase font-medium text-slate-500 dark:text-slate-400">
+                        {STATUS_LABELS[a.status] ?? a.status}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                      {new Date(a.scheduledAt).toLocaleString('en-PK', { dateStyle: 'medium', timeStyle: 'short' })}
+                    </p>
                   </div>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                    {new Date(a.scheduledAt).toLocaleString('en-PK', { dateStyle: 'medium', timeStyle: 'short' })}
-                  </p>
+                  <div className="shrink-0 flex items-center gap-3">
+                    {a.status === 'COMPLETED' && (
+                      <a
+                        href={`/api/appointments/${a.id}/prescription.pdf`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline"
+                      >
+                        <Download className="w-3 h-3" /> PDF
+                      </a>
+                    )}
+                    {a.status === 'SCHEDULED' && (
+                      <>
+                        <button
+                          onClick={() => { setRescheduling(rescheduling === a.id ? null : a.id); setNewAt('') }}
+                          disabled={actionBusy === a.id}
+                          className="inline-flex items-center gap-1 text-xs font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100"
+                        >
+                          <Calendar className="w-3 h-3" /> Reschedule
+                        </button>
+                        <button
+                          onClick={() => cancel(a.id)}
+                          disabled={actionBusy === a.id}
+                          className="inline-flex items-center gap-1 text-xs font-medium text-red-600 dark:text-red-400 hover:text-red-700 disabled:opacity-50"
+                        >
+                          {actionBusy === a.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+                          Cancel
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </div>
-                <a
-                  href={`/api/appointments/${a.id}/prescription.pdf`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="shrink-0 inline-flex items-center gap-1 text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline"
-                >
-                  <Download className="w-3 h-3" /> PDF
-                </a>
+                {rescheduling === a.id && (
+                  <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-slate-100 dark:border-slate-700 pt-3">
+                    <input
+                      type="datetime-local"
+                      value={newAt}
+                      onChange={e => setNewAt(e.target.value)}
+                      min={new Date(Date.now() + 31 * 60_000).toISOString().slice(0, 16)}
+                      className="px-2 py-1.5 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
+                    />
+                    <button
+                      onClick={() => reschedule(a.id)}
+                      disabled={!newAt || actionBusy === a.id}
+                      className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-medium rounded-lg"
+                    >
+                      {actionBusy === a.id ? <Loader2 className="w-3 h-3 animate-spin inline" /> : 'Confirm'}
+                    </button>
+                    <button
+                      onClick={() => { setRescheduling(null); setNewAt('') }}
+                      className="px-3 py-1.5 text-slate-600 dark:text-slate-300 text-xs font-medium"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                )}
               </li>
             ))}
           </ul>

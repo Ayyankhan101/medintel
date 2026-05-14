@@ -144,6 +144,7 @@ model Appointment {
   status      AppointmentStatus @default(SCHEDULED)
   scheduledAt DateTime
   completedAt DateTime?
+  cancelledAt DateTime?
 
   voiceFileUrl     String?
   transcript       String?  @db.Text

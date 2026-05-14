@@ -117,6 +117,7 @@ model Appointment {
   status      String    @default("SCHEDULED")
   scheduledAt DateTime
   completedAt DateTime?
+  cancelledAt DateTime?
 
   voiceFileUrl     String?
   transcript       String?
