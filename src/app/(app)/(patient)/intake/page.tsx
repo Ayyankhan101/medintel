@@ -1,6 +1,6 @@
 'use client'
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { VoiceRecorder } from '@/components/voice/VoiceRecorder'
 import { SymptomSummary } from '@/components/intake/SymptomSummary'
 import { UploadDocs } from '@/components/intake/UploadDocs'
@@ -12,12 +12,23 @@ type IntakeMode = 'choose' | 'voice' | 'text'
 interface IntakeResult extends TriageResult { triageId: string; transcript: string; summary: string }
 
 export default function IntakePage() {
-  const router = useRouter()
+  const router  = useRouter()
+  const params  = useSearchParams()
   const [mode,      setMode]      = useState<IntakeMode>('choose')
   const [textInput, setTextInput] = useState('')
   const [result,    setResult]    = useState<IntakeResult | null>(null)
   const [loading,   setLoading]   = useState(false)
   const [error,     setError]     = useState<string | null>(null)
+
+  // Prefill from WhatsApp / voice-call deep link.
+  useEffect(() => {
+    const prefill = params.get('prefill')
+    if (prefill && !textInput) {
+      setTextInput(prefill)
+      setMode('text')
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   async function handleVoiceComplete(blob: Blob, filename: string, language: string) {
     setLoading(true); setError(null)
