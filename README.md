@@ -195,10 +195,14 @@ In **Settings → Environment Variables**, set these for *Production* (and *Prev
 Push to your connected branch. Vercel's `vercel-build` script runs:
 
 ```
-prisma generate && prisma db push --accept-data-loss --skip-generate && next build
+prisma generate && prisma migrate deploy && next build
 ```
 
-The schema is pushed directly (no migration files needed). For real production where you want versioned migrations, switch back to `prisma migrate deploy` and check in `prisma/migrations/`.
+The repo ships versioned migrations under `prisma/migrations/`. `migrate deploy` only applies pending migrations — never drops data. If you've been on `db push` previously and your DB is already at the current schema, baseline it once before the first migrated deploy:
+
+```bash
+DATABASE_URL=... npx prisma migrate resolve --applied 0001_init
+```
 
 #### 4. Seed demo accounts (optional)
 
@@ -288,13 +292,10 @@ This app makes specific architectural choices to keep clinical and financial dat
 If you're moving past the demo:
 
 1. **Remove `MOCK_KYC=true`** and wire up real NADRA + PMDC credentials.
-2. **Switch from `prisma db push` to `prisma migrate deploy`** with versioned migrations checked into git.
-3. **Verify Stripe Connect** is in live mode and the platform account has the right capabilities for PKR payouts.
-4. **Tighten rate limiting** on `/api/auth/register`, `/api/auth/[...nextauth]`, and `/api/voice/*` (consider Vercel BotID or Upstash rate-limit middleware).
-5. **Replace `Math.random()` MedIntel-code generation** with a uniqueness-checked sequence — collision probability is non-trivial past ~10k patients.
-6. **Add an audit log table** for escrow releases, prescription uploads, and KYC outcomes — required for dispute resolution.
-7. **Switch from JWT to database sessions** if you need server-side session revocation.
-8. **Send a real `User-Agent` to Overpass** matching your production domain — they return 406 to anonymous clients.
+2. **Verify Stripe Connect** is in live mode and the platform account has the right capabilities for PKR payouts.
+3. **Tighten rate limiting** on `/api/auth/register`, `/api/auth/[...nextauth]`, and `/api/voice/*` (consider Vercel BotID or Upstash rate-limit middleware).
+4. **Switch from JWT to database sessions** if you need server-side session revocation.
+5. **Send a real `User-Agent` to Overpass** matching your production domain — they return 406 to anonymous clients.
 
 ---
 
@@ -304,7 +305,7 @@ If you're moving past the demo:
 |---------|---------|
 | `npm run dev` | Start the Next.js dev server |
 | `npm run build` | Generate Prisma client + build for production |
-| `npm run vercel-build` | What Vercel runs — `prisma generate && prisma db push --accept-data-loss --skip-generate && next build` |
+| `npm run vercel-build` | What Vercel runs — `prisma generate && prisma migrate deploy && next build` |
 | `npm run start` | Run the production build |
 | `npm run db:migrate` | Create + apply a new migration (dev) |
 | `npm run db:deploy` | Apply pending migrations (prod, only if you switch away from `db push`) |
