@@ -10,6 +10,15 @@ interface Stats {
   escrow: { held: number; released: number }
 }
 
+type IconCmp = React.ComponentType<{ size?: number; strokeWidth?: number }>
+
+const TONES = {
+  blue:    { bg: 'rgba(37,99,235,.10)',  fg: 'var(--blue-700)' },
+  emerald: { bg: 'rgba(16,185,129,.12)', fg: '#047857' },
+  amber:   { bg: 'rgba(245,158,11,.12)', fg: '#a16207' },
+  violet:  { bg: 'rgba(139,92,246,.10)', fg: 'var(--violet-600)' },
+} as const
+
 export default function AdminDashboardPage() {
   const [stats, setStats] = useState<Stats | null>(null)
   const [err, setErr] = useState<string | null>(null)
@@ -24,69 +33,131 @@ export default function AdminDashboardPage() {
       .catch(e => setErr(e.message))
   }, [])
 
-  if (err) return <div className="max-w-3xl mx-auto px-4"><div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded text-sm">{err}</div></div>
-  if (!stats) return <div className="max-w-3xl mx-auto px-4 flex items-center gap-2 text-slate-500"><Loader2 className="w-4 h-4 animate-spin" /> Loading…</div>
+  if (err) return (
+    <div style={{ maxWidth: 920, margin: '0 auto', padding: '28px 16px' }}>
+      <div style={{
+        background: 'rgba(239,68,68,.08)', border: '1px solid rgba(239,68,68,.25)',
+        borderRadius: 12, padding: '10px 12px', fontSize: 13, color: 'var(--red-600)',
+      }}>{err}</div>
+    </div>
+  )
+  if (!stats) return (
+    <div style={{ maxWidth: 920, margin: '0 auto', padding: '60px 16px', display: 'flex', alignItems: 'center', gap: 8, color: 'var(--ink-3)' }}>
+      <Loader2 size={16} className="animate-spin" /> Loading…
+    </div>
+  )
 
   return (
-    <div className="max-w-5xl mx-auto px-4 space-y-6">
-      <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">Admin overview</h1>
+    <div style={{
+      maxWidth: 1080, margin: '0 auto',
+      padding: '28px clamp(16px, 4vw, 32px) 64px',
+      display: 'flex', flexDirection: 'column', gap: 22,
+      animation: 'mi-fade-up 320ms var(--ease-out-quart) both',
+    }}>
+      <header>
+        <span style={{ fontSize: 11, fontWeight: 700, color: '#a16207', letterSpacing: '.08em', textTransform: 'uppercase' }}>
+          Admin
+        </span>
+        <h1 style={{ margin: '4px 0 0', fontSize: 28, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--ink)' }}>
+          Overview
+        </h1>
+      </header>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <Stat icon={<Users   className="w-5 h-5 text-blue-600" />}   label="Patients"           value={stats.patients} />
-        <Stat icon={<Stethoscope className="w-5 h-5 text-green-600" />} label="Verified doctors" value={stats.doctors.verified} />
-        <Stat icon={<Calendar className="w-5 h-5 text-amber-600" />} label="Appointments"        value={stats.appointments.total} />
-        <Stat icon={<Banknote className="w-5 h-5 text-emerald-600" />} label="Escrow held"       value={stats.escrow.held} />
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
+        <Stat Icon={Users}       tone="blue"    label="Patients"         value={stats.patients} />
+        <Stat Icon={Stethoscope} tone="emerald" label="Verified doctors" value={stats.doctors.verified} />
+        <Stat Icon={Calendar}    tone="amber"   label="Appointments"     value={stats.appointments.total} />
+        <Stat Icon={Banknote}    tone="violet"  label="Escrow held"      value={stats.escrow.held} />
       </div>
 
-      <Link
-        href="/admin/doctors?status=PENDING"
-        className="flex items-center justify-between p-4 bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-700 rounded-xl hover:bg-amber-50 dark:hover:bg-amber-950/30 transition"
+      <Link href="/admin/doctors?status=PENDING"
+        style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: 16, borderRadius: 18,
+          background: 'rgba(245,158,11,.06)', border: '1px solid rgba(245,158,11,.25)',
+          textDecoration: 'none', color: 'var(--ink)',
+          transition: 'background-color 200ms ease',
+        }}
       >
-        <div className="flex items-center gap-3">
-          <ShieldAlert className="w-5 h-5 text-amber-600" />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <span style={{
+            width: 40, height: 40, borderRadius: 12,
+            background: 'rgba(245,158,11,.18)', color: '#a16207',
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <ShieldAlert size={20} />
+          </span>
           <div>
-            <p className="font-semibold text-slate-900 dark:text-slate-100">{stats.doctors.pending} doctors waiting for verification</p>
-            <p className="text-xs text-slate-500 dark:text-slate-400">Review credentials and approve or reject</p>
+            <p style={{ margin: 0, fontWeight: 700, color: 'var(--ink)' }}>
+              {stats.doctors.pending} doctors waiting for verification
+            </p>
+            <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--ink-3)' }}>
+              Review credentials and approve or reject.
+            </p>
           </div>
         </div>
-        <ArrowRight className="w-4 h-4 text-slate-400" />
+        <ArrowRight size={16} style={{ color: 'var(--ink-4)' }} />
       </Link>
 
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-4">
-        <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-3">Doctors</h2>
-        <div className="grid grid-cols-3 gap-3 text-sm">
-          <BreakdownRow label="Pending"  value={stats.doctors.pending}  color="text-amber-600" />
-          <BreakdownRow label="Verified" value={stats.doctors.verified} color="text-green-600" />
-          <BreakdownRow label="Rejected" value={stats.doctors.rejected} color="text-red-600" />
-        </div>
-      </div>
+      <Section title="Doctors">
+        <Breakdown label="Pending"  value={stats.doctors.pending}  color="#a16207" />
+        <Breakdown label="Verified" value={stats.doctors.verified} color="#047857" />
+        <Breakdown label="Rejected" value={stats.doctors.rejected} color="var(--red-600)" />
+      </Section>
 
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-4">
-        <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-3">Appointments</h2>
-        <div className="grid grid-cols-3 gap-3 text-sm">
-          <BreakdownRow label="Total"     value={stats.appointments.total}     color="text-slate-700 dark:text-slate-200" />
-          <BreakdownRow label="Completed" value={stats.appointments.completed} color="text-green-600" />
-          <BreakdownRow label="Cancelled" value={stats.appointments.cancelled} color="text-red-600" />
-        </div>
-      </div>
+      <Section title="Appointments">
+        <Breakdown label="Total"     value={stats.appointments.total}     color="var(--ink)" />
+        <Breakdown label="Completed" value={stats.appointments.completed} color="#047857" />
+        <Breakdown label="Cancelled" value={stats.appointments.cancelled} color="var(--red-600)" />
+      </Section>
     </div>
   )
 }
 
-function Stat({ icon, label, value }: { icon: React.ReactNode; label: string; value: number }) {
+function Stat({ Icon, tone, label, value }: { Icon: IconCmp; tone: keyof typeof TONES; label: string; value: number }) {
+  const t = TONES[tone]
   return (
-    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-4">
-      <div className="flex items-center gap-2 mb-1">{icon}<span className="text-xs text-slate-500 dark:text-slate-400">{label}</span></div>
-      <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{value.toLocaleString('en-PK')}</p>
+    <div style={{
+      background: 'var(--bg-elev)', border: '1px solid var(--border)',
+      borderRadius: 18, padding: 16, boxShadow: 'var(--shadow-card)',
+      display: 'flex', flexDirection: 'column', gap: 10,
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <span style={{
+          width: 32, height: 32, borderRadius: 10,
+          background: t.bg, color: t.fg,
+          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <Icon size={16} strokeWidth={2} />
+        </span>
+        <span style={{ fontSize: 12, color: 'var(--ink-3)' }}>{label}</span>
+      </div>
+      <p className="mono" style={{ margin: 0, fontSize: 26, fontWeight: 700, color: 'var(--ink)', lineHeight: 1, letterSpacing: '-.01em' }}>
+        {value.toLocaleString('en-PK')}
+      </p>
     </div>
   )
 }
 
-function BreakdownRow({ label, value, color }: { label: string; value: number; color: string }) {
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section style={{
+      background: 'var(--bg-elev)', border: '1px solid var(--border)',
+      borderRadius: 18, padding: 18, boxShadow: 'var(--shadow-card)',
+    }}>
+      <h2 style={{ margin: 0, fontSize: 13, fontWeight: 700, color: 'var(--ink)', marginBottom: 12 }}>{title}</h2>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+        {children}
+      </div>
+    </section>
+  )
+}
+
+function Breakdown({ label, value, color }: { label: string; value: number; color: string }) {
   return (
     <div>
-      <p className="text-xs text-slate-500 dark:text-slate-400">{label}</p>
-      <p className={`text-lg font-bold ${color}`}>{value}</p>
+      <p style={{ margin: 0, fontSize: 11, color: 'var(--ink-3)' }}>{label}</p>
+      <p className="mono" style={{ margin: '4px 0 0', fontSize: 20, fontWeight: 700, color }}>{value}</p>
     </div>
   )
 }

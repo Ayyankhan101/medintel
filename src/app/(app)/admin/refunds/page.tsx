@@ -2,6 +2,9 @@
 
 import { useState } from 'react'
 import { Search, AlertCircle, Loader2, CheckCircle2 } from 'lucide-react'
+import { Btn } from '@/components/design/Btn'
+import { EscrowStatusPill, AppointmentStatusPill } from '@/components/design/badges'
+import { PKR } from '@/components/design/helpers'
 
 interface Snapshot {
   id:                 string
@@ -56,51 +59,89 @@ export default function AdminRefundsPage() {
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) { setError(data.error ?? 'Refund failed'); return }
-      setSuccess(`Refunded PKR ${data.refundedAmount}${data.isFull ? ' (fully refunded)' : ` (remaining: PKR ${data.remaining})`}`)
+      setSuccess(`Refunded ${PKR(data.refundedAmount)}${data.isFull ? ' (fully refunded)' : ` (remaining: ${PKR(data.remaining)})`}`)
       setAmount(''); setReason('')
-      // Reload snapshot
       lookup()
     } finally { setBusy(false) }
   }
 
-  const escrow = snap?.escrow
+  const escrow      = snap?.escrow
   const total       = escrow ? Number(escrow.amount) : 0
   const refunded    = escrow?.refundedAmount ? Number(escrow.refundedAmount) : 0
   const remaining   = total - refunded
   const canRefund   = !!escrow && escrow.status !== 'REFUNDED' && remaining > 0
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-10 space-y-6">
+    <div style={{
+      maxWidth: 880, margin: '0 auto',
+      padding: '28px clamp(16px, 4vw, 32px) 64px',
+      display: 'flex', flexDirection: 'column', gap: 18,
+      animation: 'mi-fade-up 320ms var(--ease-out-quart) both',
+    }}>
       <header>
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Refunds &amp; disputes</h1>
-        <p className="mt-1 text-sm text-slate-500">Look up an appointment, issue a full or partial refund.</p>
+        <span style={{ fontSize: 11, fontWeight: 700, color: '#a16207', letterSpacing: '.08em', textTransform: 'uppercase' }}>
+          Admin
+        </span>
+        <h1 style={{ margin: '4px 0 0', fontSize: 28, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--ink)' }}>
+          Refunds &amp; disputes
+        </h1>
+        <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--ink-3)' }}>
+          Look up an appointment, issue a full or partial refund.
+        </p>
       </header>
 
-      <form onSubmit={e => { e.preventDefault(); lookup() }} className="flex gap-2">
+      <form onSubmit={e => { e.preventDefault(); lookup() }}
+            style={{ display: 'flex', gap: 8 }}>
         <input
-          type="text"
-          value={query}
+          type="text" value={query}
           onChange={e => setQuery(e.target.value)}
           placeholder="Appointment ID (cuid)"
-          className="flex-1 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm font-mono"
+          style={{
+            flex: 1, padding: '10px 14px',
+            borderRadius: 12, border: '1px solid var(--border)',
+            background: 'var(--bg-elev)', color: 'var(--ink)',
+            fontSize: 13, fontFamily: 'var(--font-mono)', outline: 'none',
+          }}
+          onFocus={e => { e.target.style.boxShadow = '0 0 0 4px rgba(37,99,235,.14)'; e.target.style.borderColor = 'var(--blue-600)' }}
+          onBlur={e => { e.target.style.boxShadow = ''; e.target.style.borderColor = 'var(--border)' }}
         />
-        <button
-          type="submit"
-          disabled={!query.trim() || loading}
-          className="px-4 py-2 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 text-sm font-semibold rounded-lg disabled:opacity-50 inline-flex items-center gap-1.5"
-        >
-          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />} Look up
-        </button>
+        <Btn kind="primary" type="submit" disabled={!query.trim() || loading}
+             leading={loading ? <Loader2 size={14} className="animate-spin" /> : <Search size={14} />}>
+          Look up
+        </Btn>
       </form>
 
-      {error   && <p className="text-sm text-red-600 flex items-center gap-1.5"><AlertCircle className="w-4 h-4" /> {error}</p>}
-      {success && <p className="text-sm text-emerald-600 flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4" /> {success}</p>}
+      {error && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 8,
+          fontSize: 13, color: 'var(--red-600)',
+        }}>
+          <AlertCircle size={14} /> {error}
+        </div>
+      )}
+      {success && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 8,
+          fontSize: 13, color: '#047857',
+        }}>
+          <CheckCircle2 size={14} /> {success}
+        </div>
+      )}
 
       {snap && (
-        <section className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 space-y-4">
-          <div className="grid sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
-            <Row k="Status"        v={snap.status} />
-            <Row k="Scheduled"     v={new Date(snap.scheduledAt).toLocaleString('en-PK')} />
+        <section style={{
+          background: 'var(--bg-elev)', border: '1px solid var(--border)',
+          borderRadius: 22, padding: 22, boxShadow: 'var(--shadow-card)',
+          display: 'flex', flexDirection: 'column', gap: 16,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <AppointmentStatusPill status={snap.status as 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'REFUNDED'} />
+            <span style={{ fontSize: 12, color: 'var(--ink-3)' }}>
+              {new Date(snap.scheduledAt).toLocaleString('en-PK')}
+            </span>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '6px 18px' }}>
             <Row k="Patient"       v={`${snap.patient.user.name ?? '—'} · ${snap.patient.user.email}`} />
             <Row k="Phone"         v={snap.patient.user.phone ?? '—'} />
             <Row k="Doctor"        v={snap.doctor ? `Dr. ${snap.doctor.user.name ?? '—'} · ${snap.doctor.user.email}` : '—'} />
@@ -109,58 +150,72 @@ export default function AdminRefundsPage() {
             {snap.cancelledBy        && <Row k="Cancelled by"  v={snap.cancelledBy} />}
           </div>
 
-          <div className="border-t border-slate-100 dark:border-slate-800 pt-4">
-            <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-2">Escrow</h3>
+          <div style={{ borderTop: '1px solid var(--border)', paddingTop: 14 }}>
+            <h3 style={{ margin: 0, fontSize: 13, fontWeight: 700, color: 'var(--ink)', marginBottom: 10 }}>Escrow</h3>
             {escrow ? (
-              <div className="grid sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
-                <Row k="Total"            v={`PKR ${total.toLocaleString()}`} />
-                <Row k="Status"           v={escrow.status} />
-                <Row k="Refunded so far"  v={`PKR ${refunded.toLocaleString()}`} />
-                <Row k="Remaining"        v={`PKR ${remaining.toLocaleString()}`} />
-                <Row k="PaymentIntent"    v={escrow.stripePaymentIntentId} mono />
-                {escrow.refundReason && <Row k="Last reason"   v={escrow.refundReason} />}
-              </div>
+              <>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                  <EscrowStatusPill status={escrow.status} />
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '6px 18px' }}>
+                  <Row k="Total"           v={PKR(total)} mono />
+                  <Row k="Refunded so far" v={PKR(refunded)} mono />
+                  <Row k="Remaining"       v={PKR(remaining)} mono />
+                  <Row k="PaymentIntent"   v={escrow.stripePaymentIntentId} mono />
+                  {escrow.refundReason && <Row k="Last reason" v={escrow.refundReason} />}
+                </div>
+              </>
             ) : (
-              <p className="text-sm text-slate-500">No escrow attached to this appointment.</p>
+              <p style={{ margin: 0, fontSize: 13, color: 'var(--ink-3)' }}>No escrow attached to this appointment.</p>
             )}
           </div>
 
           {canRefund && (
-            <form onSubmit={e => { e.preventDefault(); refund() }} className="border-t border-slate-100 dark:border-slate-800 pt-4 space-y-3">
-              <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Issue refund</h3>
-              <label className="block text-xs">
-                <span className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Amount (PKR) — leave blank for full</span>
+            <form onSubmit={e => { e.preventDefault(); refund() }}
+                  style={{
+                    borderTop: '1px solid var(--border)', paddingTop: 14,
+                    display: 'flex', flexDirection: 'column', gap: 12,
+                  }}>
+              <h3 style={{ margin: 0, fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>Issue refund</h3>
+              <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--ink-3)', letterSpacing: '.04em', textTransform: 'uppercase' }}>
+                  Amount (PKR) — blank for full
+                </span>
                 <input
-                  type="number"
-                  min={1}
-                  max={remaining}
-                  value={amount}
+                  type="number" min={1} max={remaining} value={amount}
                   onChange={e => setAmount(e.target.value)}
                   placeholder={`${remaining}`}
-                  className="w-40 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm"
+                  style={{
+                    width: 200, padding: '10px 12px',
+                    borderRadius: 10, border: '1px solid var(--border)',
+                    background: 'var(--bg-elev)', color: 'var(--ink)',
+                    fontSize: 13, fontFamily: 'var(--font-mono)', outline: 'none',
+                  }}
                 />
               </label>
-              <label className="block text-xs">
-                <span className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Reason (required)</span>
+              <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--ink-3)', letterSpacing: '.04em', textTransform: 'uppercase' }}>
+                  Reason (required)
+                </span>
                 <textarea
-                  value={reason}
-                  onChange={e => setReason(e.target.value)}
-                  minLength={3}
-                  maxLength={500}
-                  rows={2}
-                  required
+                  value={reason} onChange={e => setReason(e.target.value)}
+                  minLength={3} maxLength={500} rows={2} required
                   placeholder="e.g. Doctor failed to provide proper diagnosis; partial refund agreed."
-                  className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm resize-none"
+                  style={{
+                    width: '100%', padding: '10px 12px',
+                    borderRadius: 10, border: '1px solid var(--border)',
+                    background: 'var(--bg-elev)', color: 'var(--ink)',
+                    fontSize: 13, lineHeight: 1.5, resize: 'vertical',
+                    outline: 'none', fontFamily: 'var(--font-ui)',
+                  }}
                 />
               </label>
-              <button
-                type="submit"
-                disabled={busy || reason.trim().length < 3}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-lg disabled:opacity-50"
-              >
-                {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+              <Btn kind="primary" type="submit"
+                   disabled={busy || reason.trim().length < 3}
+                   style={{ background: 'var(--red-600)', boxShadow: '0 4px 12px -4px rgba(239,68,68,.55)' }}
+                   leading={busy ? <Loader2 size={14} className="animate-spin" /> : null}>
                 Issue refund
-              </button>
+              </Btn>
             </form>
           )}
         </section>
@@ -171,9 +226,15 @@ export default function AdminRefundsPage() {
 
 function Row({ k, v, mono }: { k: string; v: string; mono?: boolean }) {
   return (
-    <div className="flex gap-2">
-      <span className="text-slate-500 dark:text-slate-400 min-w-[100px] text-xs uppercase tracking-wider">{k}</span>
-      <span className={`text-slate-900 dark:text-slate-100 ${mono ? 'font-mono text-xs' : ''} break-all`}>{v}</span>
+    <div style={{ display: 'flex', gap: 8, alignItems: 'baseline' }}>
+      <span style={{
+        minWidth: 110, fontSize: 10, fontWeight: 700,
+        color: 'var(--ink-4)', letterSpacing: '.06em', textTransform: 'uppercase',
+      }}>{k}</span>
+      <span className={mono ? 'mono' : ''} style={{
+        fontSize: mono ? 12 : 13,
+        color: 'var(--ink)', wordBreak: 'break-all',
+      }}>{v}</span>
     </div>
   )
 }

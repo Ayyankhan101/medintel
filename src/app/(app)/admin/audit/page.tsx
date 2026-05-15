@@ -30,55 +30,92 @@ export default function AuditPage() {
   }, [filter])
 
   return (
-    <div className="max-w-6xl mx-auto px-4 space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">Audit log</h1>
+    <div style={{
+      maxWidth: 1180, margin: '0 auto',
+      padding: '28px clamp(16px, 4vw, 32px) 64px',
+      display: 'flex', flexDirection: 'column', gap: 18,
+      animation: 'mi-fade-up 320ms var(--ease-out-quart) both',
+    }}>
+      <header style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+        <div>
+          <span style={{ fontSize: 11, fontWeight: 700, color: '#a16207', letterSpacing: '.08em', textTransform: 'uppercase' }}>
+            Admin
+          </span>
+          <h1 style={{ margin: '4px 0 0', fontSize: 28, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--ink)' }}>
+            Audit log
+          </h1>
+        </div>
         <select
           value={filter}
           onChange={e => setFilter(e.target.value)}
-          className="text-sm px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
+          style={{
+            padding: '8px 12px', borderRadius: 10,
+            border: '1px solid var(--border)',
+            background: 'var(--bg-elev)', color: 'var(--ink)',
+            fontSize: 13, fontFamily: 'var(--font-ui)', outline: 'none',
+          }}
         >
           {ACTIONS.map(a => <option key={a} value={a}>{a || 'All actions'}</option>)}
         </select>
-      </div>
+      </header>
 
-      {loading && <div className="flex items-center gap-2 text-slate-500"><Loader2 className="w-4 h-4 animate-spin" /> Loading…</div>}
+      {loading && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--ink-3)', fontSize: 13 }}>
+          <Loader2 size={16} className="animate-spin" /> Loading…
+        </div>
+      )}
 
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-slate-50 dark:bg-slate-800 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400">
-            <tr>
-              <th className="px-3 py-2">When</th>
-              <th className="px-3 py-2">Action</th>
-              <th className="px-3 py-2">Entity</th>
-              <th className="px-3 py-2">Actor</th>
-              <th className="px-3 py-2">Detail</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-            {logs.map(l => (
-              <tr key={l.id}>
-                <td className="px-3 py-2 text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">
-                  {new Date(l.createdAt).toLocaleString('en-PK', { dateStyle: 'short', timeStyle: 'short' })}
-                </td>
-                <td className="px-3 py-2 font-mono text-xs text-slate-700 dark:text-slate-200">{l.action}</td>
-                <td className="px-3 py-2 text-xs text-slate-500 dark:text-slate-400">
-                  <span className="text-slate-700 dark:text-slate-200">{l.entityType}</span>
-                  <span className="ml-1 font-mono text-slate-400">{l.entityId.slice(0, 8)}…</span>
-                </td>
-                <td className="px-3 py-2 text-xs text-slate-500 dark:text-slate-400">
-                  <span className="font-mono">{l.actorId?.slice(0, 8) ?? 'system'}</span>
-                  {l.actorRole && <span className="ml-1 text-[10px] uppercase tracking-wider text-slate-400">{l.actorRole}</span>}
-                </td>
-                <td className="px-3 py-2 text-xs text-slate-500 dark:text-slate-400 max-w-md truncate font-mono">
-                  {l.metadata ? JSON.stringify(l.metadata) : '—'}
-                </td>
+      <div style={{
+        background: 'var(--bg-elev)', border: '1px solid var(--border)',
+        borderRadius: 18, overflow: 'hidden', boxShadow: 'var(--shadow-card)',
+      }}>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+            <thead style={{ background: 'var(--bg-soft)' }}>
+              <tr>
+                {['When', 'Action', 'Entity', 'Actor', 'Detail'].map(h => (
+                  <th key={h} style={{
+                    padding: '10px 14px', textAlign: 'left',
+                    fontSize: 10, fontWeight: 700, color: 'var(--ink-3)',
+                    letterSpacing: '.08em', textTransform: 'uppercase',
+                  }}>{h}</th>
+                ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {logs.map(l => (
+                <tr key={l.id} style={{ borderTop: '1px solid var(--border)' }}>
+                  <td style={{ padding: '10px 14px', fontSize: 11, color: 'var(--ink-3)', whiteSpace: 'nowrap' }}>
+                    {new Date(l.createdAt).toLocaleString('en-PK', { dateStyle: 'short', timeStyle: 'short' })}
+                  </td>
+                  <td className="mono" style={{ padding: '10px 14px', fontSize: 11, color: 'var(--ink-2)' }}>
+                    {l.action}
+                  </td>
+                  <td style={{ padding: '10px 14px', fontSize: 11, color: 'var(--ink-3)' }}>
+                    <span style={{ color: 'var(--ink-2)' }}>{l.entityType}</span>
+                    <span className="mono" style={{ marginLeft: 4, color: 'var(--ink-4)' }}>{l.entityId.slice(0, 8)}…</span>
+                  </td>
+                  <td style={{ padding: '10px 14px', fontSize: 11, color: 'var(--ink-3)' }}>
+                    <span className="mono">{l.actorId?.slice(0, 8) ?? 'system'}</span>
+                    {l.actorRole && (
+                      <span style={{ marginLeft: 4, fontSize: 10, color: 'var(--ink-4)', letterSpacing: '.08em', textTransform: 'uppercase' }}>
+                        {l.actorRole}
+                      </span>
+                    )}
+                  </td>
+                  <td className="mono" style={{
+                    padding: '10px 14px', fontSize: 11, color: 'var(--ink-3)',
+                    maxWidth: 380, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                  }}>
+                    {l.metadata ? JSON.stringify(l.metadata) : '—'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
         {!loading && logs.length === 0 && (
-          <div className="text-center py-10 text-sm text-slate-500 dark:text-slate-400">No entries.</div>
+          <div style={{ textAlign: 'center', padding: '40px 0', fontSize: 13, color: 'var(--ink-3)' }}>No entries.</div>
         )}
       </div>
     </div>
