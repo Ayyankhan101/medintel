@@ -1,5 +1,9 @@
+'use client'
+
 import Link from 'next/link'
 import { Star, ShieldCheck, Clock, ArrowRight } from 'lucide-react'
+import { Btn } from '@/components/design/Btn'
+import { PKR } from '@/components/design/helpers'
 
 interface Doctor {
   id: string
@@ -15,73 +19,118 @@ interface Doctor {
 
 interface Props { doctor: Doctor; onBook: (id: string) => void }
 
+const AVATAR_GRADIENTS = [
+  'linear-gradient(135deg, #fbbf24 0%, #f59e0b 60%, #b45309 100%)',
+  'linear-gradient(135deg, #60a5fa 0%, #2563eb 60%, #1e3a8a 100%)',
+  'linear-gradient(135deg, #a78bfa 0%, #8b5cf6 60%, #6d28d9 100%)',
+  'linear-gradient(135deg, #34d399 0%, #10b981 60%, #047857 100%)',
+]
+
 function Avatar({ name }: { name: string }) {
-  const initials = name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()
-  const colors   = ['bg-blue-100 text-blue-700', 'bg-purple-100 text-purple-700', 'bg-emerald-100 text-emerald-700', 'bg-amber-100 text-amber-700']
-  const color    = colors[name.charCodeAt(0) % colors.length]
+  const initials = name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase() || 'DR'
+  const grad = AVATAR_GRADIENTS[name.charCodeAt(0) % AVATAR_GRADIENTS.length]
   return (
-    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-bold text-sm shrink-0 ${color}`}>
-      {initials}
-    </div>
+    <span style={{
+      width: 56, height: 56, borderRadius: 18,
+      background: grad, color: '#fff',
+      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+      fontSize: 18, fontWeight: 700, letterSpacing: '.02em',
+      flex: 'none',
+      boxShadow: '0 4px 12px -4px rgba(15,23,42,.20)',
+    }}>{initials}</span>
   )
 }
 
 export function DoctorCard({ doctor, onBook }: Props) {
-  const rating = doctor.rating ? Number(doctor.rating).toFixed(1) : null
-
+  const rating = doctor.rating != null ? Number(doctor.rating).toFixed(1) : null
   return (
-    <div className="bg-white border border-slate-200 rounded-2xl p-5 hover:shadow-md hover:border-blue-200 transition-all group">
-      <div className="flex items-start gap-4">
+    <div
+      style={{
+        background: 'var(--bg-elev)',
+        border: '1px solid var(--border)',
+        borderRadius: 22, padding: 20,
+        boxShadow: 'var(--shadow-card)',
+        display: 'flex', flexDirection: 'column', gap: 14,
+        transition: 'transform 240ms var(--ease-out-quart), box-shadow 240ms var(--ease-out-quart), border-color 240ms ease',
+      }}
+      onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = 'var(--shadow-hover)'; e.currentTarget.style.borderColor = 'rgba(37,99,235,.30)' }}
+      onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = 'var(--shadow-card)'; e.currentTarget.style.borderColor = 'var(--border)' }}
+    >
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
         <Avatar name={doctor.specialization} />
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2">
-            <div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="font-semibold text-slate-900">{doctor.specialization}</h3>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: 'var(--ink)', letterSpacing: '-.005em' }}>
+                  {doctor.specialization}
+                </h3>
                 {doctor.trustBadge && (
-                  <span className="inline-flex items-center gap-1 text-xs bg-blue-50 text-blue-700 border border-blue-100 px-2 py-0.5 rounded-full font-medium">
-                    <ShieldCheck className="w-3 h-3" /> KYD Verified
+                  <span style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 4,
+                    padding: '2px 8px', borderRadius: 999,
+                    background: 'rgba(13,148,136,.10)', color: '#0f766e',
+                    border: '1px solid rgba(13,148,136,.22)',
+                    fontSize: 10, fontWeight: 700, letterSpacing: '.04em',
+                  }}>
+                    <ShieldCheck size={10} strokeWidth={2.5} /> KYD VERIFIED
                   </span>
                 )}
               </div>
-              <div className="flex items-center gap-3 mt-1">
-                {rating && (
-                  <span className="flex items-center gap-1 text-sm text-slate-500">
-                    <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                    <span className="font-medium text-slate-700">{rating}</span>
-                    {doctor.reviewCount > 0 && <span className="text-slate-400">({doctor.reviewCount})</span>}
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 6, fontSize: 12, color: 'var(--ink-3)' }}>
+                {rating ? (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    <Star size={13} fill="#f59e0b" stroke="#f59e0b" />
+                    <span style={{ color: 'var(--ink-2)', fontWeight: 600 }}>{rating}</span>
+                    {doctor.reviewCount > 0 && <span style={{ color: 'var(--ink-4)' }}>({doctor.reviewCount})</span>}
                   </span>
+                ) : (
+                  <span style={{
+                    padding: '2px 8px', borderRadius: 999,
+                    background: 'var(--bg-soft)', color: 'var(--ink-3)',
+                    fontSize: 10, fontWeight: 600, letterSpacing: '.04em', textTransform: 'uppercase',
+                  }}>New</span>
                 )}
-                {!rating && <span className="text-xs text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">New</span>}
-                <span className="flex items-center gap-1 text-sm text-slate-400">
-                  <Clock className="w-3 h-3" />
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  <Clock size={12} />
                   {doctor.yearsExperience} yrs
                 </span>
               </div>
             </div>
-            <div className="text-right shrink-0">
-              <p className="text-lg font-bold text-slate-900">PKR {Number(doctor.consultationFee).toLocaleString()}</p>
-              <p className="text-xs text-slate-400">per session</p>
+
+            <div style={{ textAlign: 'right', flex: 'none' }}>
+              <div className="mono" style={{ fontSize: 20, fontWeight: 700, color: 'var(--ink)', letterSpacing: '-.01em', lineHeight: 1 }}>
+                {PKR(Number(doctor.consultationFee))}
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--ink-4)', marginTop: 2 }}>per session</div>
             </div>
           </div>
+
           {doctor.bio && (
-            <p className="text-sm text-slate-500 mt-2 line-clamp-2 leading-relaxed">{doctor.bio}</p>
+            <p style={{
+              margin: '10px 0 0', fontSize: 13, color: 'var(--ink-3)', lineHeight: 1.5,
+              display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+            }}>{doctor.bio}</p>
           )}
         </div>
       </div>
-      <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between gap-2">
+
+      <div style={{
+        paddingTop: 14, borderTop: '1px solid var(--border)',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
+      }}>
         <Link
           href={`/doctors/${doctor.id}`}
-          className="text-xs font-medium text-slate-500 hover:text-blue-600"
+          style={{ fontSize: 12, fontWeight: 600, color: 'var(--ink-3)', textDecoration: 'none' }}
         >
           View profile →
         </Link>
-        <button
-          onClick={() => onBook(doctor.id)}
-          className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl transition-colors group-hover:shadow-md"
-        >
-          Book now <ArrowRight className="w-3.5 h-3.5" />
-        </button>
+        <Btn kind="primary"
+             onClick={() => onBook(doctor.id)}
+             trailing={<ArrowRight size={14} strokeWidth={2.5} />}>
+          Book now
+        </Btn>
       </div>
     </div>
   )
