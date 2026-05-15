@@ -106,7 +106,7 @@ export default function ClinicDashboard() {
         <Row label="Voice number"    value={clinic.voiceNumber} />
         <Row label="Public slug"     value={`/c/${clinic.slug}`} />
         <p className="mt-3 text-xs text-slate-400">
-          To link more numbers or change branding, contact <a href="mailto:support@medintel.app" className="underline">support@medintel.app</a>.
+          <a href="/clinic/settings" className="underline font-medium text-slate-600 dark:text-slate-300">Edit brand & channels →</a>
         </p>
       </div>
     </div>
