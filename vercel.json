@@ -2,11 +2,11 @@
   "crons": [
     {
       "path": "/api/cron/appointment-reminders",
-      "schedule": "*/10 * * * *"
+      "schedule": "0 8 * * *"
     },
     {
       "path": "/api/cron/no-show-refund",
-      "schedule": "*/15 * * * *"
+      "schedule": "0 13 * * *"
     },
     {
       "path": "/api/cron/maintenance",
