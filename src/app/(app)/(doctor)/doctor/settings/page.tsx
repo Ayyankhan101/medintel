@@ -1,9 +1,9 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { Suspense } from 'react'
 import { CheckCircle2, CreditCard, Loader2, ExternalLink, Clock } from 'lucide-react'
 import { DEFAULT_AVAILABILITY, type Availability } from '@/lib/availability'
+import { Btn } from '@/components/design/Btn'
 
 const DAY_LABELS = ['', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
@@ -14,7 +14,7 @@ function SettingsContent() {
   const [loading,  setLoading]  = useState(false)
   const [error,    setError]    = useState<string | null>(null)
 
-  const [av,      setAv]       = useState<Availability>(DEFAULT_AVAILABILITY)
+  const [av,       setAv]       = useState<Availability>(DEFAULT_AVAILABILITY)
   const [avSaving, setAvSaving] = useState(false)
   const [avSaved,  setAvSaved]  = useState(false)
   const [avErr,    setAvErr]    = useState<string | null>(null)
@@ -62,119 +62,141 @@ function SettingsContent() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">Settings</h1>
-        <p className="text-sm text-slate-500 mt-0.5">Manage your account and payment details</p>
-      </div>
+    <div style={{
+      maxWidth: 760, margin: '0 auto',
+      padding: '28px clamp(16px, 4vw, 32px) 64px',
+      display: 'flex', flexDirection: 'column', gap: 22,
+      animation: 'mi-fade-up 320ms var(--ease-out-quart) both',
+    }}>
+      <header>
+        <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--violet-600)', letterSpacing: '.08em', textTransform: 'uppercase' }}>
+          Doctor console
+        </span>
+        <h1 style={{ margin: '4px 0 0', fontSize: 28, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--ink)' }}>
+          Settings
+        </h1>
+        <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--ink-3)' }}>
+          Manage your account and payment details.
+        </p>
+      </header>
 
       {success && (
-        <div className="flex items-start gap-3 bg-green-50 border border-green-200 rounded-xl px-4 py-3">
-          <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0 mt-0.5" />
-          <div className="text-sm text-green-800">
-            <p className="font-semibold">Stripe onboarding complete!</p>
-            <p className="text-green-700 mt-0.5">You can now receive consultation payments directly to your bank account.</p>
+        <div style={{
+          display: 'flex', alignItems: 'flex-start', gap: 10,
+          background: 'rgba(16,185,129,.10)', border: '1px solid rgba(16,185,129,.30)',
+          borderRadius: 14, padding: 14,
+        }}>
+          <CheckCircle2 size={18} style={{ color: 'var(--emerald-500)', flex: 'none', marginTop: 1 }} />
+          <div style={{ fontSize: 13, color: 'var(--ink-2)' }}>
+            <p style={{ margin: 0, fontWeight: 700, color: '#047857' }}>Stripe onboarding complete!</p>
+            <p style={{ margin: '2px 0 0' }}>You can now receive consultation payments directly to your bank account.</p>
           </div>
         </div>
       )}
 
-      {/* Payments section */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-4">
-        <div className="flex items-center gap-2">
-          <CreditCard className="w-5 h-5 text-slate-400" />
-          <h2 className="font-semibold text-slate-800">Payment Setup</h2>
-        </div>
-        <p className="text-sm text-slate-500 leading-relaxed">
+      <Section icon={<CreditCard size={18} />} title="Payment setup">
+        <p style={{ margin: 0, fontSize: 13, color: 'var(--ink-3)', lineHeight: 1.55 }}>
           Connect your Stripe account to receive payments from consultations.
           Funds are held in escrow and released automatically once you upload a prescription.
         </p>
-
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">
-            {error}
-          </div>
+          <div style={{
+            background: 'rgba(239,68,68,.08)', border: '1px solid rgba(239,68,68,.25)',
+            borderRadius: 12, padding: '10px 12px', fontSize: 13, color: 'var(--red-600)',
+          }}>{error}</div>
         )}
+        <Btn kind="primary" onClick={startOnboarding} disabled={loading}
+             leading={loading ? <Loader2 size={14} className="animate-spin" /> : <ExternalLink size={14} />}>
+          {loading ? 'Redirecting…' : success ? 'Update Stripe account' : 'Connect with Stripe'}
+        </Btn>
+      </Section>
 
-        <button
-          onClick={startOnboarding}
-          disabled={loading}
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white text-sm font-semibold rounded-xl transition-colors"
-        >
-          {loading
-            ? <><Loader2 className="w-4 h-4 animate-spin" /> Redirecting…</>
-            : <><ExternalLink className="w-4 h-4" /> {success ? 'Update Stripe Account' : 'Connect with Stripe'}</>
-          }
-        </button>
-      </div>
-
-      <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-4">
-        <div className="flex items-center gap-2">
-          <Clock className="w-5 h-5 text-slate-400" />
-          <h2 className="font-semibold text-slate-800">Working hours</h2>
-        </div>
-        <p className="text-sm text-slate-500 leading-relaxed">
+      <Section icon={<Clock size={18} />} title="Working hours">
+        <p style={{ margin: 0, fontSize: 13, color: 'var(--ink-3)', lineHeight: 1.55 }}>
           Patients can only book inside this window (Asia/Karachi time). Leave blank to be always available.
         </p>
-
         <div>
-          <p className="text-xs font-medium text-slate-600 mb-1.5">Days</p>
-          <div className="flex flex-wrap gap-1.5">
-            {[1, 2, 3, 4, 5, 6, 7].map(d => (
-              <button
-                key={d}
-                onClick={() => toggleDay(d)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
-                  av.days.includes(d)
-                    ? 'bg-blue-600 text-white border-blue-600'
-                    : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-                }`}
-              >
-                {DAY_LABELS[d]}
-              </button>
-            ))}
+          <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: 'var(--ink-3)', letterSpacing: '.04em', textTransform: 'uppercase', marginBottom: 8 }}>
+            Days
+          </p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {[1,2,3,4,5,6,7].map(d => {
+              const active = av.days.includes(d)
+              return (
+                <button key={d} onClick={() => toggleDay(d)} className="focus-ring"
+                  style={{
+                    padding: '8px 14px', borderRadius: 10,
+                    border: '1px solid ' + (active ? 'var(--blue-600)' : 'var(--border)'),
+                    background: active ? 'var(--blue-600)' : 'var(--bg-elev)',
+                    color: active ? '#fff' : 'var(--ink-2)',
+                    fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                    transition: 'all 200ms var(--ease-out-quart)',
+                  }}>
+                  {DAY_LABELS[d]}
+                </button>
+              )
+            })}
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <label className="text-xs font-medium text-slate-600">
-            Start hour
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--ink-3)', letterSpacing: '.04em', textTransform: 'uppercase' }}>Start hour</span>
             <input
-              type="number"
-              min={0}
-              max={23}
-              value={av.startHour}
+              type="number" min={0} max={23} value={av.startHour}
               onChange={e => setAv(a => ({ ...a, startHour: Math.max(0, Math.min(23, parseInt(e.target.value || '0', 10))) }))}
-              className="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm text-slate-900"
+              style={inputStyle}
             />
           </label>
-          <label className="text-xs font-medium text-slate-600">
-            End hour
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--ink-3)', letterSpacing: '.04em', textTransform: 'uppercase' }}>End hour</span>
             <input
-              type="number"
-              min={1}
-              max={24}
-              value={av.endHour}
+              type="number" min={1} max={24} value={av.endHour}
               onChange={e => setAv(a => ({ ...a, endHour: Math.max(1, Math.min(24, parseInt(e.target.value || '1', 10))) }))}
-              className="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm text-slate-900"
+              style={inputStyle}
             />
           </label>
         </div>
 
-        {avErr  && <div className="text-xs text-red-600">{avErr}</div>}
-        {avSaved && <div className="text-xs text-green-600">Saved.</div>}
+        {avErr   && <p style={{ margin: 0, fontSize: 12, color: 'var(--red-600)' }}>{avErr}</p>}
+        {avSaved && <p style={{ margin: 0, fontSize: 12, color: '#047857' }}>Saved.</p>}
 
-        <button
-          onClick={saveAvailability}
-          disabled={avSaving}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 disabled:opacity-60 text-white text-sm font-semibold rounded-lg"
-        >
-          {avSaving ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Saving…</> : 'Save availability'}
-        </button>
-      </div>
+        <Btn kind="primary" onClick={saveAvailability} disabled={avSaving}
+             leading={avSaving ? <Loader2 size={14} className="animate-spin" /> : null}>
+          {avSaving ? 'Saving…' : 'Save availability'}
+        </Btn>
+      </Section>
     </div>
   )
 }
 
+function Section({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
+  return (
+    <section style={{
+      background: 'var(--bg-elev)', border: '1px solid var(--border)',
+      borderRadius: 22, padding: 22, boxShadow: 'var(--shadow-card)',
+      display: 'flex', flexDirection: 'column', gap: 14,
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <span style={{ color: 'var(--ink-3)' }}>{icon}</span>
+        <h2 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: 'var(--ink)' }}>{title}</h2>
+      </div>
+      {children}
+    </section>
+  )
+}
+
+const inputStyle: React.CSSProperties = {
+  width: '100%', padding: '10px 12px',
+  borderRadius: 10, border: '1px solid var(--border)',
+  background: 'var(--bg-elev)', color: 'var(--ink)',
+  fontSize: 14, outline: 'none', fontFamily: 'var(--font-ui)',
+}
+
 export default function DoctorSettingsPage() {
-  return <Suspense><SettingsContent /></Suspense>
+  return (
+    <Suspense fallback={<div style={{ minHeight: '60vh' }} />}>
+      <SettingsContent />
+    </Suspense>
+  )
 }

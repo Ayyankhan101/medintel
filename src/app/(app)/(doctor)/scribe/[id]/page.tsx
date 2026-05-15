@@ -5,30 +5,31 @@ import {
   Loader2, Mic, Sparkles, CheckCircle2, ShieldAlert, Save,
   Stethoscope, ArrowLeft,
 } from 'lucide-react'
+import { Btn } from '@/components/design/Btn'
 
 interface Note {
-  id:         string
+  id:            string
   appointmentId: string
-  transcript: string
-  subjective: string
-  objective:  string
-  assessment: string
-  plan:       string
-  icdHints:   string[]
-  language:   string
-  modelUsed:  string | null
-  approvedAt: string | null
-  approvedBy: string | null
+  transcript:    string
+  subjective:    string
+  objective:     string
+  assessment:    string
+  plan:          string
+  icdHints:      string[]
+  language:      string
+  modelUsed:     string | null
+  approvedAt:    string | null
+  approvedBy:    string | null
 }
 
 export default function Page({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
-  const [note,    setNote]    = useState<Note | null>(null)
-  const [draft,   setDraft]   = useState<Partial<Note>>({})
+  const [note,       setNote]       = useState<Note | null>(null)
+  const [draft,      setDraft]      = useState<Partial<Note>>({})
   const [transcript, setTranscript] = useState('')
-  const [loading, setLoading] = useState(true)
-  const [working, setWorking] = useState<'gen' | 'save' | 'approve' | null>(null)
-  const [err,     setErr]     = useState<string | null>(null)
+  const [loading,    setLoading]    = useState(true)
+  const [working,    setWorking]    = useState<'gen' | 'save' | 'approve' | null>(null)
+  const [err,        setErr]        = useState<string | null>(null)
 
   useEffect(() => { load() }, [id])
 
@@ -37,9 +38,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
     const r = await fetch(`/api/consultation/${id}/scribe`)
     if (r.ok) {
       const n: Note = await r.json()
-      setNote(n)
-      setDraft(n)
-      setTranscript(n.transcript)
+      setNote(n); setDraft(n); setTranscript(n.transcript)
     } else if (r.status === 404) {
       setNote(null)
     } else {
@@ -82,113 +81,158 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
   }
 
   if (loading) return (
-    <div className="max-w-3xl mx-auto px-4 py-10 flex items-center gap-2 text-slate-500">
-      <Loader2 className="w-4 h-4 animate-spin" /> Loading scribe…
+    <div style={{ maxWidth: 920, margin: '0 auto', padding: '40px 16px', display: 'flex', alignItems: 'center', gap: 8, color: 'var(--ink-3)' }}>
+      <Loader2 size={16} className="animate-spin" /> Loading scribe…
     </div>
   )
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
+    <div style={{
+      maxWidth: 920, margin: '0 auto',
+      padding: '28px clamp(16px, 4vw, 32px) 64px',
+      display: 'flex', flexDirection: 'column', gap: 22,
+      animation: 'mi-fade-up 320ms var(--ease-out-quart) both',
+    }}>
       <div>
-        <Link href="/doctor/dashboard" className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900">
-          <ArrowLeft className="w-3.5 h-3.5" /> Back
+        <Link href="/doctor/dashboard"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--ink-3)', textDecoration: 'none' }}>
+          <ArrowLeft size={14} /> Back
         </Link>
-        <h1 className="mt-3 text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100 flex items-center gap-2">
-          <Stethoscope className="w-5 h-5 text-blue-600" /> Clinical scribe
+        <h1 style={{
+          margin: '12px 0 0', fontSize: 28, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--ink)',
+          display: 'inline-flex', alignItems: 'center', gap: 10,
+        }}>
+          <Stethoscope size={22} style={{ color: 'var(--blue-700)' }} /> Clinical scribe
         </h1>
-        <p className="text-sm text-slate-500 mt-1">
+        <p style={{ margin: '6px 0 0', fontSize: 13, color: 'var(--ink-3)' }}>
           AI assists — you stay in charge. Nothing enters the patient&apos;s record until you approve.
         </p>
       </div>
 
       {err && (
-        <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          <ShieldAlert className="w-4 h-4 mt-0.5 shrink-0" /> {err}
+        <div style={{
+          display: 'flex', alignItems: 'flex-start', gap: 10,
+          background: 'rgba(245,158,11,.10)', border: '1px solid rgba(245,158,11,.30)',
+          borderRadius: 12, padding: '12px 14px',
+          fontSize: 13, color: '#a16207',
+        }}>
+          <ShieldAlert size={14} style={{ flex: 'none', marginTop: 2 }} /> {err}
         </div>
       )}
 
-      <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 space-y-3">
-        <label className="flex items-center gap-1.5 text-sm font-semibold text-slate-900 dark:text-slate-100">
-          <Mic className="w-4 h-4 text-slate-400" /> Transcript
+      <section style={{
+        background: 'var(--bg-elev)', border: '1px solid var(--border)',
+        borderRadius: 22, padding: 20, boxShadow: 'var(--shadow-card)',
+        display: 'flex', flexDirection: 'column', gap: 14,
+      }}>
+        <label style={{
+          display: 'inline-flex', alignItems: 'center', gap: 6,
+          fontSize: 13, fontWeight: 700, color: 'var(--ink)',
+        }}>
+          <Mic size={14} style={{ color: 'var(--ink-3)' }} /> Transcript
         </label>
         <textarea
           rows={8}
           value={transcript}
           onChange={e => setTranscript(e.target.value)}
           placeholder="Paste the consultation transcript here, or upload audio from the video room (coming soon)."
-          className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3 text-sm font-mono"
+          style={{
+            width: '100%', padding: '12px 14px', borderRadius: 12,
+            border: '1px solid var(--border)',
+            background: 'var(--bg-soft)', color: 'var(--ink)',
+            fontSize: 13, lineHeight: 1.5,
+            fontFamily: 'var(--font-mono)', resize: 'vertical',
+            outline: 'none',
+          }}
+          onFocus={e => { e.target.style.boxShadow = '0 0 0 4px rgba(37,99,235,.14)'; e.target.style.borderColor = 'var(--blue-600)' }}
+          onBlur={e => { e.target.style.boxShadow = ''; e.target.style.borderColor = 'var(--border)' }}
         />
-        <button
-          onClick={generate}
-          disabled={working === 'gen'}
-          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold disabled:opacity-50"
-        >
-          {working === 'gen' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+        <Btn kind="primary" onClick={generate} disabled={working === 'gen'}
+             leading={working === 'gen' ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}>
           {note ? 'Re-generate SOAP' : 'Generate SOAP'}
-        </button>
-      </div>
+        </Btn>
+      </section>
 
       {note && (
-        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 space-y-4">
-          <Section label="Subjective"  value={draft.subjective ?? ''}  onChange={v => setDraft(d => ({ ...d, subjective: v }))} />
-          <Section label="Objective"   value={draft.objective ?? ''}   onChange={v => setDraft(d => ({ ...d, objective:  v }))} />
-          <Section label="Assessment"  value={draft.assessment ?? ''}  onChange={v => setDraft(d => ({ ...d, assessment: v }))} />
-          <Section label="Plan"        value={draft.plan ?? ''}        onChange={v => setDraft(d => ({ ...d, plan:       v }))} />
+        <section style={{
+          background: 'var(--bg-elev)', border: '1px solid var(--border)',
+          borderRadius: 22, padding: 20, boxShadow: 'var(--shadow-card)',
+          display: 'flex', flexDirection: 'column', gap: 14,
+        }}>
+          <SoapField label="Subjective" value={draft.subjective ?? ''} onChange={v => setDraft(d => ({ ...d, subjective: v }))} />
+          <SoapField label="Objective"  value={draft.objective ?? ''}  onChange={v => setDraft(d => ({ ...d, objective: v }))} />
+          <SoapField label="Assessment" value={draft.assessment ?? ''} onChange={v => setDraft(d => ({ ...d, assessment: v }))} />
+          <SoapField label="Plan"       value={draft.plan ?? ''}       onChange={v => setDraft(d => ({ ...d, plan: v }))} />
 
           {(draft.icdHints ?? []).length > 0 && (
-            <div className="text-xs">
-              <p className="font-semibold text-slate-700 dark:text-slate-300 mb-1.5">ICD hints (verify before billing)</p>
-              <div className="flex flex-wrap gap-1.5">
+            <div>
+              <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: 'var(--ink-2)', marginBottom: 8 }}>
+                ICD hints (verify before billing)
+              </p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                 {(draft.icdHints ?? []).map((h, i) => (
-                  <span key={i} className="inline-block px-2 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">{h}</span>
+                  <span key={i} className="mono" style={{
+                    padding: '4px 10px', borderRadius: 999,
+                    background: 'var(--bg-soft)', color: 'var(--ink-2)',
+                    border: '1px solid var(--border)',
+                    fontSize: 11,
+                  }}>{h}</span>
                 ))}
               </div>
             </div>
           )}
 
-          <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800">
-            <div className="text-xs text-slate-500">
-              Model: <code className="font-mono">{note.modelUsed ?? '—'}</code> · Language: {note.language}
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            paddingTop: 12, borderTop: '1px solid var(--border)',
+            gap: 12, flexWrap: 'wrap',
+          }}>
+            <div style={{ fontSize: 11, color: 'var(--ink-3)' }}>
+              Model: <code className="mono">{note.modelUsed ?? '—'}</code> · Language: {note.language}
               {note.approvedAt && (
-                <span className="ml-3 inline-flex items-center gap-1 text-green-600">
-                  <CheckCircle2 className="w-3.5 h-3.5" /> Approved {new Date(note.approvedAt).toLocaleString('en-PK')}
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginLeft: 10, color: '#047857' }}>
+                  <CheckCircle2 size={13} /> Approved {new Date(note.approvedAt).toLocaleString('en-PK')}
                 </span>
               )}
             </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => save(false)}
-                disabled={working !== null}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50"
-              >
-                {working === 'save' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+            <div style={{ display: 'flex', gap: 8 }}>
+              <Btn kind="secondary" onClick={() => save(false)} disabled={working !== null}
+                   leading={working === 'save' ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}>
                 Save draft
-              </button>
-              <button
-                onClick={() => save(true)}
-                disabled={working !== null}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-600 hover:bg-green-700 text-white text-sm font-semibold disabled:opacity-50"
-              >
-                {working === 'approve' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
-                Approve & sign
-              </button>
+              </Btn>
+              <Btn kind="primary" onClick={() => save(true)} disabled={working !== null}
+                   style={{ background: 'var(--emerald-500)', boxShadow: '0 4px 12px -4px rgba(16,185,129,.55)' }}
+                   leading={working === 'approve' ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}>
+                Approve &amp; sign
+              </Btn>
             </div>
           </div>
-        </div>
+        </section>
       )}
     </div>
   )
 }
 
-function Section({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+function SoapField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
   return (
     <div>
-      <label className="text-xs uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400">{label}</label>
+      <label style={{
+        fontSize: 11, fontWeight: 700, color: 'var(--ink-3)',
+        letterSpacing: '.06em', textTransform: 'uppercase',
+      }}>{label}</label>
       <textarea
         rows={3}
         value={value}
         onChange={e => onChange(e.target.value)}
-        className="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3 text-sm"
+        style={{
+          marginTop: 6, width: '100%', padding: '10px 12px',
+          borderRadius: 10, border: '1px solid var(--border)',
+          background: 'var(--bg-soft)', color: 'var(--ink)',
+          fontSize: 13, lineHeight: 1.5, resize: 'vertical',
+          outline: 'none', fontFamily: 'var(--font-ui)',
+        }}
+        onFocus={e => { e.target.style.boxShadow = '0 0 0 4px rgba(37,99,235,.14)'; e.target.style.borderColor = 'var(--blue-600)' }}
+        onBlur={e => { e.target.style.boxShadow = ''; e.target.style.borderColor = 'var(--border)' }}
       />
     </div>
   )

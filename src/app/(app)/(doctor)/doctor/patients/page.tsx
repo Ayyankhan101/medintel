@@ -1,7 +1,8 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Users, Search, Clock, CheckCircle2, AlertTriangle, Video } from 'lucide-react'
+import { Users, Search } from 'lucide-react'
+import { AppointmentStatusPill, SeverityPill } from '@/components/design/badges'
 
 interface Appointment {
   id: string
@@ -13,17 +14,6 @@ interface Appointment {
     user: { name: string | null; email: string; medIntelCode: string | null }
   }
   escrow: { status: string } | null
-}
-
-const STATUS_CFG: Record<string, { label: string; icon: React.ElementType; bg: string; text: string }> = {
-  SCHEDULED:   { label: 'Scheduled',   icon: Clock,         bg: 'bg-blue-50',    text: 'text-blue-700'    },
-  IN_PROGRESS: { label: 'In Progress', icon: Video,         bg: 'bg-amber-50',   text: 'text-amber-700'   },
-  COMPLETED:   { label: 'Completed',   icon: CheckCircle2,  bg: 'bg-emerald-50', text: 'text-emerald-700' },
-}
-const SEV_CFG: Record<string, string> = {
-  ROUTINE:  'bg-green-100 text-green-700',
-  URGENT:   'bg-amber-100 text-amber-700',
-  CRITICAL: 'bg-red-100 text-red-700',
 }
 
 export default function DoctorPatientsPage() {
@@ -53,114 +43,153 @@ export default function DoctorPatientsPage() {
   })
 
   return (
-    <div className="max-w-4xl mx-auto px-4 space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-3">
+    <div style={{
+      maxWidth: 920, margin: '0 auto',
+      padding: '28px clamp(16px, 4vw, 32px) 64px',
+      display: 'flex', flexDirection: 'column', gap: 18,
+      animation: 'mi-fade-up 320ms var(--ease-out-quart) both',
+    }}>
+      <header style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">My Patients</h1>
-          <p className="text-sm text-slate-500 mt-0.5">All appointments assigned to you</p>
+          <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--violet-600)', letterSpacing: '.08em', textTransform: 'uppercase' }}>
+            Doctor console
+          </span>
+          <h1 style={{ margin: '4px 0 0', fontSize: 28, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--ink)' }}>
+            My patients
+          </h1>
+          <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--ink-3)' }}>
+            All appointments assigned to you.
+          </p>
         </div>
-        <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-full">
-          <Users className="w-3.5 h-3.5 text-blue-600" />
-          <span className="text-xs font-medium text-blue-700">{appointments.length} total</span>
+        <div style={{
+          display: 'inline-flex', alignItems: 'center', gap: 8,
+          padding: '6px 12px', borderRadius: 999,
+          background: 'rgba(37,99,235,.08)', border: '1px solid rgba(37,99,235,.20)',
+        }}>
+          <Users size={13} style={{ color: 'var(--blue-700)' }} />
+          <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--blue-700)' }}>{appointments.length} total</span>
         </div>
+      </header>
+
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+        {['ALL', 'SCHEDULED', 'IN_PROGRESS', 'COMPLETED'].map(s => {
+          const active = filter === s
+          return (
+            <button key={s} onClick={() => setFilter(s)} className="focus-ring"
+              style={{
+                padding: '6px 12px', borderRadius: 999,
+                border: '1px solid ' + (active ? 'var(--ink)' : 'var(--border)'),
+                background: active ? 'var(--ink)' : 'var(--bg-elev)',
+                color: active ? 'var(--bg)' : 'var(--ink-2)',
+                fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                transition: 'all 200ms var(--ease-out-quart)',
+              }}>
+              {s === 'ALL' ? 'All' : s.replace('_', ' ')}
+            </button>
+          )
+        })}
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-wrap gap-2">
-        {['ALL', 'SCHEDULED', 'IN_PROGRESS', 'COMPLETED'].map(s => (
-          <button
-            key={s}
-            onClick={() => setFilter(s)}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-              filter === s
-                ? 'bg-slate-900 text-white'
-                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-            }`}
-          >
-            {s === 'ALL' ? 'All' : s.replace('_', ' ')}
-          </button>
-        ))}
-      </div>
-
-      {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+      <div style={{ position: 'relative' }}>
+        <Search size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--ink-4)' }} />
         <input
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder="Search by name, email, or MedIntel code…"
-          className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          style={{
+            width: '100%', padding: '12px 14px 12px 40px',
+            borderRadius: 12, border: '1px solid var(--border)',
+            background: 'var(--bg-elev)', color: 'var(--ink)',
+            fontSize: 14, outline: 'none',
+            fontFamily: 'var(--font-ui)',
+          }}
+          onFocus={e => { e.target.style.boxShadow = '0 0 0 4px rgba(37,99,235,.14)'; e.target.style.borderColor = 'var(--blue-600)' }}
+          onBlur={e => { e.target.style.boxShadow = ''; e.target.style.borderColor = 'var(--border)' }}
         />
       </div>
 
       {loading && (
-        <div className="space-y-3">
-          {[1, 2, 3].map(i => (
-            <div key={i} className="h-24 bg-slate-100 rounded-2xl animate-pulse" />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {[0,1,2].map(i => (
+            <div key={i} style={{
+              height: 96, borderRadius: 18,
+              background: 'linear-gradient(90deg, var(--bg-soft) 0%, var(--bg-elev) 50%, var(--bg-soft) 100%)',
+              backgroundSize: '200% 100%',
+              animation: 'mi-shimmer 1.4s linear infinite',
+              border: '1px solid var(--border)',
+            }} />
           ))}
         </div>
       )}
 
       {!loading && filtered.length === 0 && (
-        <div className="text-center py-16 text-slate-400">
-          <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <Users className="w-8 h-8 text-slate-300" />
-          </div>
-          <p className="font-medium text-slate-500">No patients found</p>
-          <p className="text-sm mt-1">
-            {filter !== 'ALL' ? 'Try changing the filter' : 'Patients will appear here once appointments are booked'}
+        <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--ink-3)' }}>
+          <span style={{
+            width: 64, height: 64, borderRadius: 20,
+            background: 'var(--bg-soft)', color: 'var(--ink-4)',
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: 14,
+          }}>
+            <Users size={28} />
+          </span>
+          <p style={{ margin: 0, fontWeight: 600, color: 'var(--ink-2)' }}>No patients found</p>
+          <p style={{ margin: '4px 0 0', fontSize: 13 }}>
+            {filter !== 'ALL' ? 'Try changing the filter' : 'Patients will appear here once appointments are booked.'}
           </p>
         </div>
       )}
 
-      <div className="space-y-3">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {filtered.map(a => {
-          const cfg = STATUS_CFG[a.status] ?? STATUS_CFG.SCHEDULED
-          const Icon = cfg.icon
           const name = a.patient.user.name ?? a.patient.user.email
-
           return (
             <div
               key={a.id}
-              className="bg-white border border-slate-200 rounded-2xl p-4 hover:shadow-sm hover:border-blue-200 transition-all cursor-pointer"
               onClick={() => router.push(`/consultation/${a.id}`)}
+              style={{
+                background: 'var(--bg-elev)', border: '1px solid var(--border)',
+                borderRadius: 18, padding: 16, boxShadow: 'var(--shadow-card)',
+                cursor: 'pointer',
+                transition: 'transform 240ms var(--ease-out-quart), box-shadow 240ms var(--ease-out-quart), border-color 240ms ease',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = 'var(--shadow-hover)'; e.currentTarget.style.borderColor = 'rgba(37,99,235,.30)' }}
+              onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = 'var(--shadow-card)'; e.currentTarget.style.borderColor = 'var(--border)' }}
             >
-              <div className="flex items-start justify-between gap-3 flex-wrap">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center font-semibold text-slate-600 text-sm shrink-0">
-                    {name.slice(0, 2).toUpperCase()}
-                  </div>
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <span style={{
+                    width: 44, height: 44, borderRadius: 14,
+                    background: 'var(--bg-soft)', color: 'var(--ink-2)',
+                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 14, fontWeight: 700, flex: 'none',
+                  }}>{name.slice(0, 2).toUpperCase()}</span>
                   <div>
-                    <p className="font-medium text-slate-900">{name}</p>
-                    <p className="text-xs text-slate-400 font-mono mt-0.5">
+                    <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: 'var(--ink)' }}>{name}</p>
+                    <p className="mono" style={{ margin: '2px 0 0', fontSize: 11, color: 'var(--ink-4)' }}>
                       {a.patient.user.medIntelCode ?? a.patient.user.email}
                     </p>
                   </div>
                 </div>
-
-                <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                   {a.severityLevel && (
-                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${SEV_CFG[a.severityLevel] ?? 'bg-slate-100 text-slate-600'}`}>
-                      {a.severityLevel}
-                    </span>
+                    <SeverityPill level={a.severityLevel === 'CRITICAL' ? 'EMERGENCY' : a.severityLevel === 'URGENT' ? 'URGENT' : 'ROUTINE'} />
                   )}
-                  <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${cfg.bg} ${cfg.text}`}>
-                    <Icon className="w-3 h-3" /> {cfg.label}
-                  </span>
+                  <AppointmentStatusPill status={a.status as 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'REFUNDED'} />
                 </div>
               </div>
-
               {a.aiSummary && (
-                <p className="text-sm text-slate-500 mt-3 line-clamp-2 leading-relaxed">{a.aiSummary}</p>
+                <p style={{
+                  margin: '10px 0 0', fontSize: 13, color: 'var(--ink-3)', lineHeight: 1.5,
+                  display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+                }}>{a.aiSummary}</p>
               )}
-
-              <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100">
-                <span className="text-xs text-slate-400">
+              <div style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border)',
+              }}>
+                <span style={{ fontSize: 11, color: 'var(--ink-4)' }}>
                   {new Date(a.scheduledAt).toLocaleDateString('en-PK', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                 </span>
-                <span className="text-xs font-medium text-blue-600 hover:underline">
-                  Open consultation →
-                </span>
+                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--blue-700)' }}>Open consultation →</span>
               </div>
             </div>
           )
