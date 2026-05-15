@@ -83,6 +83,10 @@ model User {
   emailVerifyExpires   DateTime?
   passwordResetToken   String?   @unique
   passwordResetExpires DateTime?
+
+  // Soft-delete marker. PII is anonymized in-place; regulated records (Rx,
+  // audit logs) are retained per Drugs Act 1976 / PMDC.
+  deletedAt DateTime?
   createdAt     DateTime           @default(now())
   updatedAt     DateTime           @updatedAt
 

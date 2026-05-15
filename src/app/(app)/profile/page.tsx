@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { Copy, Check, Loader2, ShieldCheck, Mail, Phone, Calendar, IdCard } from 'lucide-react'
+import { signOut } from 'next-auth/react'
+import { Copy, Check, Loader2, ShieldCheck, Mail, Phone, Calendar, IdCard, Trash2 } from 'lucide-react'
 
 interface Me {
   id:            string
@@ -83,6 +84,8 @@ export default function ProfilePage() {
         )}
       </section>
 
+      <DangerZone />
+
       {me.doctor && (
         <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-5 space-y-3">
           <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Practice</h2>
@@ -96,6 +99,56 @@ export default function ProfilePage() {
         </section>
       )}
     </div>
+  )
+}
+
+function DangerZone() {
+  const [confirm, setConfirm] = useState('')
+  const [busy, setBusy]       = useState(false)
+  const [err, setErr]         = useState<string | null>(null)
+
+  const matches = confirm === 'DELETE MY ACCOUNT'
+
+  async function destroy() {
+    setBusy(true); setErr(null)
+    const res  = await fetch('/api/account/delete', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ confirm }),
+    })
+    const data = await res.json().catch(() => ({}))
+    setBusy(false)
+    if (!res.ok) { setErr(data.error ?? 'Could not delete account'); return }
+    await signOut({ callbackUrl: '/' })
+  }
+
+  return (
+    <section className="bg-red-50/40 dark:bg-red-950/20 border border-red-200 dark:border-red-900/50 rounded-xl p-5 space-y-3">
+      <h2 className="text-sm font-semibold text-red-700 dark:text-red-400 flex items-center gap-2">
+        <Trash2 className="w-4 h-4" /> Delete account
+      </h2>
+      <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+        Permanently deletes your personal information. Prescriptions, audit logs, and other regulated
+        medical records are retained as required by PMDC and the Drugs Act 1976. Type{' '}
+        <code className="font-mono bg-slate-100 dark:bg-slate-800 px-1 rounded">DELETE MY ACCOUNT</code> to confirm.
+      </p>
+      <input
+        type="text"
+        value={confirm}
+        onChange={e => setConfirm(e.target.value)}
+        placeholder="DELETE MY ACCOUNT"
+        className="w-full px-3 py-2 text-sm rounded-lg border border-red-200 dark:border-red-900/50 bg-white dark:bg-slate-950 font-mono"
+      />
+      {err && <p className="text-xs text-red-600">{err}</p>}
+      <button
+        onClick={destroy}
+        disabled={!matches || busy}
+        className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-red-300 text-white text-sm font-semibold rounded-lg"
+      >
+        {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+        Delete my account
+      </button>
+    </section>
   )
 }
 
