@@ -1,215 +1,634 @@
+'use client'
+
+import * as React from 'react'
 import Link from 'next/link'
-import { Activity, Mic, Brain, Lock, AlertTriangle, ArrowRight, ShieldCheck, Star, Building2, Quote, TrendingUp, Clock, MessagesSquare, Stethoscope } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import {
+  ArrowRight, Check, Mic, Shield, ShieldCheck, Wifi, Users, Phone,
+  CreditCard, Activity,
+} from 'lucide-react'
+import { Btn } from '@/components/design/Btn'
+import { VerifiedBadge, ClinicPlanPill } from '@/components/design/badges'
+import { PKR } from '@/components/design/helpers'
+
+type NavTarget = 'intake' | 'register-doctor' | 'register' | 'login' | 'legal-terms' | 'legal-privacy' | 'legal-pmdc'
 
 export default function HomePage() {
+  const router = useRouter()
+  const go = (target: NavTarget) => {
+    const map: Record<NavTarget, string> = {
+      'intake':           '/intake',
+      'register-doctor':  '/register/doctor',
+      'register':         '/register',
+      'login':            '/login',
+      'legal-terms':      '/legal/terms',
+      'legal-privacy':    '/legal/privacy',
+      'legal-pmdc':       '/legal/pmdc',
+    }
+    router.push(map[target])
+  }
+
   return (
-    <div className="min-h-screen bg-white dark:bg-slate-950 flex flex-col">
-      {/* Nav */}
-      <header className="sticky top-0 z-40 border-b border-slate-100 dark:border-slate-800 bg-white/90 dark:bg-slate-950/90 backdrop-blur-sm">
-        <div className="max-w-6xl mx-auto px-5 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center">
-              <Activity className="w-4 h-4 text-white" />
-            </div>
-            <span className="font-bold text-slate-900 dark:text-slate-100">MedIntel</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Link href="/login" className="px-3 py-1.5 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800">
-              Sign in
-            </Link>
-            <Link href="/register" className="px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-              Get started
-            </Link>
-          </div>
-        </div>
-      </header>
+    <div style={{ display: 'flex', flexDirection: 'column' }}>
+      <TopNav onSignIn={() => go('login')} onCta={() => go('register')} />
+      <Hero onCta={() => go('intake')} onSecondary={() => go('register-doctor')} />
+      <StatsBand />
+      <FeatureGrid />
+      <HowItWorks />
+      <ComplianceSection />
+      <Pricing />
+      <FooterCta onCta={() => go('intake')} />
+      <Footer onNav={go} />
+    </div>
+  )
+}
 
-      {/* Hero */}
-      <section className="flex-1 flex flex-col items-center justify-center text-center px-5 py-24 bg-gradient-to-b from-blue-50/60 dark:from-blue-950/30 to-white dark:to-slate-950">
-        <div className="inline-flex items-center gap-2 bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-400 text-xs font-semibold px-3 py-1.5 rounded-full mb-6 border border-blue-200 dark:border-blue-800">
-          <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
-          Now live in Pakistan
-        </div>
-        <h1 className="text-5xl sm:text-6xl font-extrabold text-slate-900 dark:text-slate-100 leading-[1.1] tracking-tight max-w-2xl mb-5">
-          Healthcare that{' '}
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500">
-            understands you
+/* ───── top nav ───── */
+function TopNav({ onSignIn, onCta }: { onSignIn: () => void; onCta: () => void }) {
+  return (
+    <header style={{
+      position: 'sticky', top: 0, zIndex: 30,
+      background: 'color-mix(in oklab, var(--bg) 80%, transparent)',
+      backdropFilter: 'blur(14px)',
+      WebkitBackdropFilter: 'blur(14px)',
+      borderBottom: '1px solid var(--border)',
+      padding: '10px clamp(20px, 4vw, 56px)',
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 18,
+    }}>
+      <Link href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: 10, color: 'var(--ink)', textDecoration: 'none' }}>
+        <span style={{
+          width: 28, height: 28, borderRadius: 9,
+          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+          background: 'linear-gradient(180deg, var(--blue-500), var(--blue-700))',
+          color: '#fff', fontWeight: 700, fontSize: 14,
+          boxShadow: '0 4px 12px -4px rgba(37,99,235,.55), inset 0 1px 0 rgba(255,255,255,.25)',
+        }}>M</span>
+        <span style={{ fontWeight: 700, fontSize: 15, letterSpacing: '-.005em' }}>MedIntel</span>
+      </Link>
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <button onClick={onSignIn} className="focus-ring"
+          style={{ background: 'transparent', border: 0, color: 'var(--ink-2)', fontWeight: 600, fontSize: 13, cursor: 'pointer', padding: '8px 12px' }}>
+          Sign in
+        </button>
+        <button onClick={onCta} className="focus-ring"
+          style={{
+            background: 'var(--blue-600)', color: '#fff', border: 0,
+            padding: '8px 14px', borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer',
+            boxShadow: '0 4px 12px -4px rgba(37,99,235,.45)',
+          }}>
+          Get started
+        </button>
+      </div>
+    </header>
+  )
+}
+
+/* ───── hero ───── */
+function Hero({ onCta, onSecondary }: { onCta: () => void; onSecondary: () => void }) {
+  return (
+    <section style={{
+      position: 'relative',
+      padding: 'clamp(40px, 6vw, 80px) clamp(20px, 4vw, 56px) clamp(48px, 6vw, 96px)',
+      background:
+        'radial-gradient(1200px 600px at 50% -10%, rgba(37,99,235,.12), transparent 60%), ' +
+        'radial-gradient(800px 500px at 90% 110%, rgba(139,92,246,.10), transparent 60%)',
+      borderBottom: '1px solid var(--border)',
+      overflow: 'hidden',
+    }}>
+      <div style={{ maxWidth: 1180, margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr', gap: 36 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 18 }}>
+          <span style={{
+            display: 'inline-flex', alignItems: 'center', gap: 8,
+            padding: '5px 12px 5px 6px', borderRadius: 999,
+            background: 'var(--bg-elev)', border: '1px solid var(--border)',
+            fontSize: 12, color: 'var(--ink-2)', fontWeight: 600,
+            boxShadow: 'var(--shadow-card)',
+            animation: 'mi-fade-up 360ms var(--ease-out-quart) 0ms both',
+          }}>
+            <span style={{
+              width: 22, height: 22, borderRadius: 999,
+              background: 'linear-gradient(135deg, var(--blue-500), var(--violet-500))',
+              color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 11, fontWeight: 700,
+            }}>✦</span>
+            <span>New · PMDC-licensed telemedicine for Pakistan</span>
           </span>
-        </h1>
-        <p className="text-lg text-slate-500 dark:text-slate-400 max-w-lg mb-10 leading-relaxed">
-          Speak your symptoms in Urdu or English. MedIntel transcribes, triages with AI,
-          and connects you with a verified doctor — payments held in escrow until you get your prescription.
-        </p>
-        <div className="flex flex-col sm:flex-row gap-3">
-          <Link
-            href="/register"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-all hover:shadow-lg hover:shadow-blue-200 active:scale-95"
-          >
-            Start consultation <ArrowRight className="w-4 h-4" />
-          </Link>
-          <Link
-            href="/login"
-            className="inline-flex items-center gap-2 px-6 py-3 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-semibold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
-          >
-            Doctor login
-          </Link>
+
+          <h1 style={{
+            margin: 0,
+            fontSize: 'clamp(36px, 6vw, 64px)',
+            fontWeight: 700, letterSpacing: '-.03em', lineHeight: 1.05,
+            maxWidth: 920,
+            animation: 'mi-fade-up 480ms var(--ease-out-quart) 80ms both',
+          }}>
+            Talk to a doctor in your language.
+            <br />
+            <span style={{
+              background: 'linear-gradient(90deg, var(--blue-600), var(--violet-500))',
+              WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent',
+            }}>Paid only when they help.</span>
+          </h1>
+
+          <p style={{
+            margin: 0, maxWidth: 620, fontSize: 18,
+            color: 'var(--ink-2)', lineHeight: 1.5,
+            animation: 'mi-fade-up 480ms var(--ease-out-quart) 180ms both',
+          }}>
+            MedIntel is voice-first telemedicine built for Pakistan. Describe your symptoms
+            in Urdu, Pashto, Punjabi, Sindhi, or English. A PMDC-licensed doctor sees you in
+            minutes. Fees are held in escrow until a prescription is issued.
+          </p>
+
+          <div style={{
+            display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center',
+            animation: 'mi-fade-up 480ms var(--ease-out-quart) 280ms both',
+          }}>
+            <Btn kind="primary" onClick={onCta} trailing={<ArrowRight size={16} strokeWidth={2} />}>
+              Start a consult
+            </Btn>
+            <Btn kind="secondary" onClick={onSecondary}>I&apos;m a doctor</Btn>
+          </div>
+
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap', justifyContent: 'center',
+            color: 'var(--ink-3)', fontSize: 12,
+            animation: 'mi-fade-up 480ms var(--ease-out-quart) 380ms both',
+          }}>
+            <VerifiedBadge tier={3} compact />
+            <span style={{ width: 1, height: 14, background: 'var(--border)' }} />
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <Shield size={13} strokeWidth={2} /> E2E encrypted
+            </span>
+            <span style={{ width: 1, height: 14, background: 'var(--border)' }} />
+            <span>Audited by PMDC under Telemedicine Guidelines 2022</span>
+          </div>
         </div>
 
-        {/* Trust badges */}
-        <div className="mt-12 flex flex-wrap items-center justify-center gap-6 text-sm text-slate-400 dark:text-slate-500">
-          {[
-            { icon: ShieldCheck, text: 'NADRA KYC verified' },
-            { icon: Lock,        text: 'Escrow-protected payments' },
-            { icon: Star,        text: 'PMDC licensed doctors' },
-          ].map(({ icon: Icon, text }) => (
-            <div key={text} className="flex items-center gap-1.5">
-              <Icon className="w-4 h-4" />
-              <span>{text}</span>
+        <HeroPreview />
+      </div>
+    </section>
+  )
+}
+
+function HeroPreview() {
+  const langs: [string, string][] = [['English', 'EN'], ['اردو', 'UR'], ['پښتو', 'PS'], ['پنجابی', 'PA'], ['سنڌي', 'SD']]
+  return (
+    <div style={{
+      position: 'relative', margin: '0 auto', maxWidth: 1080, width: '100%',
+      animation: 'mi-fade-up 600ms var(--ease-out-quart) 460ms both',
+    }}>
+      <div style={{
+        background: 'var(--bg-elev)', border: '1px solid var(--border)',
+        borderRadius: 24, boxShadow: '0 30px 80px -30px rgba(15,23,42,.40), var(--shadow-card)',
+        padding: 22,
+      }}>
+        <div style={{
+          display: 'grid', gridTemplateColumns: 'minmax(0,1.2fr) minmax(0,1fr)',
+          gap: 18, alignItems: 'center',
+        }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, textAlign: 'center' }}>
+            <button aria-hidden style={{
+              width: 96, height: 96, borderRadius: 999, border: 0,
+              background: 'linear-gradient(180deg, var(--blue-500), var(--blue-700))',
+              color: '#fff',
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              animation: 'mi-pulse-ring 1.8s ease-out infinite',
+              boxShadow: '0 12px 28px -8px rgba(37,99,235,.55), inset 0 1px 0 rgba(255,255,255,.25)',
+            }}>
+              <Mic size={40} />
+            </button>
+            <div style={{ fontSize: 14, fontWeight: 600 }}>Tap and describe how you feel</div>
+            <div style={{
+              display: 'flex', gap: 8, padding: 4,
+              background: 'var(--bg-soft)', border: '1px solid var(--border)',
+              borderRadius: 999, flexWrap: 'wrap', justifyContent: 'center',
+            }}>
+              {langs.map(([n, c], i) => (
+                <span key={c} className={c === 'EN' ? '' : 'urdu'} style={{
+                  padding: '4px 10px', borderRadius: 999,
+                  background: i === 1 ? 'var(--bg-elev)' : 'transparent',
+                  fontSize: c === 'EN' ? 12 : 14,
+                  fontWeight: 600,
+                  color: i === 1 ? 'var(--ink)' : 'var(--ink-3)',
+                  boxShadow: i === 1 ? '0 1px 0 rgba(15,23,42,.06)' : 'none',
+                }}>{n}</span>
+              ))}
+            </div>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <PreviewLine label="AI triage" sub="Lower-back pain · 3-day duration" tone="violet" />
+            <PreviewLine label="Severity"  sub="Routine · GP suggested" tone="emerald" />
+            <PreviewLine label="Match"     sub="Dr. Ayesha Khan · in 12 min" tone="blue" />
+            <PreviewLine label="Escrow"    sub={`${PKR(600)} held until Rx issued`} tone="amber" />
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function PreviewLine({ label, sub, tone }: { label: string; sub: string; tone: 'violet'|'emerald'|'blue'|'amber' }) {
+  const map = {
+    violet: { fg: 'var(--violet-600)', bg: 'rgba(139,92,246,.10)' },
+    emerald:{ fg: '#047857',           bg: 'rgba(16,185,129,.10)' },
+    blue:   { fg: 'var(--blue-700)',   bg: 'rgba(37,99,235,.10)' },
+    amber:  { fg: '#a16207',           bg: 'rgba(245,158,11,.12)' },
+  } as const
+  const m = map[tone]
+  return (
+    <div style={{
+      display: 'grid', gridTemplateColumns: 'auto 1fr auto',
+      gap: 12, alignItems: 'center',
+      padding: 12, borderRadius: 12,
+      border: '1px solid var(--border)', background: 'var(--bg-soft)',
+    }}>
+      <span style={{
+        fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase',
+        color: m.fg, padding: '2px 8px', borderRadius: 999, background: m.bg,
+      }}>{label}</span>
+      <span style={{ fontSize: 13, color: 'var(--ink-2)' }}>{sub}</span>
+      <Check size={14} strokeWidth={2.5} style={{ color: m.fg }} />
+    </div>
+  )
+}
+
+/* ───── stats band ───── */
+function StatsBand() {
+  const stats: [string, string, string][] = [
+    ['142,000+', 'Consults completed',    'last 12 months'],
+    ['1,284',    'PMDC-licensed doctors', 'verified quarterly'],
+    ['9m 12s',   'Median wait time',      'patient → doctor'],
+    ['71',       'Net promoter score',    'patients · 30-day'],
+  ]
+  return (
+    <section style={{ padding: '48px clamp(20px, 4vw, 56px)' }}>
+      <div style={{
+        maxWidth: 1180, margin: '0 auto',
+        display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+        gap: 36, justifyItems: 'start',
+      }}>
+        {stats.map(([v, l, s]) => (
+          <div key={l} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <span className="mono" style={{ fontSize: 36, fontWeight: 700, letterSpacing: '-.02em', lineHeight: 1 }}>{v}</span>
+            <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink-2)' }}>{l}</span>
+            <span style={{ fontSize: 12, color: 'var(--ink-3)' }}>{s}</span>
+          </div>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+/* ───── features ───── */
+type Accent = 'blue' | 'violet' | 'amber' | 'emerald'
+const ACCENT_MAP: Record<Accent, { fg: string; bg: string }> = {
+  blue:    { fg: 'var(--blue-700)',   bg: 'rgba(37,99,235,.10)' },
+  violet:  { fg: 'var(--violet-600)', bg: 'rgba(139,92,246,.10)' },
+  amber:   { fg: '#a16207',           bg: 'rgba(245,158,11,.12)' },
+  emerald: { fg: '#047857',           bg: 'rgba(16,185,129,.10)' },
+}
+
+type IconCmp = React.ComponentType<{ size?: number; strokeWidth?: number }>
+
+function FeatureGrid() {
+  const feats: { kicker: string; accent: Accent; title: string; sub: string; Icon: IconCmp }[] = [
+    { kicker: 'Voice-first',   accent: 'blue',    title: 'Describe symptoms in five languages',         sub: 'Urdu, Pashto, Punjabi, Sindhi, English. Live translation for the doctor.',                 Icon: Mic         },
+    { kicker: 'AI triage',     accent: 'violet',  title: 'Severity ranked before you wait',             sub: 'An AI clinical scribe pre-reads symptoms so the right doctor sees you faster.',           Icon: Activity    },
+    { kicker: 'Escrow',        accent: 'amber',   title: 'Pay only when you receive care',              sub: 'Funds are held in escrow until a prescription is issued. Refunds for no-shows.',          Icon: CreditCard  },
+    { kicker: 'PMDC-verified', accent: 'emerald', title: 'Every doctor is licensed — every quarter',    sub: 'We re-verify against the PMDC register every 90 days. No expired licenses.',              Icon: ShieldCheck },
+    { kicker: 'Low bandwidth', accent: 'blue',    title: 'Voice-only fallback when video drops',        sub: 'If your data dips below 250 Kbps, we switch you to a clean audio consult automatically.', Icon: Wifi        },
+    { kicker: 'Family',        accent: 'violet',  title: 'Share with family safely',                    sub: 'Add your spouse, parents, or children with role-based access. Records stay encrypted.',   Icon: Users       },
+  ]
+  return (
+    <section style={{ padding: '32px clamp(20px, 4vw, 56px)' }}>
+      <div style={{ maxWidth: 1180, margin: '0 auto' }}>
+        <SectionHeader
+          kicker="What we do differently"
+          title="Built for how Pakistan actually talks, pays, and trusts."
+          sub="Most telehealth assumes English, debit cards, and broadband. We assumed none of that and started over."
+        />
+        <div style={{
+          display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+          gap: 16, marginTop: 32,
+        }}>
+          {feats.map(f => <FeatureCard key={f.title} {...f} />)}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function FeatureCard({ kicker, accent, title, sub, Icon }: { kicker: string; accent: Accent; title: string; sub: string; Icon: IconCmp }) {
+  const a = ACCENT_MAP[accent]
+  return (
+    <div style={{
+      background: 'var(--bg-elev)', border: '1px solid var(--border)',
+      borderRadius: 22, padding: 20,
+      display: 'flex', flexDirection: 'column', gap: 12,
+      boxShadow: 'var(--shadow-card)',
+    }}>
+      <div style={{
+        height: 140, borderRadius: 14,
+        background: 'linear-gradient(180deg, var(--bg-soft), var(--bg-elev))',
+        border: '1px solid var(--border)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}>
+        <span style={{
+          width: 56, height: 56, borderRadius: 16,
+          background: a.bg, color: a.fg,
+          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <Icon size={26} strokeWidth={2} />
+        </span>
+      </div>
+      <span style={{ fontSize: 11, fontWeight: 700, color: a.fg, letterSpacing: '.06em', textTransform: 'uppercase' }}>{kicker}</span>
+      <h3 style={{ margin: 0, fontSize: 17, fontWeight: 700, letterSpacing: '-.01em', lineHeight: 1.3 }}>{title}</h3>
+      <p style={{ margin: 0, fontSize: 13, color: 'var(--ink-3)', lineHeight: 1.5 }}>{sub}</p>
+    </div>
+  )
+}
+
+function SectionHeader({ kicker, title, sub }: { kicker?: string; title: string; sub?: string }) {
+  return (
+    <div style={{ textAlign: 'left', maxWidth: 720, display: 'flex', flexDirection: 'column', gap: 10 }}>
+      {kicker && (
+        <span style={{
+          fontSize: 11, fontWeight: 700, color: 'var(--blue-700)',
+          letterSpacing: '.08em', textTransform: 'uppercase',
+        }}>{kicker}</span>
+      )}
+      <h2 style={{ margin: 0, fontSize: 'clamp(26px, 3.4vw, 36px)', fontWeight: 700, letterSpacing: '-.02em', lineHeight: 1.15 }}>{title}</h2>
+      {sub && <p style={{ margin: 0, fontSize: 16, color: 'var(--ink-3)', lineHeight: 1.55 }}>{sub}</p>}
+    </div>
+  )
+}
+
+/* ───── how it works ───── */
+function HowItWorks() {
+  const steps: [string, string][] = [
+    ['Talk',  "Tap the mic. Describe what's bothering you in your language. We listen for 30–60 seconds."],
+    ['Match', 'We pre-read symptoms and route you to a PMDC-licensed doctor who speaks your language.'],
+    ['Treat', 'Video consult, AI-assisted notes, and a prescription. Escrow releases when Rx is issued.'],
+  ]
+  return (
+    <section style={{ padding: '64px clamp(20px, 4vw, 56px)' }}>
+      <div style={{ maxWidth: 1180, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 32 }}>
+        <SectionHeader kicker="How it works" title="Three steps. Calm pace. No surprises." />
+        <ol style={{
+          listStyle: 'none', margin: 0, padding: 0,
+          display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+          gap: 14,
+        }}>
+          {steps.map(([t, d], i) => (
+            <li key={t} style={{
+              background: 'var(--bg-elev)', border: '1px solid var(--border)',
+              borderRadius: 18, padding: 18,
+              display: 'flex', flexDirection: 'column', gap: 8,
+            }}>
+              <span style={{
+                width: 32, height: 32, borderRadius: 10,
+                background: 'linear-gradient(180deg, var(--blue-500), var(--blue-700))',
+                color: '#fff', fontWeight: 700, fontSize: 14,
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: '0 4px 12px -4px rgba(37,99,235,.55)',
+                fontFamily: 'var(--font-mono)',
+              }}>{i + 1}</span>
+              <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, letterSpacing: '-.01em' }}>{t}</h3>
+              <p style={{ margin: 0, color: 'var(--ink-3)', fontSize: 14, lineHeight: 1.5 }}>{d}</p>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </section>
+  )
+}
+
+/* ───── compliance ───── */
+function ComplianceSection() {
+  const items: { Icon: IconCmp; t: string; s: string }[] = [
+    { Icon: ShieldCheck, t: 'PMDC', s: 'Pakistan Medical & Dental Council · doctor licensure' },
+    { Icon: CreditCard,  t: 'SBP',  s: 'State Bank · escrow & PCI-DSS via Stripe Connect' },
+    { Icon: Shield,      t: 'PECA', s: 'Prevention of Electronic Crimes Act · data residency' },
+    { Icon: Phone,       t: 'PTA',  s: 'Telecom Authority · OTP & SMS compliance' },
+  ]
+  return (
+    <section style={{
+      padding: '48px clamp(20px, 4vw, 56px)',
+      background: 'var(--bg-soft)',
+      borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)',
+    }}>
+      <div style={{ maxWidth: 1180, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 24 }}>
+        <SectionHeader
+          kicker="Built on regulated rails"
+          title="Identity, licensing, and money — verified by the institutions Pakistan already trusts."
+        />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
+          {items.map(({ Icon, t, s }) => (
+            <div key={t} style={{
+              display: 'flex', alignItems: 'flex-start', gap: 12,
+              padding: 16, background: 'var(--bg-elev)',
+              border: '1px solid var(--border)', borderRadius: 16,
+            }}>
+              <span style={{
+                width: 36, height: 36, borderRadius: 10, flex: 'none',
+                background: 'rgba(37,99,235,.10)', color: 'var(--blue-700)',
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <Icon size={18} strokeWidth={2} />
+              </span>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 14 }}>{t}</div>
+                <div style={{ fontSize: 12, color: 'var(--ink-3)', lineHeight: 1.45, marginTop: 2 }}>{s}</div>
+              </div>
             </div>
           ))}
         </div>
-      </section>
+      </div>
+    </section>
+  )
+}
 
-      {/* Features */}
-      <section className="py-20 px-5 bg-slate-50 dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800">
-        <div className="max-w-5xl mx-auto">
-          <p className="text-center text-xs font-semibold uppercase tracking-widest text-blue-600 dark:text-blue-400 mb-3">How it works</p>
-          <h2 className="text-3xl font-bold text-center text-slate-900 dark:text-slate-100 mb-14">
-            From symptom to prescription in minutes
-          </h2>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[
-              { icon: Mic,           color: 'bg-red-100 text-red-600',    step: '01', title: 'Voice Intake',     desc: 'Record your symptoms in Urdu or English. Our medical-grade AI transcribes and understands local dialects.' },
-              { icon: Brain,         color: 'bg-purple-100 text-purple-600', step: '02', title: 'AI Triage',     desc: 'Severity score 1-10, department mapping, and a pre-filled summary sent to your doctor before the call.' },
-              { icon: Lock,          color: 'bg-green-100 text-green-600',  step: '03', title: 'Escrow Payment', desc: 'Pay once. Funds are held securely and released to the doctor only after your prescription is delivered.' },
-              { icon: AlertTriangle, color: 'bg-amber-100 text-amber-600',  step: '04', title: 'Emergency Protocol', desc: 'Critical symptoms trigger voice guidance, first-aid steps, and show the 3 nearest emergency hospitals.' },
-            ].map(f => (
-              <div key={f.step} className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-6 space-y-4 hover:shadow-md transition-shadow">
-                <div className="flex items-center justify-between">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${f.color}`}>
-                    <f.icon className="w-5 h-5" />
-                  </div>
-                  <span className="text-xs font-bold text-slate-300 dark:text-slate-600">{f.step}</span>
+/* ───── pricing ───── */
+const PRICING: { plan: 'STARTER'|'STANDARD'|'ENTERPRISE'; price: number | null; period: string; note: string; features: string[]; cta: string; primary: boolean }[] = [
+  { plan: 'STARTER',   price: 0,     period: 'per month', note: 'For independent practitioners',
+    features: ['Up to 60 consults / month', '1 doctor', 'Voice + chat', 'Standard escrow', 'Email support'], cta: 'Start free', primary: false },
+  { plan: 'STANDARD',  price: 14999, period: 'per month', note: 'Most popular · for small clinics',
+    features: ['Up to 600 consults / month', 'Up to 8 doctors', 'Branded clinic profile', 'WhatsApp + voice number', 'Roster + invitations', 'Priority support'], cta: 'Pick Standard', primary: true },
+  { plan: 'ENTERPRISE', price: null, period: 'custom', note: 'Hospitals & networks',
+    features: ['Unlimited consults', 'Unlimited doctors', 'Multi-clinic dashboards', 'Dedicated success manager', 'Single sign-on (SAML)', 'Custom SLA'], cta: 'Talk to sales', primary: false },
+]
+
+function Pricing() {
+  return (
+    <section style={{ padding: '64px clamp(20px, 4vw, 56px)', borderTop: '1px solid var(--border)' }}>
+      <div style={{ maxWidth: 1180, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 28 }}>
+        <SectionHeader
+          kicker="Pricing"
+          title="Free for patients. Transparent for clinics."
+          sub="Clinics pay a flat monthly platform fee. We never take a cut of the consult fee."
+        />
+        <div style={{
+          display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+          gap: 14, alignItems: 'stretch',
+        }}>
+          {PRICING.map(p => (
+            <div key={p.plan} style={{
+              background: p.primary ? 'linear-gradient(180deg, rgba(37,99,235,.04), var(--bg-elev))' : 'var(--bg-elev)',
+              border: '1px solid ' + (p.primary ? 'rgba(37,99,235,.35)' : 'var(--border)'),
+              borderRadius: 22, padding: 22,
+              display: 'flex', flexDirection: 'column', gap: 14,
+              boxShadow: p.primary ? '0 12px 32px -16px rgba(37,99,235,.35)' : 'var(--shadow-card)',
+            }}>
+              <ClinicPlanPill plan={p.plan} />
+              <div>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+                  {p.price === null
+                    ? <span style={{ fontSize: 32, fontWeight: 700, letterSpacing: '-.02em' }}>Custom</span>
+                    : <span className="mono" style={{ fontSize: 36, fontWeight: 700, letterSpacing: '-.02em', lineHeight: 1 }}>
+                        {p.price === 0 ? 'Free' : PKR(p.price)}
+                      </span>}
                 </div>
-                <div>
-                  <h3 className="font-semibold text-slate-900 dark:text-slate-100 mb-1">{f.title}</h3>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">{f.desc}</p>
-                </div>
+                <div style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 4 }}>{p.note} · {p.period}</div>
               </div>
-            ))}
-          </div>
+              <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {p.features.map(f => (
+                  <li key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 13, color: 'var(--ink-2)' }}>
+                    <span style={{
+                      width: 16, height: 16, borderRadius: 999, flex: 'none', marginTop: 2,
+                      background: 'rgba(37,99,235,.10)', color: 'var(--blue-700)',
+                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      <Check size={10} strokeWidth={3} />
+                    </span>
+                    {f}
+                  </li>
+                ))}
+              </ul>
+              <Btn kind={p.primary ? 'primary' : 'secondary'} full>{p.cta}</Btn>
+            </div>
+          ))}
         </div>
-      </section>
+      </div>
+    </section>
+  )
+}
 
-      {/* Outcome metrics */}
-      <section className="py-16 px-5 bg-white dark:bg-slate-950 border-t border-slate-100 dark:border-slate-800">
-        <div className="max-w-5xl mx-auto">
-          <p className="text-center text-xs font-semibold uppercase tracking-widest text-blue-600 dark:text-blue-400 mb-3">Outcomes</p>
-          <h2 className="text-3xl font-bold text-center text-slate-900 dark:text-slate-100 mb-12">
-            Built to move the numbers that matter
-          </h2>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[
-              { icon: Clock,          stat: '~50%', label: 'Less time on clinical notes',        sub: 'AI scribe drafts the SOAP note from the consult transcript.' },
-              { icon: MessagesSquare, stat: '60%',  label: 'Front-desk queries deflected',       sub: 'WhatsApp + web triage handles bookings and symptom intake 24/7.' },
-              { icon: TrendingUp,     stat: '4×',   label: 'Faster severity-to-doctor handoff',  sub: 'Server-authoritative triage routes patients before they call.' },
-              { icon: Stethoscope,    stat: '17',   label: 'Specialties on the canonical roster', sub: 'Single source of truth — the LLM cannot invent a routing target.' },
-            ].map(m => (
-              <div key={m.label} className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 space-y-3">
-                <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 flex items-center justify-center">
-                  <m.icon className="w-5 h-5" />
-                </div>
-                <p className="text-3xl font-extrabold text-slate-900 dark:text-slate-100">{m.stat}</p>
-                <p className="text-sm font-medium text-slate-700 dark:text-slate-300">{m.label}</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">{m.sub}</p>
-              </div>
-            ))}
+/* ───── footer CTA ───── */
+function FooterCta({ onCta }: { onCta: () => void }) {
+  return (
+    <section style={{ padding: '64px clamp(20px, 4vw, 56px)' }}>
+      <div style={{
+        maxWidth: 980, margin: '0 auto',
+        background: 'linear-gradient(135deg, var(--blue-700) 0%, var(--blue-600) 50%, var(--violet-600) 100%)',
+        borderRadius: 28, padding: 'clamp(28px, 5vw, 56px)',
+        color: '#fff', textAlign: 'center',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14,
+        boxShadow: '0 28px 64px -24px rgba(37,99,235,.55)',
+        position: 'relative', overflow: 'hidden',
+      }}>
+        <h2 style={{ margin: 0, fontSize: 'clamp(28px, 4vw, 42px)', fontWeight: 700, letterSpacing: '-.02em' }}>
+          A doctor in your pocket — in your language.
+        </h2>
+        <p style={{ margin: 0, fontSize: 16, color: 'rgba(255,255,255,.85)', maxWidth: 540, lineHeight: 1.5 }}>
+          Start a consult in under a minute. You pay nothing until a prescription is issued.
+        </p>
+        <button onClick={onCta} className="focus-ring"
+          style={{
+            background: '#fff', color: 'var(--blue-700)', border: 0,
+            padding: '0 22px', height: 52, borderRadius: 14,
+            fontSize: 15, fontWeight: 700, cursor: 'pointer',
+            display: 'inline-flex', alignItems: 'center', gap: 8,
+            boxShadow: '0 8px 20px -8px rgba(0,0,0,.25)', marginTop: 6,
+          }}>
+          Start a consult <ArrowRight size={16} strokeWidth={2.5} />
+        </button>
+      </div>
+    </section>
+  )
+}
+
+/* ───── footer ───── */
+function Footer({ onNav }: { onNav: (t: NavTarget) => void }) {
+  return (
+    <footer style={{ padding: '40px clamp(20px, 4vw, 56px) 60px', borderTop: '1px solid var(--border)' }}>
+      <div style={{
+        maxWidth: 1180, margin: '0 auto',
+        display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 24,
+      }}>
+        <div>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+            <span style={{
+              width: 28, height: 28, borderRadius: 9,
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              background: 'linear-gradient(180deg, var(--blue-500), var(--blue-700))',
+              color: '#fff', fontWeight: 700, fontSize: 14,
+            }}>M</span>
+            <span style={{ fontWeight: 700, fontSize: 15 }}>MedIntel</span>
           </div>
-          <p className="mt-6 text-center text-xs text-slate-400">
-            Reductions reflect target outcomes for partner clinics. Validated against our internal triage eval (31 English + 17 multilingual cases) and the clinical scribe pilot.
+          <p style={{ margin: 0, fontSize: 12, color: 'var(--ink-3)', lineHeight: 1.5 }}>
+            Voice-first telemedicine for Pakistan.<br />
+            Made in Karachi · regulated under PMDC.
           </p>
         </div>
-      </section>
-
-      {/* Logos strip */}
-      <section className="py-12 px-5 bg-slate-50 dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800">
-        <div className="max-w-5xl mx-auto">
-          <p className="text-center text-xs font-semibold uppercase tracking-widest text-slate-400 mb-6">Partner clinics &amp; pilot programs</p>
-          <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-4 opacity-70">
-            {['Karachi Heart Center', 'Lahore Family Clinic', 'Peshawar Telehealth', 'Islamabad Polyclinic', 'Multan Care Group'].map(name => (
-              <div key={name} className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
-                <Building2 className="w-4 h-4" />
-                <span className="text-sm font-semibold tracking-tight">{name}</span>
-              </div>
-            ))}
+        <FooterCol title="Product" items={[
+          ['For patients', 'intake'],
+          ['For doctors',  'register-doctor'],
+          ['For clinics',  'register'],
+        ]} onNav={onNav} />
+        <FooterCol title="Trust" items={[
+          ['Terms',           'legal-terms'],
+          ['Privacy',         'legal-privacy'],
+          ['PMDC compliance', 'legal-pmdc'],
+        ]} onNav={onNav} />
+        <FooterCol title="Company" items={[['About', null], ['Careers', null], ['Press', null]]} />
+        <div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--ink-3)', letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 10 }}>
+            Need help?
           </div>
-          <p className="mt-4 text-center text-[11px] text-slate-400">Placeholder logos. Logos shown with partner permission only.</p>
-        </div>
-      </section>
-
-      {/* Testimonials */}
-      <section className="py-16 px-5 bg-white dark:bg-slate-950 border-t border-slate-100 dark:border-slate-800">
-        <div className="max-w-5xl mx-auto">
-          <p className="text-center text-xs font-semibold uppercase tracking-widest text-blue-600 dark:text-blue-400 mb-3">From the frontline</p>
-          <h2 className="text-3xl font-bold text-center text-slate-900 dark:text-slate-100 mb-12">What clinicians say</h2>
-          <div className="grid md:grid-cols-2 gap-6">
-            {[
-              {
-                quote: 'Patients reach me already triaged — severity, suggested specialty, summary. The first five minutes of every consult are no longer wasted.',
-                name:  'Dr. Ayesha K.',
-                role:  'General Physician, Karachi',
-              },
-              {
-                quote: 'The Urdu and Pashto recognition is the only one I have seen that doesn\'t mangle local words. The scribe saves me half an hour every clinic.',
-                name:  'Dr. Hamza R.',
-                role:  'Internal Medicine, Peshawar',
-              },
-            ].map(t => (
-              <figure key={t.name} className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 space-y-4">
-                <Quote className="w-5 h-5 text-blue-500" />
-                <blockquote className="text-sm leading-relaxed text-slate-700 dark:text-slate-300">{t.quote}</blockquote>
-                <figcaption className="text-xs">
-                  <p className="font-semibold text-slate-900 dark:text-slate-100">{t.name}</p>
-                  <p className="text-slate-500">{t.role}</p>
-                </figcaption>
-              </figure>
-            ))}
+          <div style={{ fontSize: 13, color: 'var(--ink-2)', lineHeight: 1.6 }}>
+            <a href="tel:+92021111634683" style={{ color: 'inherit', textDecoration: 'none' }}>+92 21 111 MEDINT</a><br />
+            <a href="mailto:hello@medintel.pk" style={{ color: 'inherit', textDecoration: 'none' }}>hello@medintel.pk</a>
           </div>
         </div>
-      </section>
+      </div>
+      <div style={{
+        maxWidth: 1180, margin: '40px auto 0', paddingTop: 20,
+        borderTop: '1px solid var(--border)',
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8,
+        fontSize: 11, color: 'var(--ink-4)',
+      }}>
+        <span>© 2026 MedIntel Health (Pvt) Ltd. CUIN 0184902.</span>
+        <span className="mono">v1.0.0</span>
+      </div>
+    </footer>
+  )
+}
 
-      {/* For clinics CTA */}
-      <section className="py-16 px-5 bg-gradient-to-b from-blue-50 dark:from-blue-950/30 to-white dark:to-slate-950 border-t border-slate-100 dark:border-slate-800">
-        <div className="max-w-3xl mx-auto text-center space-y-5">
-          <div className="inline-flex items-center gap-2 bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-400 text-xs font-semibold px-3 py-1.5 rounded-full">
-            <Building2 className="w-3.5 h-3.5" /> For clinics &amp; hospitals
-          </div>
-          <h2 className="text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">Bring MedIntel to your front desk</h2>
-          <p className="text-base text-slate-600 dark:text-slate-400 leading-relaxed">
-            WhatsApp triage, voice booking, AI clinical scribe, and a single dashboard for every minute used.
-            From <strong>2,000 minutes / mo</strong> on Starter to <strong>25,000</strong> on Enterprise with SLA.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Link href="/clinic/register" className="inline-flex items-center gap-2 px-6 py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-semibold rounded-xl hover:opacity-90 transition-opacity">
-              Create clinic account <ArrowRight className="w-4 h-4" />
-            </Link>
-            <Link href="mailto:partners@medintel.app?subject=MedIntel%20for%20Clinics" className="inline-flex items-center gap-2 px-6 py-3 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-semibold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors">
-              Talk to sales
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="border-t border-slate-100 dark:border-slate-800 py-8 px-5 text-center text-sm text-slate-400 dark:text-slate-500">
-        <div className="flex items-center justify-center gap-2 mb-2">
-          <div className="w-5 h-5 rounded bg-blue-600 flex items-center justify-center">
-            <Activity className="w-3 h-3 text-white" />
-          </div>
-          <span className="font-semibold text-slate-600 dark:text-slate-400">MedIntel</span>
-        </div>
-        <p>Built for Pakistan — No patient should die because they couldn&apos;t explain their pain.</p>
-      </footer>
+function FooterCol({ title, items, onNav }: {
+  title: string
+  items: [string, NavTarget | null][]
+  onNav?: (t: NavTarget) => void
+}) {
+  return (
+    <div>
+      <div style={{
+        fontSize: 11, fontWeight: 700, color: 'var(--ink-3)',
+        letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 10,
+      }}>{title}</div>
+      <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
+        {items.map(([t, target]) => (
+          <li key={t}>
+            <button
+              onClick={() => target && onNav?.(target)}
+              style={{
+                background: 'transparent', border: 0, padding: 0,
+                color: 'var(--ink-2)', fontSize: 13, cursor: target ? 'pointer' : 'default',
+                fontFamily: 'var(--font-ui)', textAlign: 'left',
+              }}
+            >{t}</button>
+          </li>
+        ))}
+      </ul>
     </div>
   )
 }
