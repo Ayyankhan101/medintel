@@ -167,6 +167,7 @@ model Patient {
   medicalRecords MedicalRecord[]
   appointments   Appointment[]
   triages        Triage[]
+  reviews        Review[]
 }
 
 model Triage {
@@ -212,6 +213,7 @@ model Doctor {
   clinic   Clinic? @relation(fields: [clinicId], references: [id])
 
   appointments Appointment[]
+  reviews      Review[]
 
   @@index([clinicId])
 }
@@ -262,11 +264,27 @@ model Appointment {
 
   escrow    Escrow?
   note      ConsultationNote?
+  review    Review?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([patientId])
   @@index([doctorId])
+}
+
+model Review {
+  id            String      @id @default(cuid())
+  appointmentId String      @unique
+  appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  patientId     String
+  patient       Patient     @relation(fields: [patientId], references: [id])
+  doctorId      String
+  doctor        Doctor      @relation(fields: [doctorId], references: [id])
+  rating        Int         // 1..5, enforced at app + DB-CHECK level
+  comment       String?     @db.Text
+  createdAt     DateTime    @default(now())
+
+  @@index([doctorId, createdAt(sort: Desc)])
 }
 
 model ConsultationNote {

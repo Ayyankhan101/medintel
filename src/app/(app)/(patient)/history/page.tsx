@@ -3,7 +3,8 @@ import { useEffect, useState } from 'react'
 import { MedicalTimeline } from '@/components/records/MedicalTimeline'
 import { RecordUploader } from '@/components/records/RecordUploader'
 import { Button } from '@/components/ui/button'
-import { Plus, X, Download, FileText, Calendar, Trash2, Loader2 } from 'lucide-react'
+import { Plus, X, Download, FileText, Calendar, Trash2, Loader2, Star } from 'lucide-react'
+import { ReviewForm } from '@/components/reviews/ReviewForm'
 
 interface MedicalRecord {
   id: string
@@ -24,6 +25,7 @@ interface Appointment {
   severityScore:    number | null
   prescriptionText: string | null
   doctor: { specialization: string; user: { email: string; name: string | null } } | null
+  review: { id: string; rating: number } | null
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -216,6 +218,23 @@ export default function HistoryPage() {
                     )}
                   </div>
                 </div>
+                {a.status === 'COMPLETED' && a.doctor && (
+                  a.review ? (
+                    <div className="mt-3 border-t border-slate-100 dark:border-slate-700 pt-3 flex items-center gap-1.5 text-xs text-slate-500">
+                      <span>Your rating:</span>
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <Star key={i} className={`w-3.5 h-3.5 ${i < a.review!.rating ? 'fill-amber-400 text-amber-400' : 'text-slate-300'}`} />
+                      ))}
+                    </div>
+                  ) : (
+                    <ReviewForm
+                      appointmentId={a.id}
+                      onSubmitted={rating => setAppointments(prev =>
+                        prev.map(x => x.id === a.id ? { ...x, review: { id: 'pending', rating } } : x)
+                      )}
+                    />
+                  )
+                )}
                 {rescheduling === a.id && (
                   <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-slate-100 dark:border-slate-700 pt-3">
                     <input

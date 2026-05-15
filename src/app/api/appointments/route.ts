@@ -106,7 +106,10 @@ export async function GET(req: NextRequest) {
   const appointments = await prisma.appointment.findMany({
     where:   { patientId: patient.id },
     orderBy: { createdAt: 'desc' },
-    include: { doctor: { include: { user: true } } },
+    include: {
+      doctor: { include: { user: true } },
+      review: { select: { id: true, rating: true } },
+    },
   })
 
   return NextResponse.json({ appointments })

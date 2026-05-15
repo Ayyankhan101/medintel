@@ -20,12 +20,24 @@ interface Doctor {
   user:            { name: string | null; email: string }
 }
 
+interface ReviewRow {
+  id:        string
+  rating:    number
+  comment:   string | null
+  createdAt: string
+  author:    string
+}
+
 function ProfileInner({ id }: { id: string }) {
   const router = useRouter()
   const params = useSearchParams()
   const [doctor,  setDoctor]  = useState<Doctor | null>(null)
   const [loading, setLoading] = useState(true)
   const [error,   setError]   = useState<string | null>(null)
+  const [reviews, setReviews]         = useState<ReviewRow[]>([])
+  const [revLoading, setRevLoading]   = useState(true)
+  const [nextCursor, setNextCursor]   = useState<string | null>(null)
+  const [moreBusy, setMoreBusy]       = useState(false)
 
   useEffect(() => {
     fetch(`/api/doctors/${id}`)
@@ -36,7 +48,24 @@ function ProfileInner({ id }: { id: string }) {
       .then(setDoctor)
       .catch(e => setError(e.message))
       .finally(() => setLoading(false))
+
+    fetch(`/api/doctors/${id}/reviews?limit=10`)
+      .then(r => r.ok ? r.json() : { reviews: [], nextCursor: null })
+      .then(d => { setReviews(d.reviews ?? []); setNextCursor(d.nextCursor ?? null) })
+      .finally(() => setRevLoading(false))
   }, [id])
+
+  async function loadMore() {
+    if (!nextCursor || moreBusy) return
+    setMoreBusy(true)
+    try {
+      const res = await fetch(`/api/doctors/${id}/reviews?limit=10&cursor=${encodeURIComponent(nextCursor)}`)
+      if (!res.ok) return
+      const d = await res.json()
+      setReviews(prev => [...prev, ...(d.reviews ?? [])])
+      setNextCursor(d.nextCursor ?? null)
+    } finally { setMoreBusy(false) }
+  }
 
   function handleBook() {
     const q = new URLSearchParams({
@@ -139,6 +168,49 @@ function ProfileInner({ id }: { id: string }) {
           </button>
         </div>
       </div>
+
+      <section className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 sm:p-8">
+        <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
+          <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+          Patient reviews
+          {doctor.reviewCount > 0 && (
+            <span className="text-xs font-normal text-slate-500">({doctor.reviewCount})</span>
+          )}
+        </h2>
+        {revLoading ? (
+          <p className="text-xs text-slate-400">Loading reviews…</p>
+        ) : reviews.length === 0 ? (
+          <p className="text-sm text-slate-500">No reviews yet. Be the first after your consultation.</p>
+        ) : (
+          <ul className="space-y-4">
+            {reviews.map(r => (
+              <li key={r.id} className="border-b border-slate-100 dark:border-slate-800 pb-3 last:border-0 last:pb-0">
+                <div className="flex items-center gap-2 mb-1">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Star key={i} className={`w-3.5 h-3.5 ${i < r.rating ? 'fill-amber-400 text-amber-400' : 'text-slate-300'}`} />
+                  ))}
+                  <span className="text-xs text-slate-500">
+                    {r.author} · {new Date(r.createdAt).toLocaleDateString('en-PK', { dateStyle: 'medium' })}
+                  </span>
+                </div>
+                {r.comment && (
+                  <p className="text-sm text-slate-600 dark:text-slate-400 whitespace-pre-line leading-relaxed">{r.comment}</p>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+        {nextCursor && (
+          <button
+            onClick={loadMore}
+            disabled={moreBusy}
+            className="mt-4 inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700 disabled:opacity-50"
+          >
+            {moreBusy ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
+            Load more reviews
+          </button>
+        )}
+      </section>
     </div>
   )
 }

@@ -276,6 +276,25 @@ export function sendEscrowReleased(args: {
   })
 }
 
+export function sendReviewNudge(args: {
+  to: string
+  patientName: string
+  doctorName: string
+  appointmentId: string
+}) {
+  return send({
+    to: args.to,
+    subject: `How was your consultation with Dr. ${args.doctorName}?`,
+    html: layout(
+      'Rate your consultation',
+      `<p style="margin:0 0 14px;font-size:14px;line-height:1.6;color:#334155;">Hi ${escapeHtml(args.patientName)},</p>
+       <p style="margin:0 0 14px;font-size:14px;line-height:1.6;color:#334155;">Your consultation with Dr. ${escapeHtml(args.doctorName)} is complete. A 30-second rating helps other patients in Pakistan pick the right doctor.</p>
+       <p style="margin:0 0 22px;">${button(`${APP_URL}/history?review=${encodeURIComponent(args.appointmentId)}`, 'Leave a review')}</p>
+       <p style="margin:0;font-size:12px;color:#64748b;">Honest reviews only — they're tied to your verified consultation.</p>`,
+    ),
+  })
+}
+
 export function sendClinicInvite(args: { to: string; clinicName: string; inviterName: string; token: string }) {
   const url = `${APP_URL}/clinic/invite/${encodeURIComponent(args.token)}`
   return send({

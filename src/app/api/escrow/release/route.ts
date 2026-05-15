@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { releaseEscrowToDoctor } from '@/lib/stripe'
+import { sendReviewNudge } from '@/lib/email'
 
 const schema = z.object({ appointmentId: z.string().min(1) })
 
@@ -17,7 +18,7 @@ export async function POST(req: NextRequest) {
 
   const appointment = await prisma.appointment.findUnique({
     where:   { id: parsed.data.appointmentId },
-    include: { escrow: true, doctor: { include: { user: true } } },
+    include: { escrow: true, doctor: { include: { user: true } }, patient: { include: { user: true } } },
   })
 
   if (!appointment)
@@ -49,6 +50,15 @@ export async function POST(req: NextRequest) {
       data:  { status: 'COMPLETED', completedAt: new Date() },
     }),
   ])
+
+  if (appointment.patient.user.email) {
+    void sendReviewNudge({
+      to:            appointment.patient.user.email,
+      patientName:   appointment.patient.user.name ?? 'there',
+      doctorName:    appointment.doctor.user.name ?? 'your doctor',
+      appointmentId: appointment.id,
+    })
+  }
 
   return NextResponse.json({ message: 'Payment released to doctor' })
 }

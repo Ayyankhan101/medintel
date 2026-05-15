@@ -4,7 +4,7 @@ import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { releaseEscrowToDoctor } from '@/lib/stripe'
 import { audit } from '@/lib/audit'
-import { sendPrescriptionReady, sendEscrowReleased } from '@/lib/email'
+import { sendPrescriptionReady, sendEscrowReleased, sendReviewNudge } from '@/lib/email'
 
 const schema = z.object({
   appointmentId:    z.string().min(1),
@@ -102,6 +102,16 @@ export async function POST(req: NextRequest) {
       to:            appointment.doctor.user.email,
       doctorName:    appointment.doctor.user.name ?? 'Doctor',
       amount:        Number(appointment.escrow.amount),
+      appointmentId: appointment.id,
+    })
+  }
+  // Review nudge — only when the appointment actually transitioned to COMPLETED.
+  // (Doctor may upload Rx without escrow release; we only nudge when the consultation is truly done.)
+  if (appointment.escrow?.status === 'HELD' && appointment.doctor.stripeAccountId && appointment.patient.user.email) {
+    void sendReviewNudge({
+      to:            appointment.patient.user.email,
+      patientName:   appointment.patient.user.name ?? 'there',
+      doctorName:    appointment.doctor.user.name ?? 'your doctor',
       appointmentId: appointment.id,
     })
   }
