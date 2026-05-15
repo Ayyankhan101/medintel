@@ -2,15 +2,17 @@
 import { use, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Building2, CheckCircle2, AlertCircle, Loader2, ArrowRight } from 'lucide-react'
+import { CheckCircle2, AlertCircle, Loader2, ArrowRight } from 'lucide-react'
+import { AuthShell } from '@/components/design/AuthShell'
+import { Btn } from '@/components/design/Btn'
 
 export default function Page({ params }: { params: Promise<{ token: string }> }) {
   const { token } = use(params)
   const router = useRouter()
-  const [busy,    setBusy]    = useState(false)
-  const [err,     setErr]     = useState<string | null>(null)
-  const [step,    setStep]    = useState<string | null>(null)
-  const [ok,      setOk]      = useState<{ name: string } | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [err,  setErr]  = useState<string | null>(null)
+  const [step, setStep] = useState<string | null>(null)
+  const [ok,   setOk]   = useState<{ name: string } | null>(null)
 
   async function accept() {
     setBusy(true); setErr(null); setStep(null)
@@ -26,63 +28,68 @@ export default function Page({ params }: { params: Promise<{ token: string }> })
     setStep(d.step ?? null)
   }
 
-  return (
-    <div className="min-h-[70vh] flex items-center justify-center px-4">
-      <div className="w-full max-w-md rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-8 text-center">
-        {ok ? (
-          <>
-            <CheckCircle2 className="w-10 h-10 mx-auto mb-3 text-green-600" />
-            <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100">Welcome to {ok.name}</h1>
-            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Your account is now linked to the clinic.</p>
-            <Link href="/doctor/dashboard" className="inline-flex items-center gap-1.5 mt-5 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700">
-              Go to dashboard <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
-          </>
-        ) : (
-          <>
-            <div className="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-950 mx-auto flex items-center justify-center mb-3">
-              <Building2 className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-            </div>
-            <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100">You&apos;re invited to a clinic</h1>
-            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-              Sign in with your doctor account to accept this invitation.
-            </p>
-
-            {err && (
-              <div className="mt-4 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 text-left">
-                <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-                <div>
-                  {err}
-                  {step === 'login' && (
-                    <button
-                      onClick={() => router.push(`/login?callbackUrl=${encodeURIComponent(`/clinic/invite/${token}`)}`)}
-                      className="block mt-2 text-blue-700 underline"
-                    >
-                      Sign in
-                    </button>
-                  )}
-                  {step === 'role' && (
-                    <p className="mt-2 text-xs">Only DOCTOR accounts can be invited to a clinic. If you don&apos;t have one, ask the inviter to send the invite to your doctor email.</p>
-                  )}
-                </div>
-              </div>
-            )}
-
-            <button
-              onClick={accept}
-              disabled={busy}
-              className="mt-5 w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold disabled:opacity-50"
-            >
-              {busy && <Loader2 className="w-4 h-4 animate-spin" />}
-              Accept invite
-            </button>
-
-            <p className="mt-4 text-xs text-slate-400">
-              Not a doctor on MedIntel yet? <Link href="/register/doctor" className="underline">Create a doctor account</Link> first, then return to this page.
-            </p>
-          </>
-        )}
+  if (ok) return (
+    <AuthShell side="clinic" kicker="Welcome aboard" title={`Welcome to ${ok.name}`} sub="Your account is now linked to the clinic.">
+      <div style={{
+        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12,
+        textAlign: 'center',
+        background: 'rgba(16,185,129,.08)', border: '1px solid rgba(16,185,129,.25)',
+        borderRadius: 14, padding: 20,
+      }}>
+        <CheckCircle2 size={28} style={{ color: 'var(--emerald-500)' }} />
       </div>
-    </div>
+      <Link href="/doctor/dashboard" style={{ textDecoration: 'none' }}>
+        <Btn kind="primary" full trailing={<ArrowRight size={16} />}>Go to dashboard</Btn>
+      </Link>
+    </AuthShell>
+  )
+
+  return (
+    <AuthShell
+      side="clinic"
+      kicker="Clinic invite"
+      title="You're invited to a clinic"
+      sub="Sign in with your doctor account to accept this invitation."
+    >
+      {err && (
+        <div style={{
+          display: 'flex', alignItems: 'flex-start', gap: 8,
+          background: 'rgba(239,68,68,.08)', border: '1px solid rgba(239,68,68,.25)',
+          borderRadius: 12, padding: '10px 12px', fontSize: 13, color: 'var(--red-600)',
+        }}>
+          <AlertCircle size={14} style={{ flex: 'none', marginTop: 2 }} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <span>{err}</span>
+            {step === 'login' && (
+              <button
+                onClick={() => router.push(`/login?callbackUrl=${encodeURIComponent(`/clinic/invite/${token}`)}`)}
+                style={{ background: 'none', border: 0, padding: 0, cursor: 'pointer',
+                  color: 'var(--blue-700)', textDecoration: 'underline', fontSize: 13, textAlign: 'left' }}
+              >
+                Sign in
+              </button>
+            )}
+            {step === 'role' && (
+              <span style={{ fontSize: 12, color: 'var(--ink-3)' }}>
+                Only DOCTOR accounts can be invited to a clinic. If you don&apos;t have one, ask the inviter to send the invite to your doctor email.
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
+      <Btn kind="primary" full onClick={accept} disabled={busy}
+           leading={busy ? <Loader2 size={16} className="animate-spin" /> : null}>
+        {busy ? 'Accepting…' : 'Accept invite'}
+      </Btn>
+
+      <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--ink-4)', margin: 0 }}>
+        Not a doctor on MedIntel yet?{' '}
+        <Link href="/register/doctor" style={{ color: 'var(--ink-2)', textDecoration: 'underline' }}>
+          Create a doctor account
+        </Link>{' '}
+        first, then return to this page.
+      </p>
+    </AuthShell>
   )
 }
