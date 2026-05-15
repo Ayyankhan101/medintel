@@ -1,3 +1,9 @@
+// Prisma CLI only auto-loads `.env`. Load `.env.local` first (dev default),
+// then fall back to `.env` so `npx prisma db seed` works without extra flags.
+import { config as loadEnv } from 'dotenv'
+loadEnv({ path: '.env.local' })
+loadEnv()
+
 import { PrismaClient } from '@prisma/client'
 import bcrypt from 'bcryptjs'
 
@@ -84,7 +90,10 @@ async function main() {
       create: {
         id: doctorId, userId, licenseNumber: license,
         specialization:  d.specialization,
-        qualifications:  [d.bio.split('·')[0].trim()],
+        // schema.prisma uses String[] (Postgres) or String JSON (SQLite). Coerce per provider.
+        qualifications:  (process.env.DATABASE_URL ?? '').startsWith('file:')
+          ? (JSON.stringify([d.bio.split('·')[0].trim()]) as unknown as string[])
+          : [d.bio.split('·')[0].trim()],
         yearsExperience: d.years,
         bio:             d.bio,
         consultationFee: d.fee,
