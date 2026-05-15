@@ -1,8 +1,12 @@
 'use client'
 import { useEffect, useState, use } from 'react'
+import Link from 'next/link'
+import { Loader2, CheckCircle2, FileText, Video, AlertCircle, Stethoscope } from 'lucide-react'
 import { VideoCall } from '@/components/consultation/VideoCall'
 import { PrescriptionUploader } from '@/components/consultation/PrescriptionUploader'
 import { PaymentFlow } from '@/components/escrow/PaymentFlow'
+import { Btn } from '@/components/design/Btn'
+import { SeverityPill } from '@/components/design/badges'
 
 // ── shared types ──────────────────────────────────────────────────────────────
 
@@ -35,20 +39,86 @@ interface PatientHistory {
   }
 }
 
+// ── shared building blocks ────────────────────────────────────────────────────
+
+function Spinner() {
+  return (
+    <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <Loader2 size={40} className="animate-spin" style={{ color: 'var(--ink-4)' }} />
+    </div>
+  )
+}
+
+function ErrorBanner({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'flex-start', gap: 10,
+      background: 'rgba(239,68,68,.08)', border: '1px solid rgba(239,68,68,.25)',
+      borderRadius: 12, padding: '12px 14px', fontSize: 13, color: 'var(--red-600)',
+    }}>
+      <AlertCircle size={14} style={{ flex: 'none', marginTop: 2 }} />
+      <div>{children}</div>
+    </div>
+  )
+}
+
+function AISummary({ summary, level, score }: {
+  summary: string
+  level?: string | null
+  score?: number | null
+}) {
+  return (
+    <div style={{
+      background: 'rgba(245,158,11,.08)', border: '1px solid rgba(245,158,11,.25)',
+      borderRadius: 14, padding: 14,
+      display: 'flex', alignItems: 'flex-start', gap: 12, fontSize: 13, lineHeight: 1.55,
+    }}>
+      <span style={{
+        width: 32, height: 32, borderRadius: 10, flex: 'none',
+        background: 'rgba(245,158,11,.18)', color: '#a16207',
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+      }}>
+        <Stethoscope size={16} strokeWidth={2} />
+      </span>
+      <div style={{ flex: 1 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <strong style={{ color: '#a16207', fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase' }}>
+            AI suggestion · verify clinically
+          </strong>
+          {level && (
+            <SeverityPill level={level === 'CRITICAL' ? 'EMERGENCY' : level === 'URGENT' ? 'URGENT' : 'ROUTINE'} />
+          )}
+          {score != null && (
+            <span className="mono" style={{ fontSize: 11, color: 'var(--ink-3)' }}>
+              {score}/10
+            </span>
+          )}
+        </div>
+        <p style={{ margin: '6px 0 0', color: 'var(--ink-2)' }}>{summary}</p>
+      </div>
+    </div>
+  )
+}
+
 // ── doctor view ───────────────────────────────────────────────────────────────
 
 type DoctorPhase = 'loading' | 'pre' | 'call' | 'prescription' | 'done'
 
-function HistoryGroup({ label, color, icon, records }: { label: string; color: string; icon: string; records: PatientHistoryRecord[] }) {
+function HistoryGroup({ label, color, icon, records }: {
+  label: string; color: string; icon: string; records: PatientHistoryRecord[]
+}) {
   if (records.length === 0) return null
   return (
     <div>
-      <p className={`text-xs font-bold uppercase tracking-wider ${color} mb-1.5`}>{icon} {label}</p>
-      <ul className="space-y-1 text-sm">
+      <p style={{
+        margin: 0, fontSize: 10, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase',
+        color, marginBottom: 6,
+      }}>{icon} {label}</p>
+      <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
         {records.map(r => (
-          <li key={r.id} className="text-slate-700 dark:text-slate-200">
-            <span className="font-medium">{r.title}</span>
-            {r.content && <span className="text-slate-500 dark:text-slate-400"> — {r.content}</span>}
+          <li key={r.id} style={{ fontSize: 13, color: 'var(--ink-2)' }}>
+            <span style={{ fontWeight: 600 }}>{r.title}</span>
+            {r.content && <span style={{ color: 'var(--ink-3)' }}> — {r.content}</span>}
           </li>
         ))}
       </ul>
@@ -82,14 +152,10 @@ function DoctorConsultation({ appointmentId }: { appointmentId: string }) {
   async function joinCall() {
     setError('')
     try {
-      // Flip status SCHEDULED -> IN_PROGRESS the moment the doctor commits to
-      // joining. Patient-side polling can use this to know the doctor's here.
-      // Server enforces 'only when SCHEDULED'; we ignore the 409 case (already
-      // started — e.g. dropped reconnect) and continue.
       const statusRes = await fetch(`/api/appointments/${appointmentId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'start' }),
+        body:    JSON.stringify({ action: 'start' }),
       })
       if (!statusRes.ok && statusRes.status !== 409) {
         const err = await statusRes.json()
@@ -102,9 +168,7 @@ function DoctorConsultation({ appointmentId }: { appointmentId: string }) {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? 'Failed to start call')
-      setVideoToken(data.token)
-      setRoomName(data.roomName)
-      setPhase('call')
+      setVideoToken(data.token); setRoomName(data.roomName); setPhase('call')
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not connect to call')
     }
@@ -115,9 +179,9 @@ function DoctorConsultation({ appointmentId }: { appointmentId: string }) {
     setError('')
     try {
       const res = await fetch(`/api/appointments/${appointmentId}`, {
-        method: 'PATCH',
+        method:  'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'complete' }),
+        body:    JSON.stringify({ action: 'complete' }),
       })
       if (!res.ok) throw new Error((await res.json()).error ?? `HTTP ${res.status}`)
       setPhase('done')
@@ -126,119 +190,127 @@ function DoctorConsultation({ appointmentId }: { appointmentId: string }) {
     }
   }
 
-  if (phase === 'loading') {
-    return (
-      <div className="max-w-2xl mx-auto p-8 text-center">
-        <div className="w-8 h-8 border-2 border-gray-400 border-t-transparent rounded-full animate-spin mx-auto" />
-      </div>
-    )
-  }
-
-  const severityTint =
-    appointment?.severityLevel === 'CRITICAL' ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300' :
-    appointment?.severityLevel === 'URGENT'   ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300' :
-                                                'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300'
+  if (phase === 'loading') return <Spinner />
 
   return (
-    <div className="max-w-6xl mx-auto p-4">
-      <h1 className="text-xl font-bold mb-4">Doctor Console</h1>
-      {error && <div className="bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-300 p-3 rounded text-sm mb-4">{error}</div>}
+    <div style={{
+      maxWidth: 1100, margin: '0 auto',
+      padding: '28px clamp(16px, 4vw, 32px) 64px',
+      display: 'flex', flexDirection: 'column', gap: 18,
+      animation: 'mi-fade-up 320ms var(--ease-out-quart) both',
+    }}>
+      <header>
+        <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--violet-600)', letterSpacing: '.08em', textTransform: 'uppercase' }}>
+          Doctor console
+        </span>
+        <h1 style={{ margin: '4px 0 0', fontSize: 26, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--ink)' }}>
+          Consultation
+        </h1>
+      </header>
 
-      <div className="grid lg:grid-cols-[1fr_320px] gap-4">
-        {/* ── Main consultation column ─────────────────────────────────── */}
-        <div className="space-y-4 min-w-0">
+      {error && <ErrorBanner>{error}</ErrorBanner>}
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 320px', gap: 18 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14, minWidth: 0 }}>
           {appointment?.aiSummary && (
-            <div className="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-xl p-3 text-sm">
-              <p className="text-slate-700 dark:text-slate-200">
-                <strong className="text-amber-700 dark:text-amber-300">AI suggestion (verify clinically):</strong> {appointment.aiSummary}
-                {appointment.severityLevel && (
-                  <span className={`ml-2 px-2 py-0.5 rounded text-xs font-semibold ${severityTint}`}>
-                    {appointment.severityLevel} ({appointment.severityScore}/10)
-                  </span>
-                )}
+            <AISummary
+              summary={appointment.aiSummary}
+              level={appointment.severityLevel}
+              score={appointment.severityScore}
+            />
+          )}
+
+          {phase === 'pre' && (
+            <Btn kind="primary" full onClick={joinCall} leading={<Video size={18} />}>
+              Start video call
+            </Btn>
+          )}
+
+          {phase === 'call' && videoToken && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <VideoCall token={videoToken} roomName={roomName} onCallEnd={() => setPhase('prescription')} />
+              <p style={{ margin: 0, fontSize: 12, textAlign: 'center', color: 'var(--ink-3)' }}>
+                End the call to upload the prescription and collect payment.
               </p>
             </div>
           )}
 
-      {phase === 'pre' && (
-        <button
-          onClick={joinCall}
-          className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold text-lg transition-colors"
-        >
-          Start Video Call
-        </button>
-      )}
+          {phase === 'prescription' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <PrescriptionUploader appointmentId={appointmentId} onUploaded={() => setPhase('done')} />
+              <button
+                onClick={completeWithoutRx}
+                style={{
+                  background: 'transparent', border: 0, padding: 8,
+                  color: 'var(--ink-3)', fontSize: 12, cursor: 'pointer',
+                  textDecoration: 'underline',
+                }}
+              >
+                End without prescription (no charge)
+              </button>
+            </div>
+          )}
 
-      {phase === 'call' && videoToken && (
-        <div className="space-y-3">
-          <VideoCall token={videoToken} roomName={roomName} onCallEnd={() => setPhase('prescription')} />
-          <p className="text-sm text-center text-gray-500">
-            End the call to upload the prescription and collect payment.
-          </p>
-        </div>
-      )}
+          {phase === 'done' && (
+            <DonePanel
+              title="Prescription saved. Payment released."
+              backHref="/doctor/dashboard"
+              backLabel="Back to dashboard"
+            />
+          )}
 
-      {phase === 'prescription' && (
-        <div className="space-y-3">
-          <PrescriptionUploader appointmentId={appointmentId} onUploaded={() => setPhase('done')} />
-          <button
-            onClick={completeWithoutRx}
-            className="w-full text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 underline"
-          >
-            End without prescription (no charge)
-          </button>
-        </div>
-      )}
-
-      {phase === 'done' && (
-        <div className="text-center py-10 space-y-3">
-          <div className="text-4xl">💰</div>
-          <p className="font-semibold text-green-700 text-lg">Prescription saved. Payment released.</p>
-          <a href="/doctor/dashboard" className="text-blue-600 hover:underline text-sm">
-            Back to Dashboard →
-          </a>
-        </div>
-      )}
-
-          {/* PDF download for doctor too */}
           {appointment && (phase === 'prescription' || phase === 'done') && (
             <a
               href={`/api/appointments/${appointmentId}/prescription.pdf`}
               target="_blank" rel="noreferrer"
-              className="inline-flex items-center gap-1.5 text-sm text-blue-600 dark:text-blue-400 hover:underline"
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                fontSize: 13, color: 'var(--blue-700)', textDecoration: 'none',
+                fontWeight: 600,
+              }}
             >
-              📄 Download consultation summary (PDF)
+              <FileText size={14} /> Download consultation summary (PDF)
             </a>
           )}
         </div>
 
-        {/* ── Sidebar: full patient record ─────────────────────────────── */}
-        <aside className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-4 space-y-4 h-fit lg:sticky lg:top-4">
+        <aside style={{
+          background: 'var(--bg-elev)', border: '1px solid var(--border)',
+          borderRadius: 18, padding: 18,
+          display: 'flex', flexDirection: 'column', gap: 16,
+          height: 'fit-content', position: 'sticky', top: 20,
+        }}>
           <div>
-            <p className="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Patient</p>
-            <p className="font-semibold text-slate-900 dark:text-slate-100">
+            <p style={{
+              margin: 0, fontSize: 10, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase',
+              color: 'var(--ink-4)',
+            }}>Patient</p>
+            <p style={{ margin: '4px 0 0', fontSize: 14, fontWeight: 600, color: 'var(--ink)' }}>
               {appointment?.patient?.user?.email}
             </p>
-            <p className="text-xs text-slate-500 dark:text-slate-400 font-mono">
+            <p className="mono" style={{ margin: '2px 0 0', fontSize: 11, color: 'var(--ink-3)' }}>
               {appointment?.patient?.user?.medIntelCode ?? '—'}
             </p>
           </div>
 
-          <div className="border-t border-slate-100 dark:border-slate-800 pt-3">
-            <p className="text-[10px] uppercase tracking-wider text-slate-400 font-bold mb-2">
+          <div style={{ borderTop: '1px solid var(--border)', paddingTop: 14 }}>
+            <p style={{
+              margin: 0, fontSize: 10, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase',
+              color: 'var(--ink-4)', marginBottom: 10,
+            }}>
               Medical history {history && `(${history.recordCount})`}
             </p>
-            {!history && <p className="text-xs text-slate-500">Loading…</p>}
+            {!history && <p style={{ margin: 0, fontSize: 12, color: 'var(--ink-3)' }}>Loading…</p>}
             {history && history.recordCount === 0 && (
-              <p className="text-xs text-slate-500">No prior records.</p>
+              <p style={{ margin: 0, fontSize: 12, color: 'var(--ink-3)' }}>No prior records.</p>
             )}
             {history && (
-              <div className="space-y-3">
-                <HistoryGroup label="Allergies"     icon="⚠️" color="text-red-600 dark:text-red-400"    records={history.grouped.ALLERGY} />
-                <HistoryGroup label="Chronic meds"  icon="💊" color="text-amber-600 dark:text-amber-400" records={history.grouped.CHRONIC_MED} />
-                <HistoryGroup label="Surgeries"     icon="🔪" color="text-slate-600 dark:text-slate-400" records={history.grouped.SURGERY} />
-                <HistoryGroup label="Lab reports"   icon="🧪" color="text-blue-600 dark:text-blue-400"   records={history.grouped.LAB_REPORT} />
-                <HistoryGroup label="Prescriptions" icon="📋" color="text-green-600 dark:text-green-400" records={history.grouped.PRESCRIPTION} />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <HistoryGroup label="Allergies"     icon="⚠️" color="var(--red-600)"        records={history.grouped.ALLERGY} />
+                <HistoryGroup label="Chronic meds"  icon="💊" color="#a16207"               records={history.grouped.CHRONIC_MED} />
+                <HistoryGroup label="Surgeries"     icon="🔪" color="var(--ink-2)"          records={history.grouped.SURGERY} />
+                <HistoryGroup label="Lab reports"   icon="🧪" color="var(--blue-700)"       records={history.grouped.LAB_REPORT} />
+                <HistoryGroup label="Prescriptions" icon="📋" color="#047857"               records={history.grouped.PRESCRIPTION} />
               </div>
             )}
           </div>
@@ -258,6 +330,7 @@ function PatientConsultation({ appointmentId }: { appointmentId: string }) {
   const [videoToken,  setVideoToken]  = useState<string | null>(null)
   const [roomName,    setRoomName]    = useState('')
   const [error,       setError]       = useState('')
+  const [needsConsent, setNeedsConsent] = useState(false)
 
   useEffect(() => {
     fetch(`/api/appointments/${appointmentId}`)
@@ -268,8 +341,6 @@ function PatientConsultation({ appointmentId }: { appointmentId: string }) {
       })
       .catch(() => setError('Could not load appointment'))
   }, [appointmentId])
-
-  const [needsConsent, setNeedsConsent] = useState(false)
 
   async function joinCall() {
     setError('')
@@ -282,9 +353,7 @@ function PatientConsultation({ appointmentId }: { appointmentId: string }) {
       const data = await res.json()
       if (res.status === 412 && data.code === 'CONSENT_REQUIRED') { setNeedsConsent(true); return }
       if (!res.ok) throw new Error(data.error ?? 'Failed to join')
-      setVideoToken(data.token)
-      setRoomName(data.roomName)
-      setPhase('call')
+      setVideoToken(data.token); setRoomName(data.roomName); setPhase('call')
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not connect to call')
     }
@@ -298,25 +367,37 @@ function PatientConsultation({ appointmentId }: { appointmentId: string }) {
     joinCall()
   }
 
-  if (phase === 'loading') {
-    return (
-      <div className="max-w-2xl mx-auto p-8 text-center">
-        <div className="w-8 h-8 border-2 border-gray-400 border-t-transparent rounded-full animate-spin mx-auto" />
-        <p className="text-gray-500 mt-3">Loading consultation...</p>
-      </div>
-    )
-  }
+  if (phase === 'loading') return <Spinner />
 
   return (
-    <div className="max-w-2xl mx-auto p-4 space-y-6">
-      <h1 className="text-xl font-bold">Your Consultation</h1>
-      {error && <div className="bg-red-50 text-red-600 p-3 rounded text-sm">{error}</div>}
+    <div style={{
+      maxWidth: 720, margin: '0 auto',
+      padding: '28px clamp(16px, 4vw, 32px) 64px',
+      display: 'flex', flexDirection: 'column', gap: 18,
+      animation: 'mi-fade-up 320ms var(--ease-out-quart) both',
+    }}>
+      <header>
+        <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--blue-700)', letterSpacing: '.08em', textTransform: 'uppercase' }}>
+          Your consultation
+        </span>
+        <h1 style={{ margin: '4px 0 0', fontSize: 26, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--ink)' }}>
+          {appointment?.doctor?.specialization ?? 'Consultation'}
+        </h1>
+      </header>
+
+      {error && <ErrorBanner>{error}</ErrorBanner>}
 
       {phase === 'payment' && appointment && !appointment.doctor && (
-        <div className="bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-xl text-sm space-y-2">
-          <p className="font-semibold">No doctor assigned yet</p>
-          <p>Pick a doctor before continuing to payment.</p>
-          <a href="/intake" className="inline-block text-blue-600 hover:underline font-medium">Start triage →</a>
+        <div style={{
+          background: 'rgba(245,158,11,.08)', border: '1px solid rgba(245,158,11,.25)',
+          borderRadius: 14, padding: 16, color: 'var(--ink-2)',
+          display: 'flex', flexDirection: 'column', gap: 8, fontSize: 13,
+        }}>
+          <strong style={{ color: '#a16207' }}>No doctor assigned yet</strong>
+          <p style={{ margin: 0 }}>Pick a doctor before continuing to payment.</p>
+          <Link href="/intake" style={{ color: 'var(--blue-700)', fontWeight: 600, textDecoration: 'none', fontSize: 13 }}>
+            Start triage →
+          </Link>
         </div>
       )}
 
@@ -330,68 +411,119 @@ function PatientConsultation({ appointmentId }: { appointmentId: string }) {
       )}
 
       {phase === 'waiting' && (
-        <div className="space-y-4 text-center p-6 border rounded-xl">
-          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
-            <span className="text-3xl">✅</span>
-          </div>
+        <div style={{
+          background: 'var(--bg-elev)', border: '1px solid var(--border)',
+          borderRadius: 22, padding: 28, boxShadow: 'var(--shadow-card)',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, textAlign: 'center',
+        }}>
+          <span style={{
+            width: 64, height: 64, borderRadius: 999,
+            background: 'rgba(16,185,129,.12)', color: 'var(--emerald-500)',
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <CheckCircle2 size={32} strokeWidth={2.5} />
+          </span>
           <div>
-            <p className="font-semibold text-gray-800">Payment confirmed — funds held in escrow</p>
-            <p className="text-sm text-gray-500 mt-1">Funds release to doctor only after prescription is uploaded</p>
+            <p style={{ margin: 0, fontWeight: 700, fontSize: 16, color: 'var(--ink)' }}>
+              Payment confirmed — funds held in escrow
+            </p>
+            <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--ink-3)' }}>
+              Funds release to doctor only after prescription is uploaded.
+            </p>
           </div>
-          <button
-            onClick={joinCall}
-            className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold text-lg transition-colors"
-          >
-            Join Video Call
-          </button>
+          <Btn kind="primary" full onClick={joinCall} leading={<Video size={18} />}>
+            Join video call
+          </Btn>
         </div>
       )}
 
       {needsConsent && (
-        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full p-6 space-y-4">
-            <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">Recording consent</h2>
-            <div className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed space-y-2">
-              <p>This consultation will be <strong>video and audio recorded</strong> for:</p>
-              <ul className="list-disc pl-5 space-y-1">
-                <li>Generating your medical record &amp; SOAP note</li>
-                <li>Patient safety &amp; dispute resolution (PMDC requirement)</li>
-                <li>Doctor quality assurance</li>
-              </ul>
-              <p>Recordings are encrypted at rest. Raw transcript is purged after 12 months; structured medical fields are retained as part of your medical history.</p>
-              <p className="text-xs text-slate-500">You can request deletion at any time via your account settings.</p>
-            </div>
-            <div className="flex gap-2 justify-end pt-2">
-              <button onClick={() => setNeedsConsent(false)} className="px-4 py-2 text-sm text-slate-600 dark:text-slate-300 hover:underline">
-                Cancel
-              </button>
-              <button onClick={consentAndJoin} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg">
-                I consent — join call
-              </button>
-            </div>
-          </div>
-        </div>
+        <ConsentModal onCancel={() => setNeedsConsent(false)} onConsent={consentAndJoin} />
       )}
 
       {phase === 'call' && videoToken && (
-        <div className="space-y-3">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <VideoCall token={videoToken} roomName={roomName} onCallEnd={() => setPhase('done')} />
-          <p className="text-xs text-gray-400 text-center">
+          <p style={{ margin: 0, fontSize: 12, textAlign: 'center', color: 'var(--ink-4)' }}>
             The call is recording for safety. Your prescription will appear in Medical History.
           </p>
         </div>
       )}
 
       {phase === 'done' && (
-        <div className="text-center space-y-4 py-12">
-          <div className="text-5xl">✅</div>
-          <h2 className="text-xl font-bold">Consultation Complete</h2>
-          <p className="text-gray-500">Your prescription has been added to your medical vault.</p>
-          <a href="/history" className="inline-block mt-2 text-blue-600 hover:underline font-medium">
-            View Medical History →
-          </a>
-        </div>
+        <DonePanel
+          title="Consultation complete"
+          sub="Your prescription has been added to your medical vault."
+          backHref="/history"
+          backLabel="View medical history"
+        />
       )}
+    </div>
+  )
+}
+
+function DonePanel({ title, sub, backHref, backLabel }: {
+  title: string; sub?: string; backHref: string; backLabel: string
+}) {
+  return (
+    <div style={{
+      background: 'var(--bg-elev)', border: '1px solid var(--border)',
+      borderRadius: 22, padding: '36px 24px', boxShadow: 'var(--shadow-card)',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, textAlign: 'center',
+    }}>
+      <span style={{
+        width: 72, height: 72, borderRadius: 22,
+        background: 'rgba(16,185,129,.12)', color: 'var(--emerald-500)',
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        animation: 'mi-fade-up 360ms var(--ease-out-quart) both',
+      }}>
+        <CheckCircle2 size={32} strokeWidth={2.5} />
+      </span>
+      <h2 style={{ margin: 0, fontSize: 22, fontWeight: 700, letterSpacing: '-.01em', color: 'var(--ink)' }}>{title}</h2>
+      {sub && <p style={{ margin: 0, fontSize: 14, color: 'var(--ink-3)', maxWidth: 380, lineHeight: 1.55 }}>{sub}</p>}
+      <Link href={backHref} style={{ color: 'var(--blue-700)', fontWeight: 600, fontSize: 14, textDecoration: 'none' }}>
+        {backLabel} →
+      </Link>
+    </div>
+  )
+}
+
+function ConsentModal({ onCancel, onConsent }: { onCancel: () => void; onConsent: () => void }) {
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 50,
+      background: 'rgba(0,0,0,.6)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
+      animation: 'mi-fade-in 200ms ease both',
+    }}>
+      <div style={{
+        background: 'var(--bg-elev)', borderRadius: 20,
+        maxWidth: 460, width: '100%', padding: 24,
+        display: 'flex', flexDirection: 'column', gap: 14,
+        boxShadow: '0 30px 80px -30px rgba(0,0,0,.4)',
+        animation: 'mi-modal-in 280ms var(--ease-out-quart) both',
+      }}>
+        <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: 'var(--ink)' }}>Recording consent</h2>
+        <div style={{ fontSize: 13, color: 'var(--ink-2)', lineHeight: 1.55, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <p style={{ margin: 0 }}>This consultation will be <strong>video and audio recorded</strong> for:</p>
+          <ul style={{ margin: 0, paddingLeft: 18, display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <li>Generating your medical record &amp; SOAP note</li>
+            <li>Patient safety &amp; dispute resolution (PMDC requirement)</li>
+            <li>Doctor quality assurance</li>
+          </ul>
+          <p style={{ margin: 0 }}>
+            Recordings are encrypted at rest. Raw transcript is purged after 12 months; structured
+            medical fields are retained as part of your medical history.
+          </p>
+          <p style={{ margin: 0, fontSize: 11, color: 'var(--ink-4)' }}>
+            You can request deletion at any time via your account settings.
+          </p>
+        </div>
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', paddingTop: 4 }}>
+          <Btn kind="ghost" onClick={onCancel}>Cancel</Btn>
+          <Btn kind="primary" onClick={onConsent}>I consent — join call</Btn>
+        </div>
+      </div>
     </div>
   )
 }
@@ -409,13 +541,7 @@ export default function ConsultationPage({ params }: { params: Promise<{ id: str
       .catch(() => setRole(null))
   }, [])
 
-  if (role === null) {
-    return (
-      <div className="max-w-2xl mx-auto p-8 text-center">
-        <div className="w-8 h-8 border-2 border-gray-400 border-t-transparent rounded-full animate-spin mx-auto" />
-      </div>
-    )
-  }
+  if (role === null) return <Spinner />
 
   if (role === 'DOCTOR') return <DoctorConsultation appointmentId={appointmentId} />
   return <PatientConsultation appointmentId={appointmentId} />
