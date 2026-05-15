@@ -336,6 +336,8 @@ model Escrow {
   releasedAt            DateTime?
   refundedAt            DateTime?
   refundReason          String?
+  // Partial-refund support: null until first refund, then the running total in PKR.
+  refundedAmount        Decimal?     @db.Decimal(10, 2)
 }
 
 model MedicalResource {

@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { Building2, MessageSquareText, PhoneCall, Stethoscope, Globe, Loader2, CreditCard, Sparkles, UserPlus, X, Mail, Clock } from 'lucide-react'
+import { Building2, MessageSquareText, PhoneCall, Stethoscope, Globe, Loader2, CreditCard, Sparkles, UserPlus, X, Mail, Clock, BarChart3, Download } from 'lucide-react'
 
 interface ClinicData {
   clinic: {
@@ -99,6 +99,8 @@ export default function ClinicDashboard() {
       />
 
       <RosterCard />
+
+      <DoctorBreakdownCard />
 
       <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6">
         <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-3">Channels</h2>
@@ -329,6 +331,85 @@ function Row({ label, value }: { label: string; value: string | null }) {
     <div className="flex items-center justify-between py-2 border-b border-slate-100 dark:border-slate-800 last:border-0">
       <span className="text-sm text-slate-500">{label}</span>
       <span className="font-mono text-sm text-slate-700 dark:text-slate-300">{value ?? '—'}</span>
+    </div>
+  )
+}
+
+interface BreakdownRow {
+  doctorId:       string
+  name:           string
+  email:          string
+  specialization: string
+  rating:         number | null
+  reviewCount:    number
+  completed:      number
+  cancelled:      number
+  refunded:       number
+  noShow:         number
+  revenuePkr:     number
+}
+
+function DoctorBreakdownCard() {
+  const [rows, setRows]       = useState<BreakdownRow[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch('/api/clinic/usage/breakdown')
+      .then(r => r.ok ? r.json() : { rows: [] })
+      .then(d => setRows(d.rows ?? []))
+      .finally(() => setLoading(false))
+  }, [])
+
+  return (
+    <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+          <BarChart3 className="w-4 h-4" /> Per-doctor breakdown <span className="text-xs font-normal text-slate-500">(last 30 days)</span>
+        </h2>
+        <a
+          href="/api/clinic/usage/export.csv"
+          className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:underline"
+        >
+          <Download className="w-3 h-3" /> CSV
+        </a>
+      </div>
+      {loading ? (
+        <p className="text-xs text-slate-400"><Loader2 className="w-3 h-3 inline animate-spin" /> Loading…</p>
+      ) : rows.length === 0 ? (
+        <p className="text-sm text-slate-500">No doctors in this clinic yet.</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-xs uppercase tracking-wider text-slate-500 text-left border-b border-slate-100 dark:border-slate-800">
+                <th className="py-2 pr-3">Doctor</th>
+                <th className="py-2 pr-3 text-right">Done</th>
+                <th className="py-2 pr-3 text-right">Cancel</th>
+                <th className="py-2 pr-3 text-right">Refund</th>
+                <th className="py-2 pr-3 text-right">No-show</th>
+                <th className="py-2 pr-3 text-right">Rating</th>
+                <th className="py-2 text-right">Revenue (PKR)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map(r => (
+                <tr key={r.doctorId} className="border-b border-slate-50 dark:border-slate-800/50 last:border-0">
+                  <td className="py-2 pr-3">
+                    <p className="font-medium text-slate-900 dark:text-slate-100">{r.name}</p>
+                    <p className="text-xs text-slate-500">{r.specialization}</p>
+                  </td>
+                  <td className="py-2 pr-3 text-right font-mono">{r.completed}</td>
+                  <td className="py-2 pr-3 text-right font-mono text-slate-500">{r.cancelled}</td>
+                  <td className="py-2 pr-3 text-right font-mono text-amber-700">{r.refunded}</td>
+                  <td className="py-2 pr-3 text-right font-mono text-red-700">{r.noShow}</td>
+                  <td className="py-2 pr-3 text-right font-mono">{r.rating ? r.rating.toFixed(1) : '—'} <span className="text-xs text-slate-400">({r.reviewCount})</span></td>
+                  <td className="py-2 text-right font-mono font-semibold">{r.revenuePkr.toLocaleString()}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   )
 }
