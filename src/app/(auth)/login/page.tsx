@@ -1,12 +1,13 @@
 'use client'
-import { useState, Suspense } from 'react'
+import { Suspense, useState } from 'react'
 import { signIn } from 'next-auth/react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { Activity, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react'
+import { Loader2, AlertCircle, CheckCircle2, Mail, Lock } from 'lucide-react'
+import { AuthShell, Field, FieldInput } from '@/components/design/AuthShell'
+import { Btn } from '@/components/design/Btn'
 
 function LoginForm() {
-  const router = useRouter()
   const params = useSearchParams()
   const [email,    setEmail]    = useState('')
   const [password, setPassword] = useState('')
@@ -23,159 +24,122 @@ function LoginForm() {
     const result = await signIn('credentials', { email, password, redirect: false })
     if (result?.error) {
       setLoading(false)
-      // NextAuth surfaces our thrown "EMAIL_NOT_VERIFIED" as result.error === 'CredentialsSignin'
-      // by default, but the message is included when AUTH_DEBUG. Treat any error generically,
-      // and offer a resend link when the user might be unverified.
       setError(result.error.includes('EMAIL_NOT_VERIFIED') ? 'UNVERIFIED' : 'Invalid email or password')
       return
     }
-
-    // Full-page navigation back to /login. The freshly-issued session cookie
-    // is guaranteed to be sent on this request, and the middleware then
-    // redirects the user to their role's home page (/doctor/dashboard,
-    // /admin, or /intake). Avoids the race where fetch('/api/auth/session')
-    // runs before the browser commits the new cookie.
     window.location.assign('/login')
   }
 
   return (
-    <div className="min-h-screen flex">
-      {/* Left panel */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-600 to-blue-800 flex-col justify-between p-12">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
-            <Activity className="w-5 h-5 text-white" />
-          </div>
-          <span className="font-bold text-white text-lg">MedIntel</span>
-        </div>
-        <div className="space-y-6">
-          <h2 className="text-4xl font-bold text-white leading-tight">
-            Your health,<br />your language.
-          </h2>
-          <p className="text-blue-200 text-lg leading-relaxed">
-            Speak in Urdu or English. Our AI handles the rest — triage, summary, and a verified doctor, all in minutes.
-          </p>
-          <div className="space-y-3 pt-4">
-            {[
-              'NADRA-verified patient identity',
-              'PMDC-licensed doctors only',
-              'Payment held until prescription delivered',
-            ].map(t => (
-              <div key={t} className="flex items-center gap-3 text-blue-100">
-                <CheckCircle2 className="w-4 h-4 text-blue-300 shrink-0" />
-                <span className="text-sm">{t}</span>
-              </div>
-            ))}
+    <AuthShell
+      kicker="Welcome back"
+      title="Sign in to MedIntel"
+      sub="Use the email and password from your account."
+    >
+      {justRegistered && medIntelCode && (
+        <div style={{
+          display: 'flex', alignItems: 'flex-start', gap: 10,
+          background: 'rgba(16,185,129,.10)', border: '1px solid rgba(16,185,129,.30)',
+          borderRadius: 14, padding: 14, fontSize: 13, color: 'var(--ink-2)',
+        }}>
+          <CheckCircle2 size={16} style={{ color: '#10b981', flex: 'none', marginTop: 2 }} />
+          <div>
+            <div style={{ fontWeight: 700, color: 'var(--ink)' }}>Account created!</div>
+            <div>Your MedIntel Code: <strong className="mono">{medIntelCode}</strong></div>
+            <div style={{ fontSize: 11, color: 'var(--ink-3)', marginTop: 2 }}>
+              Save this — it links your entire medical history.
+            </div>
           </div>
         </div>
-        <p className="text-blue-300 text-xs">© 2026 MedIntel · Pakistan</p>
-      </div>
+      )}
 
-      {/* Right panel */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 bg-slate-50">
-        <div className="w-full max-w-sm">
-          {/* Mobile logo */}
-          <div className="lg:hidden flex items-center gap-2 mb-8">
-            <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center">
-              <Activity className="w-4 h-4 text-white" />
-            </div>
-            <span className="font-bold text-slate-900">MedIntel</span>
-          </div>
-
-          <h1 className="text-2xl font-bold text-slate-900 mb-1">Welcome back</h1>
-          <p className="text-slate-500 text-sm mb-8">Sign in to your account</p>
-
-          {justRegistered && medIntelCode && (
-            <div className="flex items-start gap-3 bg-green-50 border border-green-200 rounded-xl px-4 py-3 mb-6">
-              <CheckCircle2 className="w-4 h-4 text-green-600 mt-0.5 shrink-0" />
-              <div className="text-sm text-green-800">
-                <p className="font-semibold">Account created!</p>
-                <p>Your MedIntel Code: <strong className="font-mono">{medIntelCode}</strong></p>
-                <p className="text-green-600 text-xs mt-0.5">Save this — it links your entire medical history.</p>
-              </div>
-            </div>
-          )}
-
-          {error && error !== 'UNVERIFIED' && (
-            <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 mb-6 text-sm">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              {error}
-            </div>
-          )}
-          {error === 'UNVERIFIED' && (
-            <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl px-4 py-3 mb-6 text-sm">
-              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-              <div>
-                <p className="font-medium">Email not verified yet.</p>
-                <button
-                  type="button"
-                  onClick={async () => {
-                    await fetch('/api/auth/resend-verification', {
-                      method: 'POST',
-                      headers: { 'content-type': 'application/json' },
-                      body:    JSON.stringify({ email }),
-                    })
-                    setError('Verification email resent. Check your inbox.')
-                  }}
-                  className="mt-1 underline text-amber-900 hover:text-amber-700"
-                >
-                  Resend verification email
-                </button>
-              </div>
-            </div>
-          )}
-
-          <form onSubmit={onSubmit} className="space-y-4">
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-slate-700">Email</label>
-              <input
-                type="email"
-                name="email"
-                autoComplete="username"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                placeholder="you@example.com"
-                required
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <label className="text-sm font-medium text-slate-700">Password</label>
-                <Link href="/forgot-password" className="text-xs text-blue-600 hover:text-blue-700">Forgot?</Link>
-              </div>
-              <input
-                type="password"
-                name="password"
-                autoComplete="current-password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                required
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow"
-              />
-            </div>
+      {error && error !== 'UNVERIFIED' && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 8,
+          background: 'rgba(239,68,68,.08)', border: '1px solid rgba(239,68,68,.25)',
+          borderRadius: 12, padding: '10px 12px', fontSize: 13, color: 'var(--red-600)',
+        }}>
+          <AlertCircle size={14} /> {error}
+        </div>
+      )}
+      {error === 'UNVERIFIED' && (
+        <div style={{
+          display: 'flex', alignItems: 'flex-start', gap: 8,
+          background: 'rgba(245,158,11,.10)', border: '1px solid rgba(245,158,11,.30)',
+          borderRadius: 12, padding: '12px 14px', fontSize: 13, color: 'var(--ink-2)',
+        }}>
+          <AlertCircle size={14} style={{ flex: 'none', marginTop: 2, color: '#a16207' }} />
+          <div>
+            <div style={{ fontWeight: 600, color: 'var(--ink)' }}>Email not verified yet.</div>
             <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
+              type="button"
+              onClick={async () => {
+                await fetch('/api/auth/resend-verification', {
+                  method: 'POST',
+                  headers: { 'content-type': 'application/json' },
+                  body:    JSON.stringify({ email }),
+                })
+                setError('Verification email resent. Check your inbox.')
+              }}
+              style={{
+                marginTop: 4, background: 'transparent', border: 0,
+                color: 'var(--blue-700)', fontWeight: 600, textDecoration: 'underline',
+                cursor: 'pointer', padding: 0, fontSize: 13,
+              }}
             >
-              {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-              {loading ? 'Signing in…' : 'Sign in'}
+              Resend verification email
             </button>
-          </form>
-
-          <p className="text-center text-sm text-slate-500 mt-6">
-            No account?{' '}
-            <Link href="/register" className="text-blue-600 font-medium hover:underline">
-              Create one
-            </Link>
-          </p>
+          </div>
         </div>
-      </div>
-    </div>
+      )}
+
+      <form onSubmit={onSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <Field label="Email">
+          <FieldInput
+            type="email" name="email" autoComplete="username"
+            required
+            placeholder="you@example.com"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            leading={<Mail size={16} />}
+          />
+        </Field>
+
+        <Field label="Password">
+          <FieldInput
+            type="password" name="password" autoComplete="current-password"
+            required
+            placeholder="••••••••"
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+            leading={<Lock size={16} />}
+          />
+        </Field>
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <Link href="/forgot-password" style={{ fontSize: 12, color: 'var(--blue-700)', fontWeight: 600, textDecoration: 'none' }}>
+            Forgot password?
+          </Link>
+        </div>
+
+        <Btn kind="primary" full disabled={loading} type="submit"
+             leading={loading ? <Loader2 size={16} className="animate-spin" /> : null}>
+          {loading ? 'Signing in…' : 'Sign in'}
+        </Btn>
+      </form>
+
+      <p style={{ textAlign: 'center', fontSize: 13, color: 'var(--ink-3)', margin: 0 }}>
+        No account?{' '}
+        <Link href="/register" style={{ color: 'var(--blue-700)', fontWeight: 600, textDecoration: 'none' }}>
+          Create one
+        </Link>
+      </p>
+    </AuthShell>
   )
 }
 
 export default function LoginPage() {
-  return <Suspense><LoginForm /></Suspense>
+  return <Suspense fallback={<div style={{ minHeight: '60vh' }} />}>
+    <LoginForm />
+  </Suspense>
 }
