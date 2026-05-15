@@ -272,6 +272,10 @@ model Appointment {
   // Null until the 1h-before SMS/email reminder has been sent (idempotency lock for the cron).
   reminderSentAt DateTime?
 
+  // Explicit patient consent for recording (PMDC / telemedicine compliance).
+  // Token route refuses to mint a Twilio video grant while this is null.
+  recordingConsentAt DateTime?
+
   // Cancellation metadata — populated only when status transitions to CANCELLED/REFUNDED.
   cancellationReason String?
   cancelledBy        String?   // 'PATIENT' | 'DOCTOR' | 'ADMIN' | 'SYSTEM'

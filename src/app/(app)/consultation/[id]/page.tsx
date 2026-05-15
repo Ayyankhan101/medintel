@@ -269,6 +269,8 @@ function PatientConsultation({ appointmentId }: { appointmentId: string }) {
       .catch(() => setError('Could not load appointment'))
   }, [appointmentId])
 
+  const [needsConsent, setNeedsConsent] = useState(false)
+
   async function joinCall() {
     setError('')
     try {
@@ -278,6 +280,7 @@ function PatientConsultation({ appointmentId }: { appointmentId: string }) {
         body:    JSON.stringify({ appointmentId }),
       })
       const data = await res.json()
+      if (res.status === 412 && data.code === 'CONSENT_REQUIRED') { setNeedsConsent(true); return }
       if (!res.ok) throw new Error(data.error ?? 'Failed to join')
       setVideoToken(data.token)
       setRoomName(data.roomName)
@@ -285,6 +288,14 @@ function PatientConsultation({ appointmentId }: { appointmentId: string }) {
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not connect to call')
     }
+  }
+
+  async function consentAndJoin() {
+    setError('')
+    const res = await fetch(`/api/appointments/${appointmentId}/consent`, { method: 'POST' })
+    if (!res.ok) { setError('Could not record consent. Try again.'); return }
+    setNeedsConsent(false)
+    joinCall()
   }
 
   if (phase === 'loading') {
@@ -333,6 +344,32 @@ function PatientConsultation({ appointmentId }: { appointmentId: string }) {
           >
             Join Video Call
           </button>
+        </div>
+      )}
+
+      {needsConsent && (
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full p-6 space-y-4">
+            <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">Recording consent</h2>
+            <div className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed space-y-2">
+              <p>This consultation will be <strong>video and audio recorded</strong> for:</p>
+              <ul className="list-disc pl-5 space-y-1">
+                <li>Generating your medical record &amp; SOAP note</li>
+                <li>Patient safety &amp; dispute resolution (PMDC requirement)</li>
+                <li>Doctor quality assurance</li>
+              </ul>
+              <p>Recordings are encrypted at rest. Raw transcript is purged after 12 months; structured medical fields are retained as part of your medical history.</p>
+              <p className="text-xs text-slate-500">You can request deletion at any time via your account settings.</p>
+            </div>
+            <div className="flex gap-2 justify-end pt-2">
+              <button onClick={() => setNeedsConsent(false)} className="px-4 py-2 text-sm text-slate-600 dark:text-slate-300 hover:underline">
+                Cancel
+              </button>
+              <button onClick={consentAndJoin} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg">
+                I consent — join call
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

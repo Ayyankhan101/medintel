@@ -34,6 +34,12 @@ export async function POST(req: NextRequest) {
   if (isPatient && appointment.escrow?.status !== 'HELD')
     return NextResponse.json({ error: 'Payment required before joining consultation' }, { status: 402 })
 
+  // Recording consent must be captured before either party can mint a video
+  // token. The patient is the one giving consent; doctors are blocked too so
+  // they can't accidentally start recording an unconsenting session.
+  if (!appointment.recordingConsentAt)
+    return NextResponse.json({ error: 'Recording consent required', code: 'CONSENT_REQUIRED' }, { status: 412 })
+
   const roomName = appointmentRoomName(appointment.id)
   const token    = generateVideoToken(session.user.id!, roomName)
 

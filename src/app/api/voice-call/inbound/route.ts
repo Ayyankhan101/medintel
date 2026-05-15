@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
 
   return twiml(`<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Say language="en-IN" voice="Polly.Aditi">Assalam-o-Alaikum. Welcome to Med Intel. After the beep, please describe your symptoms in Urdu or English. We will text you the next steps. Aap apni alamat batayein.</Say>
+  <Say language="en-IN" voice="Polly.Aditi">Assalam-o-Alaikum. Welcome to Med Intel. This call will be recorded for medical record-keeping and patient safety. By continuing this call you consent to recording. After the beep, please describe your symptoms in Urdu or English. We will text you the next steps. Aap apni alamat batayein.</Say>
   <Record action="${recordAction}" method="POST" maxLength="60" timeout="3" playBeep="true" trim="trim-silence" finishOnKey="#"/>
   <Say>Sorry, we did not hear anything. Please call back. Khuda Hafiz.</Say>
 </Response>`)
