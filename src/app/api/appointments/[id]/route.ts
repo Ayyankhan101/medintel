@@ -43,7 +43,7 @@ export async function GET(
 const patchSchema = z.union([
   z.object({ doctorId: z.string().min(1) }),
   z.object({ scheduledAt: z.string().datetime() }),
-  z.object({ action: z.literal('cancel') }),
+  z.object({ action: z.literal('cancel'), reason: z.string().trim().max(500).optional() }),
   z.object({ action: z.literal('start') }),     // doctor: SCHEDULED -> IN_PROGRESS
   z.object({ action: z.literal('complete') }),  // doctor: IN_PROGRESS -> COMPLETED (without Rx; abandoned visit)
 ])
@@ -154,14 +154,19 @@ export async function PATCH(
   if (isPatient && !isAdmin && scheduledMs - now < CANCEL_MIN_LEAD_MS)
     return NextResponse.json({ error: 'Cancellations must be at least 1 hour before the appointment' }, { status: 422 })
 
+  // parsed.data is the cancel branch here
+  const reason     = ('reason' in parsed.data ? parsed.data.reason : undefined) || null
+  const cancelledBy = isPatient ? 'PATIENT' : isDoctor ? 'DOCTOR' : 'ADMIN'
+
   // If escrow is HELD, refund it. RELEASED escrow can't be reversed here —
   // that needs admin + Stripe dashboard for partial refunds.
-  if (appointment.escrow?.status === 'HELD') {
+  const willRefund = appointment.escrow?.status === 'HELD'
+  if (willRefund) {
     try {
-      await refundEscrow(appointment.escrow.stripePaymentIntentId)
+      await refundEscrow(appointment.escrow!.stripePaymentIntentId)
       await prisma.escrow.update({
-        where: { id: appointment.escrow.id },
-        data:  { status: 'REFUNDED', refundedAt: new Date() },
+        where: { id: appointment.escrow!.id },
+        data:  { status: 'REFUNDED', refundedAt: new Date(), refundReason: reason ?? `Cancelled by ${cancelledBy.toLowerCase()}` },
       })
     } catch (e) {
       console.error('[appointments PATCH cancel] refund error', e)
@@ -171,13 +176,19 @@ export async function PATCH(
 
   const updated = await prisma.appointment.update({
     where: { id },
-    data:  { status: 'CANCELLED', cancelledAt: new Date() },
+    data:  {
+      status:             willRefund ? 'REFUNDED' : 'CANCELLED',
+      cancelledAt:        new Date(),
+      cancellationReason: reason,
+      cancelledBy,
+    },
   })
 
-  const refunded = appointment.escrow?.status === 'HELD'
+  const refunded = willRefund
   await audit('appointment.cancel', 'Appointment', id, {
     actorId: session.user.id, actorRole: session.user.role,
     refunded, amount: refunded ? Number(appointment.escrow!.amount) : 0,
+    reason, cancelledBy,
   })
   if (appointment.patient.user.email) {
     void sendAppointmentCancelled({

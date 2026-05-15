@@ -94,12 +94,13 @@ export default function HistoryPage() {
 
   async function cancel(id: string) {
     if (!confirm('Cancel this appointment? Held payment is refunded automatically.')) return
+    const reason = prompt('Reason for cancellation (optional, helps us improve):') ?? ''
     setActionBusy(id)
     try {
       const res = await fetch(`/api/appointments/${id}`, {
         method:  'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'cancel' }),
+        body: JSON.stringify({ action: 'cancel', reason: reason.trim() || undefined }),
       })
       if (!res.ok) { alert((await res.json()).error ?? `HTTP ${res.status}`); return }
       loadAll()

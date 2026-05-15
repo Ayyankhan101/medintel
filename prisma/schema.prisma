@@ -265,6 +265,14 @@ model Appointment {
   escrow    Escrow?
   note      ConsultationNote?
   review    Review?
+
+  // Null until the 1h-before SMS/email reminder has been sent (idempotency lock for the cron).
+  reminderSentAt DateTime?
+
+  // Cancellation metadata — populated only when status transitions to CANCELLED/REFUNDED.
+  cancellationReason String?
+  cancelledBy        String?   // 'PATIENT' | 'DOCTOR' | 'ADMIN' | 'SYSTEM'
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -316,6 +324,7 @@ model Escrow {
   heldAt                DateTime     @default(now())
   releasedAt            DateTime?
   refundedAt            DateTime?
+  refundReason          String?
 }
 
 model MedicalResource {

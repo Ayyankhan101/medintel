@@ -8,6 +8,8 @@
  *   - invoice.paid                          → reset minutesUsed = 0, bump currentPeriodEnd
  *   - customer.subscription.updated         → plan/quota sync (e.g. customer-portal upgrades)
  *   - customer.subscription.deleted         → revert clinic to STARTER + free quota
+ *   - charge.refunded                       → reconcile out-of-band refunds
+ *                                             (admin clicking Refund in the Stripe dashboard)
  */
 import { NextRequest, NextResponse } from 'next/server'
 import type Stripe from 'stripe'
@@ -101,6 +103,41 @@ export async function POST(req: NextRequest) {
           },
         })
         void audit('clinic.subscription_update', 'Clinic', clinic.id, { plan, status: sub.status })
+        break
+      }
+
+      case 'charge.refunded': {
+        // Out-of-band refund: admin pressed "Refund" in Stripe dashboard, or our
+        // own refund call landed an async event back here. Idempotent: only flips
+        // state if escrow is still HELD/RELEASED.
+        const charge = event.data.object as Stripe.Charge
+        const piId   = typeof charge.payment_intent === 'string' ? charge.payment_intent : charge.payment_intent?.id
+        if (!piId) break
+
+        const escrow = await prisma.escrow.findUnique({
+          where:   { stripePaymentIntentId: piId },
+          include: { appointment: true },
+        })
+        if (!escrow || escrow.status === 'REFUNDED') break
+
+        await prisma.$transaction([
+          prisma.escrow.update({
+            where: { id: escrow.id },
+            data:  { status: 'REFUNDED', refundedAt: new Date(), refundReason: escrow.refundReason ?? 'Stripe dashboard refund' },
+          }),
+          prisma.appointment.update({
+            where: { id: escrow.appointmentId },
+            data:  {
+              status:             'REFUNDED',
+              cancelledAt:        escrow.appointment.cancelledAt ?? new Date(),
+              cancelledBy:        escrow.appointment.cancelledBy ?? 'ADMIN',
+              cancellationReason: escrow.appointment.cancellationReason ?? 'Refunded via Stripe dashboard',
+            },
+          }),
+        ])
+        void audit('escrow.refund_reconcile', 'Appointment', escrow.appointmentId, {
+          chargeId: charge.id, amount: charge.amount_refunded,
+        })
         break
       }
 

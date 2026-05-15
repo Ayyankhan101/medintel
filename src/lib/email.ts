@@ -276,6 +276,27 @@ export function sendEscrowReleased(args: {
   })
 }
 
+export function sendAppointmentReminder(args: {
+  to: string
+  patientName: string
+  doctorName: string
+  scheduledAt: Date
+  appointmentId: string
+}) {
+  const when = args.scheduledAt.toLocaleString('en-PK', { dateStyle: 'medium', timeStyle: 'short' })
+  return send({
+    to: args.to,
+    subject: `Reminder: consultation with Dr. ${args.doctorName} in 1 hour`,
+    html: layout(
+      'Your consultation is in 1 hour',
+      `<p style="margin:0 0 14px;font-size:14px;line-height:1.6;color:#334155;">Hi ${escapeHtml(args.patientName)},</p>
+       <p style="margin:0 0 14px;font-size:14px;line-height:1.6;color:#334155;">This is a reminder that your consultation with <strong>Dr. ${escapeHtml(args.doctorName)}</strong> starts at <strong>${escapeHtml(when)}</strong>.</p>
+       <p style="margin:0 0 22px;">${button(`${APP_URL}/consultation/${args.appointmentId}`, 'Join consultation')}</p>
+       <p style="margin:0;font-size:12px;color:#64748b;">Need to reschedule? Open your history page to pick a new time before the slot starts.</p>`,
+    ),
+  })
+}
+
 export function sendReviewNudge(args: {
   to: string
   patientName: string
