@@ -40,9 +40,9 @@ export function Navbar() {
   useEffect(() => {
     fetch('/api/auth/session')
       .then(r => r.json())
-      .then(s => {
-        setRole((s?.user as any)?.role ?? null)
-        setName((s?.user as any)?.name ?? (s?.user as any)?.email ?? null)
+      .then((s: { user?: { role?: string; name?: string; email?: string } } | null) => {
+        setRole(s?.user?.role ?? null)
+        setName(s?.user?.name ?? s?.user?.email ?? null)
       })
       .catch(() => {})
   }, [pathname])

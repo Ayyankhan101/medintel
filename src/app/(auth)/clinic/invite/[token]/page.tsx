@@ -43,7 +43,7 @@ export default function Page({ params }: { params: Promise<{ token: string }> })
             <div className="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-950 mx-auto flex items-center justify-center mb-3">
               <Building2 className="w-6 h-6 text-blue-600 dark:text-blue-400" />
             </div>
-            <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100">You're invited to a clinic</h1>
+            <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100">You&apos;re invited to a clinic</h1>
             <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
               Sign in with your doctor account to accept this invitation.
             </p>
@@ -62,7 +62,7 @@ export default function Page({ params }: { params: Promise<{ token: string }> })
                     </button>
                   )}
                   {step === 'role' && (
-                    <p className="mt-2 text-xs">Only DOCTOR accounts can be invited to a clinic. If you don't have one, ask the inviter to send the invite to your doctor email.</p>
+                    <p className="mt-2 text-xs">Only DOCTOR accounts can be invited to a clinic. If you don&apos;t have one, ask the inviter to send the invite to your doctor email.</p>
                   )}
                 </div>
               </div>

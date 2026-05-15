@@ -89,7 +89,7 @@ export async function POST(
   }
 
   // Parse multipart form with up to MAX_FILES image uploads.
-  let images: { mime: string; b64: string }[] = []
+  const images: { mime: string; b64: string }[] = []
   try {
     const form = await req.formData()
     const files = form.getAll('docs').filter((f): f is File => f instanceof File)

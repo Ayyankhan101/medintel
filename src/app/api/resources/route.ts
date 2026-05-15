@@ -26,12 +26,12 @@ export async function GET(req: NextRequest) {
 
   const resources = await prisma.medicalResource.findMany({ where, take: 200 })
 
-  let filtered = resources
+  let filtered: Array<typeof resources[number] & { distance?: number }> = resources
   if (!isNaN(lat) && !isNaN(lng)) {
     filtered = resources
       .map(r => ({ ...r, distance: haversineKm(lat, lng, Number(r.latitude), Number(r.longitude)) }))
-      .filter(r => (r as any).distance <= radius)
-      .sort((a, b) => (a as any).distance - (b as any).distance)
+      .filter(r => r.distance <= radius)
+      .sort((a, b) => a.distance - b.distance)
       .slice(0, limit)
   }
 

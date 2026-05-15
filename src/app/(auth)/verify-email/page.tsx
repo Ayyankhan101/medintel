@@ -1,10 +1,10 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Loader2, CheckCircle2, XCircle } from 'lucide-react'
 
-export default function VerifyEmailPage() {
+function VerifyEmailInner() {
   const params = useSearchParams()
   const token = params.get('token')
   const [state, setState] = useState<'loading' | 'ok' | 'fail'>('loading')
@@ -43,5 +43,17 @@ export default function VerifyEmailPage() {
         )}
       </div>
     </div>
+  )
+}
+
+export default function VerifyEmailPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <Loader2 className="w-10 h-10 animate-spin text-slate-400" />
+      </div>
+    }>
+      <VerifyEmailInner />
+    </Suspense>
   )
 }

@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { Suspense, useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { VoiceRecorder } from '@/components/voice/VoiceRecorder'
 import { SymptomSummary } from '@/components/intake/SymptomSummary'
@@ -12,6 +12,18 @@ type IntakeMode = 'choose' | 'voice' | 'text'
 interface IntakeResult extends TriageResult { triageId: string; transcript: string; summary: string }
 
 export default function IntakePage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <Loader2 className="w-10 h-10 animate-spin text-slate-400" />
+      </div>
+    }>
+      <IntakeInner />
+    </Suspense>
+  )
+}
+
+function IntakeInner() {
   const router  = useRouter()
   const params  = useSearchParams()
   const [mode,      setMode]      = useState<IntakeMode>('choose')
@@ -97,7 +109,7 @@ export default function IntakePage() {
     <div className="max-w-xl mx-auto px-4">
       <div className="text-center mb-8">
         <h1 className="text-2xl font-bold text-slate-900">How are you feeling?</h1>
-        <p className="text-slate-500 mt-1.5">Describe your symptoms — we'll find the right doctor for you</p>
+        <p className="text-slate-500 mt-1.5">Describe your symptoms — we&apos;ll find the right doctor for you</p>
       </div>
 
       {mode === 'choose' && (

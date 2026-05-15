@@ -405,7 +405,7 @@ export default function ConsultationPage({ params }: { params: Promise<{ id: str
   useEffect(() => {
     fetch('/api/auth/session')
       .then(r => r.json())
-      .then(s => setRole((s?.user as any)?.role ?? null))
+      .then((s: { user?: { role?: string } } | null) => setRole(s?.user?.role ?? null))
       .catch(() => setRole(null))
   }, [])
 

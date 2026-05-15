@@ -227,3 +227,144 @@
 
 /* Auth pages */
 .dark .bg-slate-50.flex-1          { background-color: oklch(0.145 0 0); }
+/* ──────────────────────────────────────────────────────────────────────
+ * MedIntel Design System (from Claude Design handoff)
+ * ────────────────────────────────────────────────────────────────────── */
+
+:root {
+  /* type vars — fonts wired up in layout.tsx via next/font */
+  --font-ui:   var(--font-sans);
+  --font-mono: var(--font-mono);
+  --font-urdu: "Noto Nastaliq Urdu", "Noto Naskh Arabic", serif;
+
+  /* brand */
+  --blue-50:  #eff6ff;
+  --blue-100: #dbeafe;
+  --blue-200: #bfdbfe;
+  --blue-300: #93c5fd;
+  --blue-400: #60a5fa;
+  --blue-500: #3b82f6;
+  --blue-600: #2563eb;
+  --blue-700: #1d4ed8;
+  --blue-800: #1e40af;
+
+  /* slate */
+  --slate-50:  #f8fafc;
+  --slate-100: #f1f5f9;
+  --slate-200: #e2e8f0;
+  --slate-300: #cbd5e1;
+  --slate-400: #94a3b8;
+  --slate-500: #64748b;
+  --slate-600: #475569;
+  --slate-700: #334155;
+  --slate-800: #1e293b;
+  --slate-900: #0f172a;
+  --slate-950: #020617;
+
+  /* accents */
+  --amber-400:   #fbbf24;
+  --amber-500:   #f59e0b;
+  --red-500:     #ef4444;
+  --red-600:     #dc2626;
+  --violet-400:  #a78bfa;
+  --violet-500:  #8b5cf6;
+  --violet-600:  #7c3aed;
+  --emerald-500: #10b981;
+
+  /* easing */
+  --ease-out-quart: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-out:       cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* density (default = comfy on desktop) */
+  --pad-card:  28px;
+  --pad-stage: 40px;
+  --gap:       20px;
+  --h-tap:     52px;
+
+  /* light theme surfaces */
+  --mi-bg:        var(--slate-50);
+  --mi-bg-elev:   #ffffff;
+  --mi-bg-soft:   var(--slate-100);
+  --mi-ink:       var(--slate-900);
+  --mi-ink-2:     var(--slate-700);
+  --mi-ink-3:     var(--slate-500);
+  --mi-ink-4:     var(--slate-400);
+  --mi-border:    var(--slate-200);
+  --mi-border-strong: var(--slate-300);
+  --mi-shadow-card:  0 1px 0 rgba(15,23,42,.04), 0 2px 8px -2px rgba(15,23,42,.06);
+  --mi-shadow-hover: 0 1px 0 rgba(15,23,42,.04), 0 12px 28px -10px rgba(15,23,42,.18);
+  --mi-ring:        0 0 0 4px rgba(37,99,235,.18);
+  --mi-gradient-stage:
+    radial-gradient(1200px 600px at 50% -10%, rgba(37,99,235,.10), transparent 60%),
+    radial-gradient(800px 500px at 90% 110%, rgba(139,92,246,.08), transparent 60%);
+}
+
+.dark {
+  --mi-bg:        var(--slate-950);
+  --mi-bg-elev:   #0b1220;
+  --mi-bg-soft:   #0a1326;
+  --mi-ink:       #f8fafc;
+  --mi-ink-2:     #cbd5e1;
+  --mi-ink-3:     #94a3b8;
+  --mi-ink-4:     #64748b;
+  --mi-border:    #1e293b;
+  --mi-border-strong: #243246;
+  --mi-shadow-card:  0 1px 0 rgba(255,255,255,.02) inset, 0 2px 12px -2px rgba(0,0,0,.5);
+  --mi-shadow-hover: 0 1px 0 rgba(255,255,255,.04) inset, 0 12px 32px -10px rgba(0,0,0,.7);
+  --mi-ring:        0 0 0 4px rgba(59,130,246,.28);
+  --mi-gradient-stage:
+    radial-gradient(1200px 600px at 50% -10%, rgba(37,99,235,.20), transparent 60%),
+    radial-gradient(800px 500px at 90% 110%, rgba(139,92,246,.12), transparent 60%);
+}
+
+/* Aliases without the mi- prefix so design components can use --bg-elev etc. */
+:root, .dark {
+  --bg:             var(--mi-bg);
+  --bg-elev:        var(--mi-bg-elev);
+  --bg-soft:        var(--mi-bg-soft);
+  --ink:            var(--mi-ink);
+  --ink-2:          var(--mi-ink-2);
+  --ink-3:          var(--mi-ink-3);
+  --ink-4:          var(--mi-ink-4);
+  --border:         var(--mi-border);
+  --border-strong:  var(--mi-border-strong);
+  --shadow-card:    var(--mi-shadow-card);
+  --shadow-hover:   var(--mi-shadow-hover);
+  --ring:           var(--mi-ring);
+  --gradient-stage: var(--mi-gradient-stage);
+}
+
+/* utilities */
+.mono { font-family: var(--font-mono); font-feature-settings: "tnum" 1; }
+.urdu { font-family: var(--font-urdu); line-height: 2.1; }
+
+.focus-ring:focus-visible { outline: none; box-shadow: var(--ring); }
+
+/* keyframes */
+@keyframes mi-pulse-ring {
+  0%   { box-shadow: 0 0 0 0 rgba(37,99,235,.42); }
+  80%  { box-shadow: 0 0 0 28px rgba(37,99,235,0); }
+  100% { box-shadow: 0 0 0 0 rgba(37,99,235,0); }
+}
+@keyframes mi-fade-up { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes mi-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes mi-page-in { from { opacity: 0; transform: translateX(32px); } to { opacity: 1; transform: none; } }
+@keyframes mi-shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+@keyframes mi-spin   { to { transform: rotate(360deg); } }
+@keyframes mi-blink  { 0%, 40%, 100% { opacity: .2; } 20% { opacity: 1; } }
+@keyframes mi-bar    { 0%, 100% { transform: scaleY(.18); } 50% { transform: scaleY(1); } }
+@keyframes mi-marquee { from { transform: translateX(0); } to { transform: translateX(-33.33%); } }
+@keyframes mi-modal-in  { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+@keyframes mi-drawer-in { from { transform: translateX(100%); } to { transform: translateX(0); } }
+@keyframes mi-toast-in  { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes mi-mascot-blink { 0%, 92%, 100% { opacity: 1; } 95% { opacity: .15; } }
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

@@ -8,7 +8,7 @@ const PUBLIC_PATHS = ['/', '/login', '/register', '/register/doctor', '/clinic/r
 const DOCTOR_PREFIXES  = ['/doctor']
 const ADMIN_PREFIXES   = ['/admin']
 const CLINIC_PREFIXES  = ['/clinic']
-const PATIENT_PREFIXES = ['/intake', '/doctors', '/book', '/booking', '/history', '/resources', '/imaging']
+const PATIENT_PREFIXES = ['/onboarding', '/intake', '/doctors', '/book', '/booking', '/history', '/resources', '/imaging']
 
 function startsWithAny(path: string, prefixes: string[]): boolean {
   return prefixes.some(p => path === p || path.startsWith(p + '/'))

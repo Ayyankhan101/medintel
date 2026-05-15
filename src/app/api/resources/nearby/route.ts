@@ -50,7 +50,7 @@ export async function GET(req: NextRequest) {
   const json = await res.json()
   const places: NearbyPlace[] = (json.results ?? [])
     .slice(0, limit)
-    .map((p: any) => ({
+    .map((p: { place_id: string; name: string; vicinity?: string; geometry: { location: { lat: number; lng: number } }; opening_hours?: { open_now?: boolean } }) => ({
       placeId:  p.place_id,
       name:     p.name,
       address:  p.vicinity ?? '',

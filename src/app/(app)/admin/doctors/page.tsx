@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useCallback } from 'react'
+import { Suspense, useEffect, useState, useCallback } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Check, X, Loader2, ShieldCheck } from 'lucide-react'
 
@@ -21,6 +21,18 @@ interface Doctor {
 type Filter = 'PENDING' | 'VERIFIED' | 'REJECTED' | 'ALL'
 
 export default function AdminDoctorsPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <Loader2 className="w-10 h-10 animate-spin text-slate-400" />
+      </div>
+    }>
+      <AdminDoctorsInner />
+    </Suspense>
+  )
+}
+
+function AdminDoctorsInner() {
   const search = useSearchParams()
   const initial = (search.get('status') ?? 'PENDING') as Filter
   const [filter, setFilter] = useState<Filter>(initial)

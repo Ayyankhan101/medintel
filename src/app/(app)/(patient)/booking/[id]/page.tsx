@@ -43,9 +43,9 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
         <div className="w-14 h-14 rounded-full bg-green-100 mx-auto flex items-center justify-center">
           <CheckCircle2 className="w-8 h-8 text-green-600" />
         </div>
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">You're booked</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">You&apos;re booked</h1>
         <p className="text-sm text-slate-500 dark:text-slate-400">
-          A confirmation email is on the way. Save the calendar invite so you don't miss it.
+          A confirmation email is on the way. Save the calendar invite so you don&apos;t miss it.
         </p>
       </div>
 

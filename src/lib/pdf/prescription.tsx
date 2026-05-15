@@ -111,7 +111,9 @@ export function PrescriptionDoc({ data }: { data: PrescriptionPdfData }) {
 
         {appointment.transcript && (
           <View style={styles.section}>
+            {/* eslint-disable-next-line react/no-unescaped-entities */}
             <Text style={styles.sectionTitle}>Patient's words</Text>
+            {/* eslint-disable-next-line react/no-unescaped-entities */}
             <Text style={styles.body}>"{appointment.transcript}"</Text>
           </View>
         )}
@@ -149,6 +151,7 @@ export function PrescriptionDoc({ data }: { data: PrescriptionPdfData }) {
         </View>
 
         <View style={styles.footer} fixed>
+          {/* eslint-disable-next-line react/no-unescaped-entities */}
           <Text>Generated {generatedAt.toLocaleString('en-PK')} · MedIntel · Document is signed by the issuing doctor's account. Not a substitute for a physical examination.</Text>
         </View>
       </Page>

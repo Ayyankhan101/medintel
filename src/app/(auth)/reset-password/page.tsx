@@ -1,10 +1,22 @@
 'use client'
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { Lock, Loader2, CheckCircle2 } from 'lucide-react'
 
 export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-[70vh] flex items-center justify-center">
+        <Loader2 className="w-10 h-10 animate-spin text-slate-400" />
+      </div>
+    }>
+      <ResetPasswordInner />
+    </Suspense>
+  )
+}
+
+function ResetPasswordInner() {
   const params = useSearchParams()
   const token  = params.get('token') ?? ''
   const [password, setPassword] = useState('')

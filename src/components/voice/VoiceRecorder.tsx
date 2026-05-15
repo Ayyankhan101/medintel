@@ -240,7 +240,7 @@ export function VoiceRecorder({ onRecordingComplete }: Props) {
 
           <div className="text-center">
             <span className="text-3xl font-mono font-bold text-red-600 tabular-nums">{fmt(seconds)}</span>
-            <p className="text-xs text-slate-400 mt-1">Tap the button again when you're done</p>
+            <p className="text-xs text-slate-400 mt-1">Tap the button again when you&apos;re done</p>
           </div>
         </div>
       )}
