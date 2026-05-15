@@ -80,6 +80,7 @@ export async function POST(req: NextRequest) {
           where: { id: clinic.id },
           data: {
             minutesUsed:      0,
+            quotaAlertLevel:  0,
             currentPeriodEnd: periodEnd ? new Date(periodEnd * 1000) : undefined,
             active:           true,
           },

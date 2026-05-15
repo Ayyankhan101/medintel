@@ -7,6 +7,10 @@
     {
       "path": "/api/cron/no-show-refund",
       "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/cron/maintenance",
+      "schedule": "0 3 * * *"
     }
   ]
 }

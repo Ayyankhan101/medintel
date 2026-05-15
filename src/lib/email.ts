@@ -276,6 +276,32 @@ export function sendEscrowReleased(args: {
   })
 }
 
+export function sendClinicQuotaAlert(args: {
+  to: string
+  clinicName: string
+  ownerName: string
+  level: 80 | 100
+  minutesUsed: number
+  minutesQuota: number
+}) {
+  const atCap = args.level === 100
+  return send({
+    to: args.to,
+    subject: atCap
+      ? `${args.clinicName} has reached its monthly minute quota`
+      : `${args.clinicName} is at 80% of its monthly minute quota`,
+    html: layout(
+      atCap ? 'Quota reached' : '80% quota warning',
+      `<p style="margin:0 0 14px;font-size:14px;line-height:1.6;color:#334155;">Hi ${escapeHtml(args.ownerName)},</p>
+       <p style="margin:0 0 14px;font-size:14px;line-height:1.6;color:#334155;">${args.clinicName} has used <strong>${args.minutesUsed.toLocaleString()}</strong> of <strong>${args.minutesQuota.toLocaleString()}</strong> minutes this period.</p>
+       ${atCap
+         ? `<p style="margin:0 0 14px;font-size:14px;line-height:1.6;color:#b91c1c;">New voice and WhatsApp triage sessions will be paused until the next billing cycle. Upgrade to keep services running.</p>`
+         : `<p style="margin:0 0 14px;font-size:14px;line-height:1.6;color:#334155;">You're at <strong>80%</strong>. Consider upgrading before you hit the cap to avoid service interruption.</p>`}
+       <p style="margin:0 0 22px;">${button(`${APP_URL}/clinic/dashboard`, 'Manage subscription')}</p>`,
+    ),
+  })
+}
+
 export function sendAppointmentReminder(args: {
   to: string
   patientName: string

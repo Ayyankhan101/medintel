@@ -115,6 +115,9 @@ model Clinic {
   stripeSubscriptionId String?   @unique
   currentPeriodEnd     DateTime?
 
+  // Highest quota-threshold alert already sent in the current period. Reset to 0 on invoice.paid.
+  quotaAlertLevel Int @default(0)
+
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
 
