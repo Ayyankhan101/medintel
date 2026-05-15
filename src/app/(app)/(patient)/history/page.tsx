@@ -2,9 +2,10 @@
 import { useEffect, useState } from 'react'
 import { MedicalTimeline } from '@/components/records/MedicalTimeline'
 import { RecordUploader } from '@/components/records/RecordUploader'
-import { Button } from '@/components/ui/button'
 import { Plus, X, Download, FileText, Calendar, Trash2, Loader2, Star } from 'lucide-react'
 import { ReviewForm } from '@/components/reviews/ReviewForm'
+import { Btn } from '@/components/design/Btn'
+import { AppointmentStatusPill, SeverityPill } from '@/components/design/badges'
 
 interface MedicalRecord {
   id: string
@@ -28,34 +29,21 @@ interface Appointment {
   review: { id: string; rating: number } | null
 }
 
-const STATUS_LABELS: Record<string, string> = {
-  SCHEDULED:   'Scheduled',
-  IN_PROGRESS: 'In progress',
-  COMPLETED:   'Completed',
-  CANCELLED:   'Cancelled',
-  REFUNDED:    'Refunded',
-}
-const SEVERITY_TINT: Record<string, string> = {
-  ROUTINE:  'bg-green-100  text-green-800  dark:bg-green-900/40  dark:text-green-300',
-  URGENT:   'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300',
-  CRITICAL: 'bg-red-100    text-red-800    dark:bg-red-900/40    dark:text-red-300',
-}
-
 const TYPE_LABELS: Record<string, string> = {
   ALL:          'All',
   PRESCRIPTION: 'Prescriptions',
-  LAB_REPORT:   'Lab Reports',
+  LAB_REPORT:   'Lab reports',
   SURGERY:      'Surgeries',
   ALLERGY:      'Allergies',
-  CHRONIC_MED:  'Chronic Meds',
+  CHRONIC_MED:  'Chronic meds',
 }
 
 export default function HistoryPage() {
-  const [records, setRecords]           = useState<MedicalRecord[]>([])
+  const [records,      setRecords]      = useState<MedicalRecord[]>([])
   const [appointments, setAppointments] = useState<Appointment[]>([])
-  const [loading, setLoading]           = useState(true)
-  const [showUpload, setShowUpload]     = useState(false)
-  const [filter, setFilter]             = useState('ALL')
+  const [loading,      setLoading]      = useState(true)
+  const [showUpload,   setShowUpload]   = useState(false)
+  const [filter,       setFilter]       = useState('ALL')
 
   async function loadAll() {
     setLoading(true)
@@ -66,16 +54,13 @@ export default function HistoryPage() {
         const d = await r2.json()
         setAppointments(d.appointments ?? [])
       }
-    } finally {
-      setLoading(false)
-    }
+    } finally { setLoading(false) }
   }
-
   useEffect(() => { loadAll() }, [])
 
   const [rescheduling, setRescheduling] = useState<string | null>(null)
-  const [newAt, setNewAt]               = useState('')
-  const [actionBusy, setActionBusy]     = useState<string | null>(null)
+  const [newAt,        setNewAt]        = useState('')
+  const [actionBusy,   setActionBusy]   = useState<string | null>(null)
 
   async function reschedule(id: string) {
     if (!newAt) return
@@ -84,7 +69,7 @@ export default function HistoryPage() {
       const res = await fetch(`/api/appointments/${id}`, {
         method:  'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ scheduledAt: new Date(newAt).toISOString() }),
+        body:    JSON.stringify({ scheduledAt: new Date(newAt).toISOString() }),
       })
       if (!res.ok) { alert((await res.json()).error ?? `HTTP ${res.status}`); return }
       setRescheduling(null); setNewAt('')
@@ -100,7 +85,7 @@ export default function HistoryPage() {
       const res = await fetch(`/api/appointments/${id}`, {
         method:  'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'cancel', reason: reason.trim() || undefined }),
+        body:    JSON.stringify({ action: 'cancel', reason: reason.trim() || undefined }),
       })
       if (!res.ok) { alert((await res.json()).error ?? `HTTP ${res.status}`); return }
       loadAll()
@@ -110,46 +95,64 @@ export default function HistoryPage() {
   const filtered = filter === 'ALL' ? records : records.filter(r => r.type === filter)
 
   return (
-    <div className="max-w-2xl mx-auto p-4 space-y-4">
-      <div className="flex items-center justify-between">
+    <div style={{
+      maxWidth: 760, margin: '0 auto',
+      padding: '28px clamp(16px, 4vw, 32px) 64px',
+      display: 'flex', flexDirection: 'column', gap: 18,
+      animation: 'mi-fade-up 320ms var(--ease-out-quart) both',
+    }}>
+      <header style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
         <div>
-          <h1 className="text-2xl font-bold">My Medical History</h1>
-          <p className="text-sm text-slate-500">{records.length} records in your vault</p>
+          <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--blue-700)', letterSpacing: '.08em', textTransform: 'uppercase' }}>
+            Medical vault
+          </span>
+          <h1 style={{ margin: '4px 0 0', fontSize: 28, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--ink)' }}>
+            My medical history
+          </h1>
+          <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--ink-3)' }}>
+            {records.length} records in your vault
+          </p>
         </div>
-        <Button
-          variant={showUpload ? 'outline' : 'default'}
-          size="sm"
-          onClick={() => setShowUpload(!showUpload)}
-        >
-          {showUpload ? <><X className="w-4 h-4 mr-1" /> Cancel</> : <><Plus className="w-4 h-4 mr-1" /> Add Record</>}
-        </Button>
-      </div>
+        <Btn kind={showUpload ? 'secondary' : 'primary'}
+             onClick={() => setShowUpload(!showUpload)}
+             leading={showUpload ? <X size={14} /> : <Plus size={14} />}>
+          {showUpload ? 'Cancel' : 'Add record'}
+        </Btn>
+      </header>
 
       {showUpload && (
         <RecordUploader onUploaded={() => { loadAll(); setShowUpload(false) }} />
       )}
 
-      {/* Filter chips */}
-      <div className="flex gap-2 flex-wrap">
-        {Object.entries(TYPE_LABELS).map(([value, label]) => (
-          <button
-            key={value}
-            onClick={() => setFilter(value)}
-            className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
-              filter === value
-                ? 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900'
-                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-            }`}
-          >
-            {label}
-          </button>
-        ))}
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+        {Object.entries(TYPE_LABELS).map(([value, label]) => {
+          const active = filter === value
+          return (
+            <button key={value} onClick={() => setFilter(value)} className="focus-ring"
+              style={{
+                padding: '6px 12px', borderRadius: 999,
+                border: '1px solid ' + (active ? 'var(--ink)' : 'var(--border)'),
+                background: active ? 'var(--ink)' : 'var(--bg-elev)',
+                color: active ? 'var(--bg)' : 'var(--ink-2)',
+                fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                transition: 'all 200ms var(--ease-out-quart)',
+              }}>
+              {label}
+            </button>
+          )
+        })}
       </div>
 
       {loading ? (
-        <div className="space-y-3">
-          {Array(3).fill(0).map((_, i) => (
-            <div key={i} className="h-24 bg-gray-100 dark:bg-slate-800 rounded-xl animate-pulse" />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {[0,1,2].map(i => (
+            <div key={i} style={{
+              height: 96, borderRadius: 18,
+              background: 'linear-gradient(90deg, var(--bg-soft) 0%, var(--bg-elev) 50%, var(--bg-soft) 100%)',
+              backgroundSize: '200% 100%',
+              animation: 'mi-shimmer 1.4s linear infinite',
+              border: '1px solid var(--border)',
+            }} />
           ))}
         </div>
       ) : (
@@ -157,74 +160,72 @@ export default function HistoryPage() {
       )}
 
       {!loading && appointments.length > 0 && (
-        <section className="pt-4">
-          <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-3 flex items-center gap-2">
-            <FileText className="w-4 h-4 text-blue-600" />
+        <section style={{ paddingTop: 8, display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <h2 style={{
+            margin: 0, fontSize: 16, fontWeight: 700, color: 'var(--ink)',
+            display: 'inline-flex', alignItems: 'center', gap: 8,
+          }}>
+            <FileText size={16} style={{ color: 'var(--blue-700)' }} />
             Past consultations
           </h2>
-          <ul className="space-y-2">
+          <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
             {appointments.map(a => (
-              <li
-                key={a.id}
-                className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3"
-              >
-                <div className="flex items-start gap-3 justify-between">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-medium text-slate-800 dark:text-slate-100 truncate">
+              <li key={a.id} style={{
+                background: 'var(--bg-elev)', border: '1px solid var(--border)',
+                borderRadius: 18, padding: 16, boxShadow: 'var(--shadow-card)',
+                display: 'flex', flexDirection: 'column', gap: 10,
+              }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                      <span style={{ fontWeight: 700, color: 'var(--ink)', fontSize: 14 }}>
                         {a.doctor?.specialization ?? a.department ?? 'Consultation'}
                       </span>
+                      <AppointmentStatusPill status={a.status as 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'REFUNDED'} />
                       {a.severityLevel && (
-                        <span className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded ${SEVERITY_TINT[a.severityLevel] ?? ''}`}>
-                          AI: {a.severityLevel}
-                        </span>
+                        <SeverityPill level={a.severityLevel === 'CRITICAL' ? 'EMERGENCY' : a.severityLevel === 'URGENT' ? 'URGENT' : 'ROUTINE'} />
                       )}
-                      <span className="text-[10px] uppercase font-medium text-slate-500 dark:text-slate-400">
-                        {STATUS_LABELS[a.status] ?? a.status}
-                      </span>
                     </div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--ink-3)' }}>
                       {new Date(a.scheduledAt).toLocaleString('en-PK', { dateStyle: 'medium', timeStyle: 'short' })}
                     </p>
                   </div>
-                  <div className="shrink-0 flex items-center gap-3">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 14, flex: 'none' }}>
                     {a.status === 'COMPLETED' && (
-                      <a
-                        href={`/api/appointments/${a.id}/prescription.pdf`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline"
-                      >
-                        <Download className="w-3 h-3" /> PDF
+                      <a href={`/api/appointments/${a.id}/prescription.pdf`} target="_blank" rel="noreferrer"
+                         style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--blue-700)', fontWeight: 600, textDecoration: 'none' }}>
+                        <Download size={12} /> PDF
                       </a>
                     )}
                     {a.status === 'SCHEDULED' && (
                       <>
-                        <button
-                          onClick={() => { setRescheduling(rescheduling === a.id ? null : a.id); setNewAt('') }}
-                          disabled={actionBusy === a.id}
-                          className="inline-flex items-center gap-1 text-xs font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100"
-                        >
-                          <Calendar className="w-3 h-3" /> Reschedule
+                        <button onClick={() => { setRescheduling(rescheduling === a.id ? null : a.id); setNewAt('') }}
+                                disabled={actionBusy === a.id}
+                                style={iconLink('ink')}>
+                          <Calendar size={12} /> Reschedule
                         </button>
-                        <button
-                          onClick={() => cancel(a.id)}
-                          disabled={actionBusy === a.id}
-                          className="inline-flex items-center gap-1 text-xs font-medium text-red-600 dark:text-red-400 hover:text-red-700 disabled:opacity-50"
-                        >
-                          {actionBusy === a.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+                        <button onClick={() => cancel(a.id)} disabled={actionBusy === a.id}
+                                style={iconLink('red')}>
+                          {actionBusy === a.id ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
                           Cancel
                         </button>
                       </>
                     )}
                   </div>
                 </div>
+
                 {a.status === 'COMPLETED' && a.doctor && (
                   a.review ? (
-                    <div className="mt-3 border-t border-slate-100 dark:border-slate-700 pt-3 flex items-center gap-1.5 text-xs text-slate-500">
+                    <div style={{
+                      borderTop: '1px solid var(--border)', paddingTop: 10,
+                      display: 'flex', alignItems: 'center', gap: 6,
+                      fontSize: 12, color: 'var(--ink-3)',
+                    }}>
                       <span>Your rating:</span>
                       {Array.from({ length: 5 }).map((_, i) => (
-                        <Star key={i} className={`w-3.5 h-3.5 ${i < a.review!.rating ? 'fill-amber-400 text-amber-400' : 'text-slate-300'}`} />
+                        <Star key={i} size={13}
+                              fill={i < a.review!.rating ? '#f59e0b' : 'transparent'}
+                              stroke={i < a.review!.rating ? '#f59e0b' : 'var(--ink-4)'} />
                       ))}
                     </div>
                   ) : (
@@ -236,28 +237,29 @@ export default function HistoryPage() {
                     />
                   )
                 )}
+
                 {rescheduling === a.id && (
-                  <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-slate-100 dark:border-slate-700 pt-3">
+                  <div style={{
+                    borderTop: '1px solid var(--border)', paddingTop: 10,
+                    display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8,
+                  }}>
                     <input
                       type="datetime-local"
                       value={newAt}
                       onChange={e => setNewAt(e.target.value)}
                       min={new Date(Date.now() + 31 * 60_000).toISOString().slice(0, 16)}
-                      className="px-2 py-1.5 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
+                      style={{
+                        padding: '8px 12px', fontSize: 13,
+                        borderRadius: 10, border: '1px solid var(--border)',
+                        background: 'var(--bg-elev)', color: 'var(--ink)',
+                      }}
                     />
-                    <button
-                      onClick={() => reschedule(a.id)}
-                      disabled={!newAt || actionBusy === a.id}
-                      className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-medium rounded-lg"
-                    >
-                      {actionBusy === a.id ? <Loader2 className="w-3 h-3 animate-spin inline" /> : 'Confirm'}
-                    </button>
-                    <button
-                      onClick={() => { setRescheduling(null); setNewAt('') }}
-                      className="px-3 py-1.5 text-slate-600 dark:text-slate-300 text-xs font-medium"
-                    >
+                    <Btn kind="primary" disabled={!newAt || actionBusy === a.id} onClick={() => reschedule(a.id)}>
+                      {actionBusy === a.id ? <Loader2 size={14} className="animate-spin" /> : 'Confirm'}
+                    </Btn>
+                    <Btn kind="ghost" onClick={() => { setRescheduling(null); setNewAt('') }}>
                       Cancel
-                    </button>
+                    </Btn>
                   </div>
                 )}
               </li>
@@ -267,4 +269,13 @@ export default function HistoryPage() {
       )}
     </div>
   )
+}
+
+function iconLink(tone: 'ink' | 'red'): React.CSSProperties {
+  return {
+    display: 'inline-flex', alignItems: 'center', gap: 4,
+    background: 'transparent', border: 0, padding: 0,
+    fontSize: 12, fontWeight: 600, cursor: 'pointer',
+    color: tone === 'red' ? 'var(--red-600)' : 'var(--ink-2)',
+  }
 }
