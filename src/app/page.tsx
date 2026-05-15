@@ -8,7 +8,7 @@ import {
   CreditCard, Activity,
 } from 'lucide-react'
 import { Btn } from '@/components/design/Btn'
-import { VerifiedBadge, ClinicPlanPill } from '@/components/design/badges'
+import { VerifiedBadge } from '@/components/design/badges'
 import { PKR } from '@/components/design/helpers'
 
 type NavTarget = 'intake' | 'register-doctor' | 'register' | 'login' | 'legal-terms' | 'legal-privacy' | 'legal-pmdc'
@@ -36,7 +36,6 @@ export default function HomePage() {
       <FeatureGrid />
       <HowItWorks />
       <ComplianceSection />
-      <Pricing />
       <FooterCta onCta={() => go('intake')} />
       <Footer onNav={go} />
     </div>
@@ -440,71 +439,6 @@ function ComplianceSection() {
                 <div style={{ fontWeight: 700, fontSize: 14 }}>{t}</div>
                 <div style={{ fontSize: 12, color: 'var(--ink-3)', lineHeight: 1.45, marginTop: 2 }}>{s}</div>
               </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  )
-}
-
-/* ───── pricing ───── */
-const PRICING: { plan: 'STARTER'|'STANDARD'|'ENTERPRISE'; price: number | null; period: string; note: string; features: string[]; cta: string; primary: boolean }[] = [
-  { plan: 'STARTER',   price: 0,     period: 'per month', note: 'For independent practitioners',
-    features: ['Up to 60 consults / month', '1 doctor', 'Voice + chat', 'Standard escrow', 'Email support'], cta: 'Start free', primary: false },
-  { plan: 'STANDARD',  price: 14999, period: 'per month', note: 'Most popular · for small clinics',
-    features: ['Up to 600 consults / month', 'Up to 8 doctors', 'Branded clinic profile', 'WhatsApp + voice number', 'Roster + invitations', 'Priority support'], cta: 'Pick Standard', primary: true },
-  { plan: 'ENTERPRISE', price: null, period: 'custom', note: 'Hospitals & networks',
-    features: ['Unlimited consults', 'Unlimited doctors', 'Multi-clinic dashboards', 'Dedicated success manager', 'Single sign-on (SAML)', 'Custom SLA'], cta: 'Talk to sales', primary: false },
-]
-
-function Pricing() {
-  return (
-    <section style={{ padding: '64px clamp(20px, 4vw, 56px)', borderTop: '1px solid var(--border)' }}>
-      <div style={{ maxWidth: 1180, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 28 }}>
-        <SectionHeader
-          kicker="Pricing"
-          title="Free for patients. Transparent for clinics."
-          sub="Clinics pay a flat monthly platform fee. We never take a cut of the consult fee."
-        />
-        <div style={{
-          display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-          gap: 14, alignItems: 'stretch',
-        }}>
-          {PRICING.map(p => (
-            <div key={p.plan} style={{
-              background: p.primary ? 'linear-gradient(180deg, rgba(37,99,235,.04), var(--bg-elev))' : 'var(--bg-elev)',
-              border: '1px solid ' + (p.primary ? 'rgba(37,99,235,.35)' : 'var(--border)'),
-              borderRadius: 22, padding: 22,
-              display: 'flex', flexDirection: 'column', gap: 14,
-              boxShadow: p.primary ? '0 12px 32px -16px rgba(37,99,235,.35)' : 'var(--shadow-card)',
-            }}>
-              <ClinicPlanPill plan={p.plan} />
-              <div>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-                  {p.price === null
-                    ? <span style={{ fontSize: 32, fontWeight: 700, letterSpacing: '-.02em' }}>Custom</span>
-                    : <span className="mono" style={{ fontSize: 36, fontWeight: 700, letterSpacing: '-.02em', lineHeight: 1 }}>
-                        {p.price === 0 ? 'Free' : PKR(p.price)}
-                      </span>}
-                </div>
-                <div style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 4 }}>{p.note} · {p.period}</div>
-              </div>
-              <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {p.features.map(f => (
-                  <li key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 13, color: 'var(--ink-2)' }}>
-                    <span style={{
-                      width: 16, height: 16, borderRadius: 999, flex: 'none', marginTop: 2,
-                      background: 'rgba(37,99,235,.10)', color: 'var(--blue-700)',
-                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                    }}>
-                      <Check size={10} strokeWidth={3} />
-                    </span>
-                    {f}
-                  </li>
-                ))}
-              </ul>
-              <Btn kind={p.primary ? 'primary' : 'secondary'} full>{p.cta}</Btn>
             </div>
           ))}
         </div>
