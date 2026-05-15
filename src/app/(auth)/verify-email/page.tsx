@@ -3,6 +3,7 @@ import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Loader2, CheckCircle2, XCircle } from 'lucide-react'
+import { AuthShell } from '@/components/design/AuthShell'
 
 function VerifyEmailInner() {
   const params = useSearchParams()
@@ -21,36 +22,52 @@ function VerifyEmailInner() {
       .catch(() => { setState('fail'); setMsg('Network error.') })
   }, [token])
 
+  const kicker = state === 'loading' ? 'Hold on'         : state === 'ok' ? 'Confirmed' : 'Action needed'
+  const title  = state === 'loading' ? 'Verifying email…' : state === 'ok' ? 'Email verified' : 'Verification failed'
+
   return (
-    <div className="min-h-[60vh] flex items-center justify-center px-4">
-      <div className="w-full max-w-md rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-8 text-center">
-        {state === 'loading' && <Loader2 className="w-10 h-10 mx-auto mb-3 animate-spin text-slate-400" />}
-        {state === 'ok'      && <CheckCircle2 className="w-10 h-10 mx-auto mb-3 text-green-600" />}
-        {state === 'fail'    && <XCircle className="w-10 h-10 mx-auto mb-3 text-red-600" />}
-        <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
-          {state === 'loading' ? 'Verifying…' : state === 'ok' ? 'Email verified' : 'Verification failed'}
-        </h1>
-        {msg && <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">{msg}</p>}
-        {state === 'ok' && (
-          <Link href="/login" className="inline-block mt-5 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700">
-            Continue to sign in
-          </Link>
-        )}
-        {state === 'fail' && (
-          <Link href="/login" className="inline-block mt-5 px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-700 text-sm font-medium">
-            Back to sign in
-          </Link>
-        )}
+    <AuthShell kicker={kicker} title={title} sub={msg || undefined}>
+      <div style={{ display: 'flex', justifyContent: 'center' }}>
+        <span style={{
+          width: 64, height: 64, borderRadius: 18,
+          background:
+            state === 'ok'   ? 'rgba(16,185,129,.12)' :
+            state === 'fail' ? 'rgba(239,68,68,.10)'  :
+                               'var(--bg-soft)',
+          color:
+            state === 'ok'   ? 'var(--emerald-500)' :
+            state === 'fail' ? 'var(--red-600)'     :
+                               'var(--ink-3)',
+          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          {state === 'loading' && <Loader2 size={28} className="animate-spin" />}
+          {state === 'ok'      && <CheckCircle2 size={32} strokeWidth={2.5} />}
+          {state === 'fail'    && <XCircle size={32} strokeWidth={2.5} />}
+        </span>
       </div>
-    </div>
+
+      {state !== 'loading' && (
+        <Link href="/login" style={{
+          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+          width: '100%', padding: '0 18px', height: 48, borderRadius: 14,
+          background: state === 'ok' ? 'var(--blue-600)' : 'var(--bg-elev)',
+          color: state === 'ok' ? '#fff' : 'var(--ink)',
+          border: state === 'ok' ? 0 : '1px solid var(--border)',
+          fontSize: 14, fontWeight: 600, textDecoration: 'none',
+          boxShadow: state === 'ok' ? '0 8px 20px -8px rgba(37,99,235,.55)' : 'none',
+        }}>
+          {state === 'ok' ? 'Continue to sign in' : 'Back to sign in'}
+        </Link>
+      )}
+    </AuthShell>
   )
 }
 
 export default function VerifyEmailPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-[60vh] flex items-center justify-center">
-        <Loader2 className="w-10 h-10 animate-spin text-slate-400" />
+      <div style={{ minHeight: '70vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Loader2 size={40} className="animate-spin" style={{ color: 'var(--ink-4)' }} />
       </div>
     }>
       <VerifyEmailInner />
