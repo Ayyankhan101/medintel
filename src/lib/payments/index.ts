@@ -25,12 +25,12 @@ export function pickProvider(preferred?: ProviderId): PaymentProvider {
 }
 
 export function providerFor(id: ProviderId): PaymentProvider {
+  // Stripe stays on its dedicated routes (lib/stripe.ts) for now and isn't
+  // routable through the unified surface. If we later need it here, add a
+  // stripe adapter wrapping createEscrowPaymentIntent + releaseEscrowToDoctor.
   switch (id) {
     case 'safepay': return safepayProvider
     case 'mock':    return mockProvider
-    // Stripe stays on its current dedicated routes (lib/stripe.ts) for now.
-    // If we later need it through the unified surface, write a stripe adapter
-    // that wraps createEscrowPaymentIntent + releaseEscrowToDoctor.
     default:        return mockProvider
   }
 }

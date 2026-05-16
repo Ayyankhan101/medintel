@@ -21,6 +21,8 @@ import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { pickProvider } from '@/lib/payments'
 import type { ProviderId } from '@/lib/payments'
+import { rateLimitDb } from '@/lib/rate-limit'
+import type { Escrow } from '@prisma/client'
 
 const schema = z.object({
   appointmentId: z.string().min(1),
@@ -30,6 +32,9 @@ const schema = z.object({
 export async function POST(req: NextRequest) {
   const session = await auth()
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const rl = await rateLimitDb('escrow-checkout', session.user.id!, { max: 5, windowMs: 60_000 })
+  if (!rl.ok) return NextResponse.json({ error: 'Too many checkout attempts. Slow down.' }, { status: 429 })
 
   const body   = await req.json().catch(() => ({}))
   const parsed = schema.safeParse(body)
@@ -67,7 +72,7 @@ export async function POST(req: NextRequest) {
     },
   })
 
-  let reserved
+  let reserved: Escrow
   try {
     reserved = await prisma.escrow.create({
       data: {

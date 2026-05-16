@@ -32,47 +32,51 @@ export async function POST(req: NextRequest) {
     if ((e as { code?: string }).code === 'P2002') {
       return NextResponse.json({ received: true, duplicate: true })
     }
+    // Anything else (db down, network blip) must NOT silently fall through —
+    // the rest of the handler would then run un-deduped on the retry.
+    console.error('[safepay-webhook] dedupe insert failed', e)
+    return NextResponse.json({ error: 'Dedupe insert failed' }, { status: 500 })
   }
 
   try {
-    if (event.type === 'payment.succeeded' && event.providerRef) {
-      const escrow = await prisma.escrow.findUnique({ where: { providerRef: event.providerRef } })
-      if (escrow && escrow.status === 'HELD') {
-        // Money is at the PSP; no app-level state change needed beyond a
-        // confirmation flag in audit so admins can see the patient paid.
-        void audit('escrow.captured', 'Appointment', escrow.appointmentId, {
-          provider: 'safepay', amount: event.amount,
-        })
-      }
-    }
-    if (event.type === 'payment.failed' && event.providerRef) {
-      // Look up the appointment via our own escrow row — never trust the
-      // appointmentId echoed back in the webhook payload (an attacker who
-      // forges a signed event could otherwise cancel arbitrary appointments).
-      const escrow = await prisma.escrow.findUnique({
-        where:  { providerRef: event.providerRef },
-        select: { appointmentId: true },
+    // Resolve the escrow once for any state-mutating branch. Never trust
+    // attacker-controllable payload fields (event.appointmentId, etc.) — only
+    // our own row is authoritative.
+    const escrow = event.providerRef
+      ? await prisma.escrow.findUnique({ where: { providerRef: event.providerRef } })
+      : null
+
+    if (event.type === 'payment.succeeded' && escrow && escrow.status === 'HELD') {
+      // Money is at the PSP; no app-level state change needed beyond a
+      // confirmation flag in audit so admins can see the patient paid.
+      void audit('escrow.captured', 'Appointment', escrow.appointmentId, {
+        provider: 'safepay', amount: event.amount,
       })
+    }
+    if (event.type === 'payment.failed') {
       if (escrow) {
         await prisma.appointment.update({
           where: { id: escrow.appointmentId },
           data:  { status: 'CANCELLED', cancellationReason: 'payment_failed' },
         })
+      } else {
+        // Orphan event: forged-but-signed, or our reservation was already
+        // swept. Either way ops needs to see it.
+        void audit('webhook.orphan', 'Escrow', event.providerRef ?? 'unknown', {
+          provider: 'safepay', type: 'payment.failed',
+        })
       }
     }
-    if (event.type === 'payment.refunded' && event.providerRef) {
-      const escrow = await prisma.escrow.findUnique({ where: { providerRef: event.providerRef } })
-      if (escrow && escrow.status !== 'REFUNDED') {
-        await prisma.escrow.update({
-          where: { id: escrow.id },
-          data:  { status: 'REFUNDED', refundedAt: new Date() },
-        })
-        await prisma.appointment.update({
-          where: { id: escrow.appointmentId },
-          data:  { status: 'REFUNDED' },
-        })
-        void audit('escrow.refund_reconcile', 'Appointment', escrow.appointmentId, { provider: 'safepay' })
-      }
+    if (event.type === 'payment.refunded' && escrow && escrow.status !== 'REFUNDED') {
+      await prisma.escrow.update({
+        where: { id: escrow.id },
+        data:  { status: 'REFUNDED', refundedAt: new Date() },
+      })
+      await prisma.appointment.update({
+        where: { id: escrow.appointmentId },
+        data:  { status: 'REFUNDED' },
+      })
+      void audit('escrow.refund_reconcile', 'Appointment', escrow.appointmentId, { provider: 'safepay' })
     }
   } catch (e) {
     await prisma.processedStripeEvent.delete({ where: { eventId } }).catch(() => {})

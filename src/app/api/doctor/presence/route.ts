@@ -19,6 +19,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { rateLimitDb } from '@/lib/rate-limit'
 
 const schema = z.object({ online: z.boolean() })
 
@@ -26,6 +27,11 @@ export async function POST(req: NextRequest) {
   const session = await auth()
   if (!session?.user || session.user.role !== 'DOCTOR')
     return NextResponse.json({ error: 'Doctors only' }, { status: 403 })
+
+  // Heartbeat cadence is 60s from the client; cap at 6/min to absorb retries
+  // and tab focus events without letting a buggy client spam writes.
+  const rl = await rateLimitDb('doctor-presence', session.user.id!, { max: 6, windowMs: 60_000 })
+  if (!rl.ok) return NextResponse.json({ error: 'Heartbeat too frequent' }, { status: 429 })
 
   const parsed = schema.safeParse(await req.json().catch(() => ({})))
   if (!parsed.success) return NextResponse.json({ error: 'Invalid' }, { status: 400 })

@@ -17,6 +17,7 @@ import { z } from 'zod'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { sendBookingConfirmation, sendDoctorNewBooking } from '@/lib/email'
+import { rateLimitDb } from '@/lib/rate-limit'
 
 const STALE_AFTER_MS = 3 * 60_000
 
@@ -30,6 +31,9 @@ class DoctorUnavailable extends Error {}
 export async function POST(req: NextRequest) {
   const session = await auth()
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const rl = await rateLimitDb('appt-instant', session.user.id!, { max: 3, windowMs: 60_000 })
+  if (!rl.ok) return NextResponse.json({ error: 'Too many consult-now requests. Slow down.' }, { status: 429 })
 
   const parsed = schema.safeParse(await req.json().catch(() => ({})))
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
@@ -51,12 +55,17 @@ export async function POST(req: NextRequest) {
           || !doctor.lastSeenAt || doctor.lastSeenAt.getTime() < Date.now() - STALE_AFTER_MS) {
         throw new DoctorUnavailable()
       }
-      // Block double-booking inside the heartbeat window.
+      // Reject if the doctor already has any active appointment within ±30m
+      // of `now`. Catches both "they're mid-call with someone" and "they have
+      // a scheduled slot starting in 10m" — Consult-Now must not overlap.
       const clash = await tx.appointment.findFirst({
         where: {
           doctorId: doctor.id,
           status:   { in: ['SCHEDULED', 'IN_PROGRESS'] },
-          scheduledAt: { gte: new Date(startAt.getTime() - 30 * 60_000) },
+          scheduledAt: {
+            gte: new Date(startAt.getTime() - 30 * 60_000),
+            lte: new Date(startAt.getTime() + 30 * 60_000),
+          },
         },
         select: { id: true },
       })

@@ -3,14 +3,12 @@
  * NayaPay, SadaPay, and bank-transfer under one hosted checkout.
  *
  * Docs (sandbox): https://safepay.dev/docs/integrations/api-reference
- * Sandbox base:    https://sandbox.api.getsafepay.com
- * Production base: https://getsafepay.com/api
  *
- * Env:
- *   SAFEPAY_API_KEY      — public key (sent as Authorization)
- *   SAFEPAY_SECRET_KEY   — used to HMAC-SHA256 webhook bodies
- *   SAFEPAY_BASE_URL     — override (defaults to sandbox)
- *   SAFEPAY_WEBHOOK_SECRET — separate webhook secret if SafePay rotates it
+ * Env (single source of truth):
+ *   SAFEPAY_ENV            — 'sandbox' | 'production' (default 'sandbox')
+ *   SAFEPAY_API_KEY        — sent as Authorization Bearer
+ *   SAFEPAY_SECRET_KEY     — HMAC-SHA256 webhook secret (fallback)
+ *   SAFEPAY_WEBHOOK_SECRET — preferred webhook secret if SafePay rotates it
  *
  * NOTE: We don't have live SafePay credentials wired yet. This adapter targets
  * the real REST contract so swapping in a live key flips it from mocked-by-env
@@ -24,7 +22,25 @@ import type {
   CaptureInput, RefundInput, RefundResult, NormalizedEvent,
 } from './types'
 
-const BASE = process.env.SAFEPAY_BASE_URL ?? 'https://sandbox.api.getsafepay.com'
+type SafePayEnv = 'sandbox' | 'production'
+const ENV: SafePayEnv = process.env.SAFEPAY_ENV === 'production' ? 'production' : 'sandbox'
+
+// Per-env base + checkout endpoints. Production has no `api.` subdomain so
+// previous `BASE.replace('api.','')` trick silently produced a broken URL —
+// keep them as explicit constants instead.
+const ENDPOINTS = {
+  sandbox: {
+    api:      'https://sandbox.api.getsafepay.com',
+    checkout: 'https://sandbox.getsafepay.com/checkout',
+  },
+  production: {
+    api:      'https://getsafepay.com/api',
+    checkout: 'https://getsafepay.com/checkout',
+  },
+} as const
+
+const BASE         = ENDPOINTS[ENV].api
+const CHECKOUT_URL = ENDPOINTS[ENV].checkout
 
 function authHeaders(): Record<string, string> {
   return {
@@ -57,7 +73,7 @@ export const safepayProvider: PaymentProvider = {
     const body = {
       amount:          input.amount,
       currency:        'PKR',
-      environment:     process.env.SAFEPAY_API_KEY?.startsWith('sec_live_') ? 'production' : 'sandbox',
+      environment:     ENV,
       source:          'custom',
       order_id:        input.appointmentId,
       // Custom metadata round-trips back to us in the webhook.
@@ -74,7 +90,7 @@ export const safepayProvider: PaymentProvider = {
       body:   JSON.stringify(body),
     })
     const tracker = resp.data.tracker
-    const u = new URL('/checkout', BASE.replace('api.', ''))
+    const u = new URL(CHECKOUT_URL)
     u.searchParams.set('tracker', tracker)
     u.searchParams.set('source',  'custom')
     u.searchParams.set('redirect_url', input.successUrl)
@@ -85,11 +101,16 @@ export const safepayProvider: PaymentProvider = {
   },
 
   async capture(_input: CaptureInput): Promise<void> {
-    // SafePay captures synchronously at checkout — no separate capture step.
-    // The escrow "held → released" transition is enforced at the application
-    // layer (release route flips the row; we only call out to disbursement
-    // when we actually want to pay the doctor).
-    return
+    // SafePay captures synchronously at checkout, so no capture API call is
+    // needed — BUT the release-to-doctor flow in lib/stripe.ts assumes this
+    // method also moves funds to the doctor (transfer_data semantics). For
+    // SafePay we need a separate disbursement call that does not exist yet.
+    // Fail loud rather than silently succeeding so we don't ship a "doctors
+    // never paid" bug to prod.
+    throw new Error(
+      'SafePay disbursement not yet implemented. Wire lib/payouts before ' +
+      'calling capture() on a SafePay-held escrow.',
+    )
   },
 
   async refund(input: RefundInput): Promise<RefundResult> {
@@ -109,9 +130,11 @@ export const safepayProvider: PaymentProvider = {
     const secret = process.env.SAFEPAY_WEBHOOK_SECRET ?? process.env.SAFEPAY_SECRET_KEY
     const sig    = headers.get('x-safepay-signature') ?? ''
     if (!secret) throw new Error('SAFEPAY_WEBHOOK_SECRET not configured')
-    const expected = createHmac('sha256', secret).update(rawBody).digest('hex')
-    const a = Buffer.from(sig)
-    const b = Buffer.from(expected)
+    if (!/^[0-9a-f]+$/i.test(sig)) throw new Error('SafePay webhook signature invalid')
+    // Compare raw bytes, not utf8 hex strings: lets us tolerate case
+    // differences and catches truncation / encoding drift early.
+    const a = Buffer.from(sig, 'hex')
+    const b = createHmac('sha256', secret).update(rawBody).digest()
     if (a.length !== b.length || !timingSafeEqual(a, b)) {
       throw new Error('SafePay webhook signature invalid')
     }
