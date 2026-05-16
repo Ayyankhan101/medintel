@@ -15,8 +15,28 @@ const loginSchema = z.object({
   password: z.string().min(8),
 })
 
+const useSecureCookies = process.env.NODE_ENV === 'production'
+
 export const { handlers, signIn, signOut, auth } = NextAuth({
   session: { strategy: 'jwt' },
+  // Explicit cookie config — don't rely on NextAuth defaults silently changing.
+  // httpOnly: blocks JS access (XSS mitigation). sameSite 'lax': blocks CSRF on
+  // cross-site POSTs while keeping top-level nav from email links working.
+  // secure: only sent over HTTPS in production.
+  cookies: {
+    sessionToken: {
+      name:    useSecureCookies ? '__Secure-authjs.session-token' : 'authjs.session-token',
+      options: { httpOnly: true, sameSite: 'lax', path: '/', secure: useSecureCookies },
+    },
+    csrfToken: {
+      name:    useSecureCookies ? '__Host-authjs.csrf-token' : 'authjs.csrf-token',
+      options: { httpOnly: true, sameSite: 'lax', path: '/', secure: useSecureCookies },
+    },
+    callbackUrl: {
+      name:    useSecureCookies ? '__Secure-authjs.callback-url' : 'authjs.callback-url',
+      options: { httpOnly: true, sameSite: 'lax', path: '/', secure: useSecureCookies },
+    },
+  },
   providers: [
     Credentials({
       async authorize(credentials) {

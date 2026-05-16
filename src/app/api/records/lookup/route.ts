@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { audit } from '@/lib/audit'
 
 export async function GET(req: NextRequest) {
   const session = await auth()
@@ -27,6 +28,31 @@ export async function GET(req: NextRequest) {
   if (!user?.patient) {
     return NextResponse.json({ error: 'No patient found with this MedIntel code' }, { status: 404 })
   }
+
+  // PMDC/Drugs-Act: a doctor may only read another patient's chart when an
+  // active clinical relationship exists. Admins bypass for moderation.
+  if (role === 'DOCTOR') {
+    const doctor = await prisma.doctor.findUnique({ where: { userId: session.user.id! }, select: { id: true } })
+    const link = doctor ? await prisma.appointment.findFirst({
+      where: {
+        patientId: user.patient.id,
+        doctorId:  doctor.id,
+        status:    { in: ['SCHEDULED', 'IN_PROGRESS', 'COMPLETED'] },
+      },
+      select: { id: true },
+    }) : null
+    if (!link) {
+      // Audit the *refusal* too — repeated denied lookups are a red flag.
+      void audit('records.lookup_denied', 'Patient', user.patient.id, {
+        actorId: session.user.id, actorRole: role, reason: 'no_active_appointment',
+      })
+      return NextResponse.json({ error: 'No active appointment with this patient' }, { status: 403 })
+    }
+  }
+
+  void audit('records.lookup', 'Patient', user.patient.id, {
+    actorId: session.user.id, actorRole: role, medIntelCode,
+  })
 
   const records = user.patient.medicalRecords
   const grouped = {

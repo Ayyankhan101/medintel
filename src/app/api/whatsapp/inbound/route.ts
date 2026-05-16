@@ -47,8 +47,10 @@ function twiml(text: string): NextResponse {
 function verifySignature(req: NextRequest, params: Record<string, string>): boolean {
   const token = process.env.TWILIO_AUTH_TOKEN
   if (!token) {
-    // Dev convenience — allow unsigned requests when no token is configured.
-    return process.env.NODE_ENV !== 'production'
+    // Dev convenience — allow unsigned requests only when explicitly running
+    // in development. Anything other than `development` (including unset)
+    // fails closed so a missing token in prod can't open the webhook up.
+    return process.env.NODE_ENV === 'development'
   }
   const sig = req.headers.get('x-twilio-signature')
   if (!sig) return false
@@ -57,6 +59,14 @@ function verifySignature(req: NextRequest, params: Record<string, string>): bool
 }
 
 async function downloadMedia(url: string): Promise<Buffer> {
+  // SSRF guard: only fetch Twilio-hosted media. Even with a valid signature,
+  // an attacker controlling MediaUrl0 (via replay or sub-domain trickery)
+  // could try to pivot us into internal services.
+  let host = ''
+  try { host = new URL(url).hostname } catch { throw new Error('invalid media url') }
+  if (!host.endsWith('.twilio.com') && host !== 'twilio.com') {
+    throw new Error(`untrusted media host: ${host}`)
+  }
   const sid  = process.env.TWILIO_ACCOUNT_SID
   const tok  = process.env.TWILIO_AUTH_TOKEN
   const auth = sid && tok ? `Basic ${Buffer.from(`${sid}:${tok}`).toString('base64')}` : ''

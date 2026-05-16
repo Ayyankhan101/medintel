@@ -18,7 +18,7 @@ import { randomBytes } from 'node:crypto'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { audit } from '@/lib/audit'
-import { rateLimit } from '@/lib/rate-limit'
+import { rateLimitDb, clientIp } from '@/lib/rate-limit'
 
 export const dynamic = 'force-dynamic'
 
@@ -30,8 +30,12 @@ export async function POST(req: NextRequest) {
   const session = await auth()
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const rl = rateLimit(req, { key: 'account-delete', max: 3, windowMs: 60 * 60_000 })
-  if (!rl.ok) return NextResponse.json({ error: 'Too many attempts. Try again later.' }, { status: 429 })
+  // DB-backed RL: per-user (primary) AND per-IP (secondary) so the cap holds
+  // across Fluid Compute instances/regions.
+  const userRl = await rateLimitDb('account-delete:user', session.user.id!, { max: 3, windowMs: 60 * 60_000 })
+  const ipRl   = await rateLimitDb('account-delete:ip',   clientIp(req),       { max: 10, windowMs: 60 * 60_000 })
+  if (!userRl.ok || !ipRl.ok)
+    return NextResponse.json({ error: 'Too many attempts. Try again later.' }, { status: 429 })
 
   const body   = await req.json().catch(() => ({}))
   const parsed = schema.safeParse(body)

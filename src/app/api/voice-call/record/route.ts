@@ -42,7 +42,7 @@ function thankYou(message: string): NextResponse {
 
 function verify(req: NextRequest, params: Record<string, string>): boolean {
   const token = process.env.TWILIO_AUTH_TOKEN
-  if (!token) return process.env.NODE_ENV !== 'production'
+  if (!token) return process.env.NODE_ENV === 'development'
   const sig = req.headers.get('x-twilio-signature')
   if (!sig) return false
   const url = process.env.TWILIO_WEBHOOK_URL ?? `${APP_URL()}/api/voice-call/record`
@@ -50,6 +50,12 @@ function verify(req: NextRequest, params: Record<string, string>): boolean {
 }
 
 async function downloadRecording(url: string): Promise<Buffer> {
+  // SSRF guard: only fetch Twilio media domains.
+  let host = ''
+  try { host = new URL(url).hostname } catch { throw new Error('invalid recording url') }
+  if (!host.endsWith('.twilio.com') && host !== 'twilio.com') {
+    throw new Error(`untrusted recording host: ${host}`)
+  }
   const sid  = process.env.TWILIO_ACCOUNT_SID
   const tok  = process.env.TWILIO_AUTH_TOKEN
   if (!sid || !tok) throw new Error('Twilio creds missing')

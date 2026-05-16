@@ -10,12 +10,17 @@ export const dynamic = 'force-dynamic'
 const schema = z.object({ email: z.string().email() })
 
 export async function POST(req: NextRequest) {
-  const rl = await rateLimitDb('pw-reset', clientIp(req), { max: 5, windowMs: 15 * 60_000 })
-  if (!rl.ok) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+  const ipRl = await rateLimitDb('pw-reset:ip', clientIp(req), { max: 5, windowMs: 15 * 60_000 })
+  if (!ipRl.ok) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
 
   const body = await req.json().catch(() => ({}))
   const parsed = schema.safeParse(body)
   if (!parsed.success) return NextResponse.json({ error: 'Invalid email' }, { status: 400 })
+
+  // Per-email bucket so a single victim can't be ground down from many IPs,
+  // and a NAT'd attacker can't exhaust other users' reset windows.
+  const emailRl = await rateLimitDb('pw-reset:email', parsed.data.email.toLowerCase(), { max: 3, windowMs: 60 * 60_000 })
+  if (!emailRl.ok) return NextResponse.json({ ok: true })
 
   // Always return ok — no enumeration.
   const user = await prisma.user.findUnique({ where: { email: parsed.data.email } })

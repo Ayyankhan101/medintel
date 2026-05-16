@@ -44,13 +44,16 @@ export async function POST(req: NextRequest) {
   if (!ALLOWED_RECORD_TYPES.has(type))         return NextResponse.json({ error: 'Invalid record type' }, { status: 400 })
   if (title.length < 2)                        return NextResponse.json({ error: 'Title required' }, { status: 400 })
 
-  // Per-patient namespacing prevents URL guessing across accounts.
+  // Per-patient namespacing AND a random suffix so the URL acts as a
+  // capability token — even if the patientId is known, the blob URL cannot be
+  // guessed without the suffix Vercel adds. Don't store the URL anywhere the
+  // patient hasn't already chosen to share it.
   const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 80)
   const blobKey  = `records/${patient.id}/${Date.now()}-${safeName}`
 
   let blob: { url: string }
   try {
-    blob = await put(blobKey, file, { access: 'public', addRandomSuffix: false })
+    blob = await put(blobKey, file, { access: 'public', addRandomSuffix: true })
   } catch (e) {
     console.error('[records/upload] blob put failed', e)
     return NextResponse.json({ error: 'Upload failed' }, { status: 502 })
