@@ -17,10 +17,50 @@ const CARD_TONES = {
 type Tone = keyof typeof CARD_TONES
 
 export default function DoctorDashboardPage() {
-  const [stats, setStats] = useState<Stats | null>(null)
+  const [stats,  setStats]  = useState<Stats | null>(null)
+  const [online, setOnline] = useState(false)
+  const [busy,   setBusy]   = useState(false)
+
   useEffect(() => {
     fetch('/api/doctor/stats').then(r => r.json()).then(setStats).catch(() => {})
   }, [])
+
+  // Presence heartbeat: while `online`, ping every 60s so lastSeenAt stays
+  // fresh. Patient-side query treats >3-min-stale as offline.
+  useEffect(() => {
+    if (!online) return
+    const tick = () => fetch('/api/doctor/presence', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body:   JSON.stringify({ online: true }),
+    }).catch(() => {})
+    tick()
+    const id = setInterval(tick, 60_000)
+    return () => clearInterval(id)
+  }, [online])
+
+  // Tell the server we're offline when the doctor leaves the page.
+  useEffect(() => {
+    const off = () => {
+      if (!online) return
+      navigator.sendBeacon?.('/api/doctor/presence', new Blob(
+        [JSON.stringify({ online: false })], { type: 'application/json' },
+      ))
+    }
+    window.addEventListener('beforeunload', off)
+    return () => { off(); window.removeEventListener('beforeunload', off) }
+  }, [online])
+
+  async function toggle() {
+    setBusy(true)
+    const next = !online
+    try {
+      const r = await fetch('/api/doctor/presence', {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body:   JSON.stringify({ online: next }),
+      })
+      if (r.ok) setOnline(next)
+    } finally { setBusy(false) }
+  }
 
   const cards: { Icon: IconCmp; label: string; value: number; tone: Tone }[] = stats ? [
     { Icon: CalendarDays, label: 'Today',     value: stats.today,     tone: 'blue'    },
@@ -48,14 +88,34 @@ export default function DoctorDashboardPage() {
             {new Date().toLocaleDateString('en-PK', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
           </p>
         </div>
-        <div style={{
-          display: 'inline-flex', alignItems: 'center', gap: 8,
-          padding: '6px 12px', borderRadius: 999,
-          background: 'rgba(16,185,129,.10)', border: '1px solid rgba(16,185,129,.30)',
-        }}>
-          <span style={{ width: 8, height: 8, borderRadius: 999, background: 'var(--emerald-500)' }} />
-          <span style={{ fontSize: 11, fontWeight: 600, color: '#047857' }}>Online</span>
-        </div>
+        <button
+          type="button" onClick={toggle} disabled={busy}
+          aria-pressed={online}
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 10,
+            padding: '6px 12px 6px 8px', borderRadius: 999,
+            background: online ? 'rgba(16,185,129,.10)' : 'rgba(148,163,184,.10)',
+            border: `1px solid ${online ? 'rgba(16,185,129,.30)' : 'rgba(148,163,184,.30)'}`,
+            color: online ? '#047857' : 'var(--ink-3)',
+            cursor: busy ? 'wait' : 'pointer',
+          }}
+          title={online ? 'You are visible to patients for Consult-Now' : 'Click to go online and accept instant consultations'}
+        >
+          <span style={{
+            display: 'inline-block', width: 28, height: 16, borderRadius: 999,
+            background: online ? 'var(--emerald-500)' : '#cbd5e1', position: 'relative',
+            transition: 'background 160ms',
+          }}>
+            <span style={{
+              position: 'absolute', top: 2, left: online ? 14 : 2,
+              width: 12, height: 12, borderRadius: 999, background: '#fff',
+              transition: 'left 160ms',
+            }} />
+          </span>
+          <span style={{ fontSize: 11, fontWeight: 600 }}>
+            {online ? 'Available now' : 'Offline'}
+          </span>
+        </button>
       </header>
 
       {stats && (

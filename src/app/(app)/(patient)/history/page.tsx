@@ -192,10 +192,17 @@ export default function HistoryPage() {
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 14, flex: 'none' }}>
                     {a.status === 'COMPLETED' && (
-                      <a href={`/api/appointments/${a.id}/prescription.pdf`} target="_blank" rel="noreferrer"
-                         style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--blue-700)', fontWeight: 600, textDecoration: 'none' }}>
-                        <Download size={12} /> PDF
-                      </a>
+                      <>
+                        <a href={`/api/appointments/${a.id}/prescription.pdf`} target="_blank" rel="noreferrer"
+                           style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--blue-700)', fontWeight: 600, textDecoration: 'none' }}>
+                          <Download size={12} /> Rx
+                        </a>
+                        <a href={`/api/appointments/${a.id}/claim.pdf`} target="_blank" rel="noreferrer"
+                           title="Insurance claim PDF (State Life / Adamjee / EFU)"
+                           style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--blue-700)', fontWeight: 600, textDecoration: 'none' }}>
+                          <FileText size={12} /> Claim
+                        </a>
+                      </>
                     )}
                     {a.status === 'SCHEDULED' && (
                       <>

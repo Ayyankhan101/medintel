@@ -3,7 +3,9 @@ import { use, useEffect, useState } from 'react'
 import Link from 'next/link'
 import {
   CheckCircle2, Calendar, Video, Loader2, Stethoscope, ShieldCheck, ArrowRight,
+  CreditCard, AlertCircle,
 } from 'lucide-react'
+import { useSearchParams } from 'next/navigation'
 import { PKR } from '@/components/design/helpers'
 
 interface Appointment {
@@ -20,9 +22,13 @@ interface Appointment {
 }
 
 export default function Page({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params)
-  const [appt, setAppt] = useState<Appointment | null>(null)
-  const [err,  setErr]  = useState<string | null>(null)
+  const { id }   = use(params)
+  const sp       = useSearchParams()
+  const paidFlag = sp.get('paid') === '1'
+  const [appt,    setAppt]    = useState<Appointment | null>(null)
+  const [err,     setErr]     = useState<string | null>(null)
+  const [paying,  setPaying]  = useState(false)
+  const [payErr,  setPayErr]  = useState<string | null>(null)
 
   useEffect(() => {
     fetch(`/api/appointments/${id}`)
@@ -30,6 +36,30 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
       .then(setAppt)
       .catch(e => setErr(typeof e === 'string' ? e : 'Failed to load'))
   }, [id])
+
+  async function startPayment() {
+    setPaying(true); setPayErr(null)
+    try {
+      const r = await fetch('/api/escrow/checkout', {
+        method:  'POST',
+        headers: { 'content-type': 'application/json' },
+        body:    JSON.stringify({ appointmentId: id }),
+      })
+      const data = await r.json()
+      if (!r.ok) throw new Error(data?.error ?? `HTTP ${r.status}`)
+      if (data.redirectUrl) {
+        window.location.assign(data.redirectUrl)
+        return
+      }
+      // No redirect (e.g. Stripe Elements path) — surface a message; UI for
+      // Stripe-Elements checkout is the legacy /api/escrow/create flow.
+      setPayErr('Checkout returned no redirect URL — try the cards-only checkout.')
+    } catch (e) {
+      setPayErr(e instanceof Error ? e.message : 'Payment failed')
+    } finally {
+      setPaying(false)
+    }
+  }
 
   if (err) return <Centered><p style={{ margin: 0, fontSize: 13, color: 'var(--red-600)' }}>{err}</p></Centered>
   if (!appt) return <Centered><Loader2 size={28} className="animate-spin" style={{ color: 'var(--ink-4)' }} /></Centered>
@@ -95,7 +125,51 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
         </Row>
       </div>
 
+      {!appt.escrow && (
+        <div style={{
+          background: 'rgba(245,158,11,.08)', border: '1px solid rgba(245,158,11,.28)',
+          borderRadius: 14, padding: 14, display: 'flex', gap: 12, alignItems: 'flex-start',
+        }}>
+          <AlertCircle size={18} style={{ color: '#a16207', flex: 'none', marginTop: 2 }} />
+          <div style={{ flex: 1, fontSize: 13, color: 'var(--ink-2)' }}>
+            <strong>Payment required.</strong> Your booking is reserved but the doctor won&apos;t see it
+            in their queue until escrow is funded. Choose any method below — we route to JazzCash,
+            EasyPaisa, NayaPay, SadaPay, or card.
+            {payErr && (
+              <div style={{ marginTop: 6, color: 'var(--red-600)' }}>{payErr}</div>
+            )}
+          </div>
+        </div>
+      )}
+      {paidFlag && appt.escrow && (
+        <div style={{
+          background: 'rgba(16,185,129,.08)', border: '1px solid rgba(16,185,129,.28)',
+          borderRadius: 14, padding: 14, display: 'flex', gap: 12, alignItems: 'center',
+          fontSize: 13, color: 'var(--ink-2)',
+        }}>
+          <CheckCircle2 size={18} style={{ color: 'var(--emerald-500)' }} />
+          Payment received. Held in escrow until your consultation is complete.
+        </div>
+      )}
+
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10 }}>
+        {!appt.escrow ? (
+          <button
+            type="button" onClick={startPayment} disabled={paying}
+            style={{
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              padding: '0 18px', height: 48, borderRadius: 14,
+              background: 'var(--blue-600)', color: '#fff', border: 0, cursor: paying ? 'wait' : 'pointer',
+              fontSize: 14, fontWeight: 600,
+              boxShadow: '0 8px 20px -8px rgba(37,99,235,.55)',
+              opacity: paying ? 0.7 : 1,
+            }}
+          >
+            {paying ? <Loader2 size={16} className="animate-spin" /> : <CreditCard size={16} />}
+            {paying ? 'Redirecting…' : `Pay ${fee !== undefined ? PKR(Number(fee)) : ''}`}
+            {!paying && <ArrowRight size={14} strokeWidth={2.5} />}
+          </button>
+        ) : (
         <Link
           href={`/consultation/${appt.id}`}
           style={{
@@ -109,6 +183,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
           <Video size={16} /> Join consultation
           <ArrowRight size={14} strokeWidth={2.5} />
         </Link>
+        )}
         <a
           href={`/api/appointments/${appt.id}/ics`}
           style={{

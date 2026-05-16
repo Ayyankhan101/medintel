@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { signOut } from 'next-auth/react'
-import { Copy, Check, Loader2, ShieldCheck, Mail, Phone, Calendar, IdCard, Trash2 } from 'lucide-react'
+import { Copy, Check, Loader2, ShieldCheck, Mail, Phone, Calendar, IdCard, Trash2, Download } from 'lucide-react'
 import { Btn } from '@/components/design/Btn'
 import { PKR } from '@/components/design/helpers'
 
@@ -112,6 +112,8 @@ export default function ProfilePage() {
         )}
       </Section>
 
+      <DataExport />
+
       <DangerZone />
 
       {me.doctor && (
@@ -149,6 +151,35 @@ function Row({ icon, label, value, mono }: { icon?: React.ReactNode; label: stri
       <span style={{ color: 'var(--ink-3)', minWidth: 120 }}>{label}</span>
       <span className={mono ? 'mono' : ''} style={{ color: 'var(--ink)', fontWeight: 500 }}>{value}</span>
     </div>
+  )
+}
+
+function DataExport() {
+  return (
+    <section style={{
+      background: 'var(--bg-elev)', border: '1px solid var(--border)',
+      borderRadius: 22, padding: 20, boxShadow: 'var(--shadow-card)',
+      display: 'flex', flexDirection: 'column', gap: 10,
+    }}>
+      <h2 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: 'var(--ink)' }}>Your data</h2>
+      <p style={{ margin: 0, fontSize: 12, color: 'var(--ink-3)', lineHeight: 1.55 }}>
+        Download everything we hold on you — profile, appointments, prescriptions,
+        triages, medical records, reviews. JSON format, machine-readable.
+      </p>
+      <a
+        href="/api/patient/export"
+        download
+        style={{
+          alignSelf: 'flex-start',
+          display: 'inline-flex', alignItems: 'center', gap: 8,
+          padding: '8px 14px', borderRadius: 12,
+          background: 'var(--bg-soft)', border: '1px solid var(--border)',
+          color: 'var(--ink)', fontSize: 13, fontWeight: 600, textDecoration: 'none',
+        }}
+      >
+        <Download size={14} /> Export my data
+      </a>
+    </section>
   )
 }
 

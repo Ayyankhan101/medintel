@@ -3,15 +3,17 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { signOut } from 'next-auth/react'
-import { Menu, X, Activity, LogOut, User, Stethoscope, Sun, Moon } from 'lucide-react'
+import { Menu, X, Activity, LogOut, User, Stethoscope, Sun, Moon, Zap, BarChart3 } from 'lucide-react'
 import { useTheme } from '@/components/ThemeProvider'
+import { LangToggle } from '@/lib/i18n/client'
 
 interface NavLink { label: string; href: string }
 
 const PATIENT_LINKS: NavLink[] = [
-  { label: 'Consult',   href: '/intake'    },
-  { label: 'History',   href: '/history'   },
-  { label: 'Resources', href: '/resources' },
+  { label: 'Consult',     href: '/intake'         },
+  { label: 'Online now',  href: '/doctors/online' },
+  { label: 'History',     href: '/history'        },
+  { label: 'Resources',   href: '/resources'      },
 ]
 
 const DOCTOR_LINKS: NavLink[] = [
@@ -22,6 +24,7 @@ const DOCTOR_LINKS: NavLink[] = [
 
 const ADMIN_LINKS: NavLink[] = [
   { label: 'Overview', href: '/admin/dashboard' },
+  { label: 'Metrics',  href: '/admin/metrics'   },
   { label: 'Doctors',  href: '/admin/doctors'   },
   { label: 'Audit',    href: '/admin/audit'     },
 ]
@@ -85,6 +88,9 @@ export function Navbar() {
 
         {/* Right side */}
         <div className="flex items-center gap-2">
+          {/* Language toggle (EN ↔ UR + RTL flip) */}
+          <LangToggle />
+
           {/* Dark mode toggle */}
           <button
             onClick={toggle}
