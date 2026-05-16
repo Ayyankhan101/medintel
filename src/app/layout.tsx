@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Inter, JetBrains_Mono, Noto_Nastaliq_Urdu } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { ThemeProvider } from '@/components/ThemeProvider'
+import { I18nProvider } from '@/lib/i18n/client'
 import './globals.css'
 
 const sans = Inter({
@@ -39,7 +40,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         className="min-h-full font-sans"
         style={{ background: 'var(--bg)', color: 'var(--ink)', backgroundImage: 'var(--gradient-stage)' }}
       >
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider><I18nProvider>{children}</I18nProvider></ThemeProvider>
         <Analytics />
       </body>
     </html>

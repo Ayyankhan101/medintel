@@ -216,6 +216,12 @@ model Doctor {
   // null = always available (the default for newly-onboarded doctors).
   availability Json?
 
+  // Live presence — doctor flips this from their dashboard. Heartbeat updates
+  // lastSeenAt so a stale tab (>3 min) is treated as offline by the consult-now
+  // query without the doctor having to remember to log out.
+  isOnline   Boolean   @default(false)
+  lastSeenAt DateTime?
+
   // Doctor optionally belongs to a clinic (B2B model).
   clinicId String?
   clinic   Clinic? @relation(fields: [clinicId], references: [id])
@@ -332,7 +338,14 @@ model Escrow {
   amount                Decimal      @db.Decimal(10, 2)
   currency              String       @default("PKR")
   status                EscrowStatus @default(HELD)
-  stripePaymentIntentId String       @unique
+  // Which PSP holds the funds: 'stripe' | 'safepay' | 'mock'. Defaults to
+  // 'stripe' for backward compat with rows that pre-date the provider column.
+  provider              String       @default("stripe")
+  // PSP's own reference (tracker, order id, mock token). Mutually exclusive
+  // with stripePaymentIntentId in practice; both columns kept for the
+  // migration window.
+  providerRef           String?      @unique
+  stripePaymentIntentId String?      @unique
   heldAt                DateTime     @default(now())
   releasedAt            DateTime?
   refundedAt            DateTime?

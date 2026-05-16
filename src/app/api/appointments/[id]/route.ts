@@ -163,7 +163,7 @@ export async function PATCH(
   const willRefund = appointment.escrow?.status === 'HELD'
   if (willRefund) {
     try {
-      await refundEscrow(appointment.escrow!.stripePaymentIntentId)
+      await refundEscrow(appointment.escrow!.stripePaymentIntentId!)
       await prisma.escrow.update({
         where: { id: appointment.escrow!.id },
         data:  { status: 'REFUNDED', refundedAt: new Date(), refundReason: reason ?? `Cancelled by ${cancelledBy.toLowerCase()}` },

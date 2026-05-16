@@ -21,6 +21,8 @@ const PUBLIC_PREFIXES = [
   // Stripe + Twilio webhooks (signature-verified inside the handler).
   '/api/clinics/', '/api/cron/', '/api/health',
   '/api/stripe/webhook', '/api/whatsapp/inbound', '/api/voice-call/',
+  // PSP webhooks are signature-verified inside the handler.
+  '/api/payments/safepay/webhook',
 ]
 
 export default auth(req => {

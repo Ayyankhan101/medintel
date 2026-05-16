@@ -56,10 +56,10 @@ export async function POST(req: NextRequest) {
       // No partial refunds for uncaptured PIs — Stripe will just cancel the auth.
       if (requestedAmt !== totalPkr)
         return NextResponse.json({ error: 'HELD escrows can only be fully refunded (not yet captured)' }, { status: 422 })
-      await refundEscrow(escrow.stripePaymentIntentId)
+      await refundEscrow(escrow.stripePaymentIntentId!)
     } else {
       // RELEASED → captured + transferred. Refund + reverse transfer.
-      await refundCapturedEscrow(escrow.stripePaymentIntentId, requestedAmt === totalPkr ? undefined : requestedAmt)
+      await refundCapturedEscrow(escrow.stripePaymentIntentId!, requestedAmt === totalPkr ? undefined : requestedAmt)
     }
 
     const newTotal = alreadyRefunded + requestedAmt

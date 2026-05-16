@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
   if (!isAdmin && !isPatientRefundEligible(appointment.scheduledAt, appointment.status))
     return NextResponse.json({ error: 'Appointment is not eligible for refund' }, { status: 422 })
 
-  await refundEscrow(appointment.escrow.stripePaymentIntentId)
+  await refundEscrow(appointment.escrow.stripePaymentIntentId!)
 
   await Promise.all([
     prisma.escrow.update({

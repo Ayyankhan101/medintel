@@ -155,6 +155,10 @@ model Doctor {
   // JSON string: { days: [1..7], startHour, endHour, timezone }
   availability    String?
 
+  // Live presence for "Consult Now". Heartbeat-updated lastSeenAt.
+  isOnline        Boolean   @default(false)
+  lastSeenAt      DateTime?
+
   // Doctor optionally belongs to a clinic (B2B model).
   clinicId String?
   clinic   Clinic? @relation(fields: [clinicId], references: [id])
@@ -270,7 +274,9 @@ model Escrow {
   currency              String    @default("PKR")
   // status: HELD | RELEASED | REFUNDED
   status                String    @default("HELD")
-  stripePaymentIntentId String    @unique
+  provider              String    @default("stripe")
+  providerRef           String?   @unique
+  stripePaymentIntentId String?   @unique
   heldAt                DateTime  @default(now())
   releasedAt            DateTime?
   refundedAt            DateTime?

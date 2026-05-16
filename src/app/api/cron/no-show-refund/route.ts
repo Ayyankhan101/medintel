@@ -64,7 +64,7 @@ export async function GET(req: NextRequest) {
       })
       if (lock.count === 0) continue
 
-      await refundEscrow(a.escrow.stripePaymentIntentId)
+      await refundEscrow(a.escrow.stripePaymentIntentId!)
       await prisma.escrow.update({
         where: { id: a.escrow.id },
         data:  { status: 'REFUNDED', refundedAt: new Date(), refundReason: 'Doctor no-show (auto)' },

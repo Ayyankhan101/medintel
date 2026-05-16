@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Prescription must be uploaded before releasing payment' }, { status: 422 })
 
   await releaseEscrowToDoctor(
-    appointment.escrow.stripePaymentIntentId,
+    appointment.escrow.stripePaymentIntentId!,
     appointment.doctor.stripeAccountId!,
     Number(appointment.escrow.amount)
   )

@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
   // Auto-release escrow
   if (appointment.escrow?.status === 'HELD' && appointment.doctor.stripeAccountId) {
     await releaseEscrowToDoctor(
-      appointment.escrow.stripePaymentIntentId,
+      appointment.escrow.stripePaymentIntentId!,
       appointment.doctor.stripeAccountId,
       Number(appointment.escrow.amount)
     )
