@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState, use } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Loader2, CheckCircle2, FileText, Video, AlertCircle, Stethoscope } from 'lucide-react'
 import { VideoCall } from '@/components/consultation/VideoCall'
 import { PrescriptionUploader } from '@/components/consultation/PrescriptionUploader'
@@ -325,6 +326,7 @@ function DoctorConsultation({ appointmentId }: { appointmentId: string }) {
 type PatientPhase = 'loading' | 'payment' | 'waiting' | 'call' | 'done'
 
 function PatientConsultation({ appointmentId }: { appointmentId: string }) {
+  const router = useRouter()
   const [phase,       setPhase]       = useState<PatientPhase>('loading')
   const [appointment, setAppointment] = useState<AppointmentData | null>(null)
   const [videoToken,  setVideoToken]  = useState<string | null>(null)
@@ -337,10 +339,18 @@ function PatientConsultation({ appointmentId }: { appointmentId: string }) {
       .then(r => r.json())
       .then(data => {
         setAppointment(data)
-        setPhase(data.escrow?.status === 'HELD' ? 'waiting' : 'payment')
+        // No escrow row = patient hasn't paid yet. Punt them back to the
+        // booking page where the Pay button calls /api/escrow/checkout
+        // (provider-agnostic — mock / SafePay / future rails). Avoids the
+        // legacy Stripe Elements path which needs NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY.
+        if (!data.escrow) {
+          router.replace(`/booking/${appointmentId}`)
+          return
+        }
+        setPhase(data.escrow.status === 'HELD' ? 'waiting' : 'payment')
       })
       .catch(() => setError('Could not load appointment'))
-  }, [appointmentId])
+  }, [appointmentId, router])
 
   async function joinCall() {
     setError('')
