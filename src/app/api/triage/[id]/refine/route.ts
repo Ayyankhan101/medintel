@@ -1,25 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
-import OpenAI from 'openai'
 import { SeverityLevel } from '@prisma/client'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { parseDepartmentFromSummary, parseSeverityFromText } from '@/lib/openai'
+import { mapDepartment, scoreFromKeywords } from '@/lib/triage'
+import { getLlmClient, VISION_MODEL } from '@/lib/llm-client'
+import { rateLimit } from '@/lib/rate-limit'
 import { normalizeSpecialty, SPECIALTY_NAMES } from '@/lib/triage/specialties'
 
 const MAX_BYTES = 8 * 1024 * 1024  // 8 MB per image
 const MAX_FILES = 3
 
-function getClient(): OpenAI {
-  const useGroq = !!process.env.GROQ_API_KEY
-  return new OpenAI({
-    apiKey:  useGroq ? process.env.GROQ_API_KEY : process.env.OPENAI_API_KEY,
-    baseURL: useGroq ? (process.env.GROQ_BASE_URL ?? 'https://api.groq.com/openai/v1') : undefined,
-  })
-}
-
-const VISION_MODEL = process.env.GROQ_API_KEY
-  ? 'meta-llama/llama-4-scout-17b-16e-instruct'
-  : 'gpt-4o'
+const getClient = getLlmClient
+const parseDepartmentFromSummary = mapDepartment
+const parseSeverityFromText = scoreFromKeywords
 
 function buildPrompt(originalTranscript: string, originalSummary: string): string {
   return `You are a clinical triage assistant analysing patient-uploaded medical documents (lab reports, imaging, prescriptions, doctor notes, symptom photos).
@@ -76,6 +69,9 @@ export async function POST(
 ) {
   const session = await auth()
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const rl = rateLimit(req, { key: 'triage-refine', max: 5, windowMs: 60_000 })
+  if (!rl.ok) return NextResponse.json({ error: 'Too many refine requests — slow down' }, { status: 429 })
 
   const { id } = await params
 

@@ -16,6 +16,7 @@
 
 import { Prisma } from '@prisma/client'
 import { prisma } from './prisma'
+import { captureError } from './observability'
 
 type AuditMeta = Record<string, unknown> & {
   actorId?: string | null
@@ -42,6 +43,7 @@ export async function audit(
     })
   } catch (e) {
     // Never throw — auditing a successful action shouldn't roll it back.
-    console.error('[audit] failed to write log', { action, entityType, entityId, e })
+    // Pipe to Sentry so compliance gaps are visible, not silently buried.
+    captureError(e, { tag: 'audit.write_failed', action, entityType, entityId })
   }
 }

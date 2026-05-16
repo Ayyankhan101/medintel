@@ -5,6 +5,8 @@ import { prisma } from '@/lib/prisma'
 import { sendBookingConfirmation, sendDoctorNewBooking } from '@/lib/email'
 import { isAvailable, parseAvailability } from '@/lib/availability'
 
+class SlotTakenError extends Error {}
+
 const createSchema = z.object({
   scheduledAt: z.string().datetime(),
   doctorId:    z.string().optional(),
@@ -48,25 +50,46 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  const startAt   = new Date(scheduledAt)
+  const windowLo  = new Date(startAt.getTime() - 30 * 60_000)
+  const windowHi  = new Date(startAt.getTime() + 30 * 60_000)
+
   try {
-    const appointment = await prisma.appointment.create({
-      data: {
-        patient:     { connect: { id: patient.id } },
-        scheduledAt: new Date(scheduledAt),
-        ...(triage ? {
-          transcript:    triage.transcript,
-          aiSummary:     triage.summary,
-          severityScore: triage.severityScore,
-          severityLevel: triage.severityLevel,
-          department:    triage.department,
-        } : {}),
-        ...(doctorId ? { doctor: { connect: { id: doctorId } } } : {}),
-      },
-      include: {
-        patient: { include: { user: true } },
-        doctor:  { include: { user: true } },
-      },
-    })
+    // Serializable isolation makes the clash check + create atomic on postgres —
+    // a concurrent booker hits a 40001 conflict and we surface 409. SQLite
+    // serializes writes globally, so the same logic holds there.
+    const appointment = await prisma.$transaction(async tx => {
+      if (doctorId) {
+        const clash = await tx.appointment.findFirst({
+          where: {
+            doctorId,
+            status:      { in: ['SCHEDULED', 'IN_PROGRESS'] },
+            scheduledAt: { gte: windowLo, lt: windowHi },
+          },
+          select: { id: true },
+        })
+        if (clash) throw new SlotTakenError()
+      }
+
+      return tx.appointment.create({
+        data: {
+          patient:     { connect: { id: patient.id } },
+          scheduledAt: startAt,
+          ...(triage ? {
+            transcript:    triage.transcript,
+            aiSummary:     triage.summary,
+            severityScore: triage.severityScore,
+            severityLevel: triage.severityLevel,
+            department:    triage.department,
+          } : {}),
+          ...(doctorId ? { doctor: { connect: { id: doctorId } } } : {}),
+        },
+        include: {
+          patient: { include: { user: true } },
+          doctor:  { include: { user: true } },
+        },
+      })
+    }, { isolationLevel: 'Serializable' })
 
     if (appointment.doctor && appointment.patient.user.email) {
       void sendBookingConfirmation({
@@ -91,6 +114,13 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ appointmentId: appointment.id }, { status: 201 })
   } catch (e) {
+    if (e instanceof SlotTakenError) {
+      return NextResponse.json({ error: 'That slot is already booked. Pick another time.' }, { status: 409 })
+    }
+    // Postgres serialization failure (40001) when two bookings race the same slot.
+    if ((e as { code?: string }).code === 'P2034' || (e as { code?: string }).code === '40001') {
+      return NextResponse.json({ error: 'That slot is already booked. Pick another time.' }, { status: 409 })
+    }
     console.error('[appointments POST]', e)
     return NextResponse.json({ error: 'Failed to create appointment' }, { status: 500 })
   }

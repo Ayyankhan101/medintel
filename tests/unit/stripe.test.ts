@@ -2,17 +2,19 @@ import { describe, it, expect } from 'vitest'
 import { formatAmountForStripe, formatAmountFromStripe, isAutoRefundEligible } from '@/lib/stripe'
 
 describe('formatAmountForStripe', () => {
-  it('converts dollars to cents', () => {
-    expect(formatAmountForStripe(20)).toBe(2000)
-    expect(formatAmountForStripe(20.50)).toBe(2050)
-    expect(formatAmountForStripe(0.99)).toBe(99)
+  // PKR is a zero-decimal currency — 1500 PKR is sent as 1500, not 150000.
+  it('rounds to whole rupees (PKR is zero-decimal in Stripe)', () => {
+    expect(formatAmountForStripe(20)).toBe(20)
+    expect(formatAmountForStripe(20.50)).toBe(21)
+    expect(formatAmountForStripe(0.99)).toBe(1)
+    expect(formatAmountForStripe(1500)).toBe(1500)
   })
 })
 
 describe('formatAmountFromStripe', () => {
-  it('converts cents to dollars', () => {
-    expect(formatAmountFromStripe(2000)).toBe(20)
-    expect(formatAmountFromStripe(2050)).toBe(20.50)
+  it('is identity for PKR (zero-decimal)', () => {
+    expect(formatAmountFromStripe(2000)).toBe(2000)
+    expect(formatAmountFromStripe(1500)).toBe(1500)
   })
 })
 

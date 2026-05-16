@@ -19,8 +19,10 @@
  *   - Temperature pinned at 0 — clinical text should be deterministic.
  */
 
-import OpenAI from 'openai'
 import { z } from 'zod'
+import { getLlmClient, SCRIBE_MODEL } from './llm-client'
+
+export { SCRIBE_MODEL }
 
 const SoapSchema = z.object({
   subjective: z.string().min(1).max(2_000),
@@ -33,19 +35,7 @@ const SoapSchema = z.object({
 
 export type SoapNote = z.infer<typeof SoapSchema>
 
-let _client: OpenAI | null = null
-function client(): OpenAI {
-  if (!_client) {
-    const useGroq = !!process.env.GROQ_API_KEY
-    _client = new OpenAI({
-      apiKey:  useGroq ? process.env.GROQ_API_KEY : process.env.OPENAI_API_KEY,
-      baseURL: useGroq ? (process.env.GROQ_BASE_URL ?? 'https://api.groq.com/openai/v1') : undefined,
-    })
-  }
-  return _client
-}
-
-export const SCRIBE_MODEL = process.env.GROQ_API_KEY ? 'llama-3.3-70b-versatile' : 'gpt-4o'
+const client = getLlmClient
 
 const SYSTEM = `You are a clinical scribe assisting a Pakistani GP/specialist. Convert the raw consultation transcript into a SOAP note.
 

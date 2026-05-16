@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { refundEscrow, isAutoRefundEligible } from '@/lib/stripe'
+import { refundEscrow, isPatientRefundEligible } from '@/lib/stripe'
 import { audit } from '@/lib/audit'
 
 const schema = z.object({ appointmentId: z.string().min(1) })
@@ -29,8 +29,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   if (!appointment.escrow || appointment.escrow.status !== 'HELD')
     return NextResponse.json({ error: 'No held escrow to refund' }, { status: 409 })
-  if (!isAutoRefundEligible(appointment.scheduledAt, appointment.status))
-    return NextResponse.json({ error: 'Appointment is not yet eligible for refund (within 2-hour grace period)' }, { status: 422 })
+  // Patient: free cancel before scheduledAt, or after a 2h no-show grace.
+  // Admin: bypass the eligibility gate (manual intervention path).
+  if (!isAdmin && !isPatientRefundEligible(appointment.scheduledAt, appointment.status))
+    return NextResponse.json({ error: 'Appointment is not eligible for refund' }, { status: 422 })
 
   await refundEscrow(appointment.escrow.stripePaymentIntentId)
 

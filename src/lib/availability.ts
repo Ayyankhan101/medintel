@@ -19,19 +19,26 @@
 import { z } from 'zod'
 
 export const AvailabilitySchema = z.object({
-  days:      z.array(z.number().int().min(1).max(7)).min(1).max(7),
-  startHour: z.number().int().min(0).max(23),
-  endHour:   z.number().int().min(1).max(24),
-  timezone:  z.string().default('Asia/Karachi'),
-}).refine(v => v.endHour > v.startHour, { message: 'endHour must be after startHour', path: ['endHour'] })
+  days:        z.array(z.number().int().min(1).max(7)).min(1).max(7),
+  startHour:   z.number().int().min(0).max(23),
+  endHour:     z.number().int().min(1).max(24),
+  startMinute: z.number().int().min(0).max(59).default(0),
+  endMinute:   z.number().int().min(0).max(59).default(0),
+  timezone:    z.string().default('Asia/Karachi'),
+}).refine(
+  v => (v.endHour * 60 + v.endMinute) > (v.startHour * 60 + v.startMinute),
+  { message: 'end must be after start', path: ['endHour'] },
+)
 
 export type Availability = z.infer<typeof AvailabilitySchema>
 
 export const DEFAULT_AVAILABILITY: Availability = {
-  days:      [1, 2, 3, 4, 5, 6],
-  startHour: 9,
-  endHour:   18,
-  timezone:  'Asia/Karachi',
+  days:        [1, 2, 3, 4, 5, 6],
+  startHour:   9,
+  endHour:     18,
+  startMinute: 0,
+  endMinute:   0,
+  timezone:    'Asia/Karachi',
 }
 
 /** Return null if input is null/undefined or malformed — caller treats null as "always available". */
@@ -48,14 +55,17 @@ export function isAvailable(av: Availability | null, at: Date): boolean {
   // Intl gives us the local hour + weekday in the doctor's TZ.
   const tz = av.timezone || 'Asia/Karachi'
   const fmt = new Intl.DateTimeFormat('en-US', {
-    timeZone: tz, hourCycle: 'h23', weekday: 'short', hour: 'numeric',
+    timeZone: tz, hourCycle: 'h23', weekday: 'short', hour: '2-digit', minute: '2-digit',
   })
   const parts = fmt.formatToParts(at)
   const weekday = parts.find(p => p.type === 'weekday')?.value ?? ''
-  const hourStr = parts.find(p => p.type === 'hour')?.value ?? '0'
-  const hour    = parseInt(hourStr, 10)
+  const hour    = parseInt(parts.find(p => p.type === 'hour')?.value ?? '0', 10)
+  const minute  = parseInt(parts.find(p => p.type === 'minute')?.value ?? '0', 10)
   // Mon=1, Tue=2 ... Sun=7
   const isoDay = { Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6, Sun: 7 }[weekday] ?? 0
   if (!av.days.includes(isoDay)) return false
-  return hour >= av.startHour && hour < av.endHour
+  const tMinutes     = hour * 60 + minute
+  const startMinutes = av.startHour * 60 + (av.startMinute ?? 0)
+  const endMinutes   = av.endHour   * 60 + (av.endMinute   ?? 0)
+  return tMinutes >= startMinutes && tMinutes < endMinutes
 }

@@ -1,35 +1,59 @@
+/**
+ * Deterministic keyword-based triage scoring + department mapping.
+ *
+ * Used as a fallback when the LLM agent (`./triage/agent`) fails, and by the
+ * post-consultation analyze endpoint to derive missing fields.
+ *
+ * Single source of truth: openai.ts and triage/agent.ts both delegate here.
+ */
+import { inferSpecialtyFromKeywords } from './triage/specialties'
+
 export type SeverityLevel = 'ROUTINE' | 'URGENT' | 'CRITICAL'
 
 const CRITICAL_KEYWORDS = [
-  'troponin', 'heart attack', 'myocardial infarction', 'crushing chest',
-  "can't breathe", 'difficulty breathing', 'stroke', 'unconscious',
-  'paralysis', 'anaphylaxis', 'blood pressure 180', 'seizure uncontrolled',
+  // cardiac / pulmonary arrest
+  'troponin', 'heart attack', 'myocardial infarction', 'crushing chest', 'cardiac arrest',
+  // airway
+  "can't breathe", "cannot breathe", 'not able to breath', 'unable to breath',
+  'not breathing', 'difficulty breathing', 'choking',
+  // neuro
+  'stroke', 'unconscious', 'unresponsive', 'paralysis', 'seizure', 'seizure uncontrolled',
+  'not able to speak', 'blacking out', 'passing out',
+  // shock / bleeding / poisoning
+  'anaphylaxis', 'overdose', 'haemorrhage', 'hemorrhage', 'arterial bleeding',
+  'blood pressure 180',
 ]
 
 const URGENT_KEYWORDS = [
-  'severe', 'intense', 'vomiting blood', 'high fever', 'fever 40',
-  'unable to walk', 'blurred vision', 'chest pain', 'shortness of breath',
+  'severe', 'intense', 'unbearable', 'excruciating', 'worst pain', 'extreme pain',
+  'vomiting blood', 'high fever', 'fever 40',
+  'unable to walk', 'cannot move',
+  'blurred vision', 'chest pain', 'chest tightness', 'rapid heartbeat',
+  'shortness of breath', 'breathless',
   'confusion', 'disoriented',
 ]
 
 const MILD_KEYWORDS = [
-  'mild', 'slight', 'little', 'minor', 'occasional', 'sometimes',
-  'manageable', 'better when resting',
+  'mild', 'slight', 'little', 'a little', 'minor', 'occasional', 'sometimes',
+  'manageable', 'better when resting', 'bit of',
 ]
 
-const DEPARTMENT_MAP: Array<{ department: string; keywords: string[] }> = [
-  { department: 'Cardiology',       keywords: ['chest', 'heart', 'pulse', 'troponin', 'palpitation', 'diaphoresis', 'ecg', 'cardiac'] },
-  { department: 'Neurology',        keywords: ['brain', 'numbness', 'seizure', 'migraine', 'stroke', 'confusion', 'dizziness', 'paralysis', 'nerve'] },
-  { department: 'Orthopedics',      keywords: ['bone', 'joint', 'fracture', 'knee', 'shoulder', 'spine', 'back pain', 'hip'] },
-  { department: 'Gastroenterology', keywords: ['stomach', 'abdomen', 'nausea', 'vomiting', 'diarrhea', 'liver', 'appendix', 'bowel'] },
-  { department: 'Pulmonology',      keywords: ['lung', 'breathing', 'shortness of breath', 'cough', 'asthma', 'oxygen', 'sputum'] },
-  { department: 'Dermatology',      keywords: ['skin', 'rash', 'itching', 'eczema', 'hives', 'blister'] },
-  { department: 'Psychiatry',       keywords: ['anxiety', 'depression', 'mental', 'sleep', 'panic', 'hallucination', 'suicidal'] },
-  { department: 'Ophthalmology',    keywords: ['eye', 'vision', 'blurred', 'blind', 'retina'] },
-  { department: 'ENT',              keywords: ['ear', 'nose', 'throat', 'hearing', 'sinusitis', 'tonsil'] },
-  { department: 'Urology',          keywords: ['kidney', 'bladder', 'urination', 'blood in urine', 'renal'] },
-]
+/**
+ * Bucketed severity: 9 (critical) / 6 (urgent) / 2 (mild) / 4 (default).
+ * Stable, predictable — preferred for fallback paths and UI banners.
+ */
+export function scoreFromKeywords(text: string): number {
+  const lower = text.toLowerCase()
+  if (CRITICAL_KEYWORDS.some(w => lower.includes(w))) return 9
+  if (URGENT_KEYWORDS.some(w => lower.includes(w)))   return 6
+  if (MILD_KEYWORDS.some(w => lower.includes(w)))     return 2
+  return 4
+}
 
+/**
+ * Graded severity: critical scales 8→10 with match count, urgent 5→7, mild 2.
+ * Used by the appointment-analyze endpoint where a more granular score is wanted.
+ */
 export function computeScore(text: string): number {
   const lower = text.toLowerCase()
 
@@ -55,10 +79,7 @@ export function computeSeverityLevel(score: number): SeverityLevel {
   return 'CRITICAL'
 }
 
+/** Department name from free-text symptoms. Delegates to the canonical specialty registry. */
 export function mapDepartment(text: string): string {
-  const lower = text.toLowerCase()
-  for (const { department, keywords } of DEPARTMENT_MAP) {
-    if (keywords.some(kw => lower.includes(kw))) return department
-  }
-  return 'General Medicine'
+  return inferSpecialtyFromKeywords(text)
 }

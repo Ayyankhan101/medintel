@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
-import { rateLimit } from '@/lib/rate-limit'
+import { rateLimitDb, clientIp } from '@/lib/rate-limit'
 import { sendPasswordReset } from '@/lib/email'
 import { randomToken, PASSWORD_RESET_TTL_MS } from '@/lib/tokens'
 
@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic'
 const schema = z.object({ email: z.string().email() })
 
 export async function POST(req: NextRequest) {
-  const rl = rateLimit(req, { key: 'pw-reset', max: 5, windowMs: 15 * 60_000 })
+  const rl = await rateLimitDb('pw-reset', clientIp(req), { max: 5, windowMs: 15 * 60_000 })
   if (!rl.ok) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
 
   const body = await req.json().catch(() => ({}))

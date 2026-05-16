@@ -10,8 +10,8 @@
  * parse failure.
  */
 
-import OpenAI from 'openai'
 import { z } from 'zod'
+import { getLlmClient, VISION_MODEL } from './llm-client'
 
 export const ImagingFindings = z.object({
   imageType:    z.enum(['xray', 'skin_photo', 'eye_photo', 'wound', 'rash', 'prescription_photo', 'lab_report', 'other']),
@@ -23,20 +23,7 @@ export const ImagingFindings = z.object({
 })
 export type ImagingFindings = z.infer<typeof ImagingFindings>
 
-let _client: OpenAI | null = null
-function client(): OpenAI {
-  if (!_client) {
-    const useGroq = !!process.env.GROQ_API_KEY
-    _client = new OpenAI({
-      apiKey:  useGroq ? process.env.GROQ_API_KEY : process.env.OPENAI_API_KEY,
-      baseURL: useGroq ? (process.env.GROQ_BASE_URL ?? 'https://api.groq.com/openai/v1') : undefined,
-    })
-  }
-  return _client
-}
-const VISION_MODEL = process.env.GROQ_API_KEY
-  ? 'meta-llama/llama-4-scout-17b-16e-instruct'
-  : 'gpt-4o'
+const client = getLlmClient
 
 const SYSTEM = `You are a triage imaging assistant. The patient has uploaded a medical image.
 

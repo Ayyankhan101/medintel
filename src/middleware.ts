@@ -29,7 +29,8 @@ export default auth(req => {
 
   // 1. Public routes: if already logged in, push to their home; otherwise let through.
   if (PUBLIC_PATHS.includes(path)) {
-    if (isLoggedIn && (path === '/login' || path === '/register')) {
+    const AUTH_LANDING = new Set(['/login', '/register', '/register/doctor', '/clinic/register', '/forgot-password', '/reset-password'])
+    if (isLoggedIn && AUTH_LANDING.has(path)) {
       const dest = role === 'DOCTOR'       ? '/doctor/dashboard'
                  : role === 'ADMIN'        ? '/admin/dashboard'
                  : role === 'CLINIC_ADMIN' ? '/clinic/dashboard'

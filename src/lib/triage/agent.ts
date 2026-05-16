@@ -12,7 +12,6 @@
  *  - Severity > 8 raises an `isEmergency` flag the UI uses to show 1122 banner.
  */
 
-import OpenAI from 'openai'
 import { z } from 'zod'
 import {
   SPECIALTY_NAMES,
@@ -20,21 +19,10 @@ import {
   inferSpecialtyFromKeywords,
   specialtyPromptList,
 } from './specialties'
+import { scoreFromKeywords } from '../triage'
+import { getLlmClient, CHAT_MODEL } from '../llm-client'
 
-// ── client ────────────────────────────────────────────────────────────────────
-
-let _client: OpenAI | null = null
-function client(): OpenAI {
-  if (_client) return _client
-  const useGroq = !!process.env.GROQ_API_KEY
-  _client = new OpenAI({
-    apiKey:  useGroq ? process.env.GROQ_API_KEY : process.env.OPENAI_API_KEY,
-    baseURL: useGroq ? (process.env.GROQ_BASE_URL ?? 'https://api.groq.com/openai/v1') : undefined,
-  })
-  return _client
-}
-
-const CHAT_MODEL = process.env.GROQ_API_KEY ? 'llama-3.3-70b-versatile' : 'gpt-4o-mini'
+const client = getLlmClient
 
 // ── output schema ─────────────────────────────────────────────────────────────
 
@@ -153,30 +141,9 @@ function tryParse(raw: string): { ok: true; data: TriageOutput } | { ok: false; 
 // ── deterministic fallback ────────────────────────────────────────────────────
 
 function deterministicFallback(input: string): TriageOutput {
-  const lower = input.toLowerCase()
-  const criticalWords = [
-    "can't breathe", 'cannot breathe', 'not able to breath', 'unable to breath', 'not breathing',
-    'crushing chest', 'heart attack', 'cardiac arrest', 'unconscious', 'unresponsive',
-    'stroke', 'seizure', 'anaphylaxis', 'choking', 'overdose', 'passing out', 'blacking out',
-    'lost consciousness', 'cannot speak', 'face drooped', 'throat is swelling',
-    'arterial bleeding', 'blood is spurting',
-  ]
-  const urgentWords = [
-    'severe', 'intense', 'unbearable', 'excruciating', 'worst pain', 'high fever',
-    'shortness of breath', 'difficulty breathing', 'vomiting blood', 'unable to walk',
-    'chest pain', 'chest tightness', 'paralysis', 'extreme pain',
-    'wheezing', 'bleeding heavily', 'bleeding for', 'flashing lights', 'sudden blurred',
-    'lethargic', '40 degrees', '39 degrees', 'inhaler isn',
-    'kidney failure', 'kidneys are failing', 'kidneys failing', 'creatinine',
-    'newborn', 'jaundice', 'eyes look yellow', 'skin looks yellow',
-  ]
-  const mildWords = ['mild', 'slight', 'minor', 'a little', 'bit of']
-
-  let score = 4
-  if (criticalWords.some(w => lower.includes(w))) score = 9
-  else if (urgentWords.some(w => lower.includes(w))) score = 6
-  else if (mildWords.some(w => lower.includes(w))) score = 2
-
+  // Shared keyword tables live in ../triage so we don't drift between
+  // the fallback and the user-facing analyze endpoint.
+  const score = scoreFromKeywords(input)
   const specialty = score >= 8 ? 'Emergency Medicine' : inferSpecialtyFromKeywords(input)
   const level: TriageOutput['severityLevel'] = score <= 4 ? 'ROUTINE' : score <= 7 ? 'URGENT' : 'CRITICAL'
 

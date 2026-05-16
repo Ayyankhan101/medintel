@@ -1,5 +1,6 @@
-// Production schema — PostgreSQL
-// To deploy: copy this file over schema.prisma, set DATABASE_URL to your PostgreSQL URL
+// Canonical schema — PostgreSQL (production + Vercel).
+// SQLite alternative for offline/Docker: prisma/schema.sqlite.prisma
+//   (use --schema=prisma/schema.sqlite.prisma with prisma CLI commands).
 
 generator client {
   provider = "prisma-client-js"
@@ -350,4 +351,25 @@ model MedicalResource {
   phone       String?
   isAvailable Boolean  @default(true)
   updatedAt   DateTime @updatedAt
+}
+
+/// Shared rate-limit buckets — backs auth endpoints so per-instance memory
+/// doesn't let an attacker bypass limits by hitting different Fluid Compute
+/// regions. `id` is `key:identifier` (e.g. `auth:login:1.2.3.4`).
+model RateLimitBucket {
+  id      String   @id
+  count   Int      @default(0)
+  resetAt DateTime
+
+  @@index([resetAt])
+}
+
+/// Stripe webhook dedupe. PK = Stripe event.id. Insert before handling;
+/// duplicate inserts hit the unique constraint and we early-return 200.
+model ProcessedStripeEvent {
+  eventId   String   @id
+  type      String
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
 }

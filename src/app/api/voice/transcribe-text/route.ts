@@ -28,9 +28,9 @@ export async function POST(req: NextRequest) {
     result = await runTextIntakePipeline(text)
   } catch (e) {
     console.error('[transcribe-text] AI pipeline error:', e)
-    const { parseDepartmentFromSummary, parseSeverityFromText } = await import('@/lib/openai')
-    const severityScore = parseSeverityFromText(text)
-    const department    = parseDepartmentFromSummary(text)
+    const { mapDepartment, scoreFromKeywords } = await import('@/lib/triage')
+    const severityScore = scoreFromKeywords(text)
+    const department    = mapDepartment(text)
     const severityLevel = severityScore <= 4 ? 'ROUTINE' : severityScore <= 7 ? 'URGENT' : 'CRITICAL'
     result = { transcript: text, summary: text, department, severityScore, severityLevel, isEmergency: severityScore >= 8 }
   }

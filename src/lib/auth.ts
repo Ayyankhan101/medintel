@@ -1,8 +1,14 @@
-import NextAuth from 'next-auth'
+import NextAuth, { CredentialsSignin } from 'next-auth'
 import Credentials from 'next-auth/providers/credentials'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
 import { z } from 'zod'
+
+/** Thrown when the credentials are valid but email verification is outstanding.
+ *  NextAuth v5 surfaces `code` on the client via `signIn(...).code`. */
+class EmailNotVerifiedError extends CredentialsSignin {
+  code = 'email_not_verified'
+}
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -28,7 +34,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         // Block login when an email verification is still outstanding.
         // New signups get a token; legacy/seeded users without one are grandfathered.
         if (user.emailVerifyToken && !user.emailVerified) {
-          throw new Error('EMAIL_NOT_VERIFIED')
+          throw new EmailNotVerifiedError()
         }
 
         return {

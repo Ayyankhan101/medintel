@@ -12,6 +12,7 @@
  */
 
 import type { NextRequest } from 'next/server'
+import { prisma } from './prisma'
 
 interface Bucket {
   count: number
@@ -28,7 +29,7 @@ function maybeGc(now: number) {
   for (const [k, b] of buckets) if (b.resetAt < now) buckets.delete(k)
 }
 
-function clientIp(req: NextRequest): string {
+export function clientIp(req: NextRequest): string {
   const xff = req.headers.get('x-forwarded-for')
   if (xff) return xff.split(',')[0].trim()
   return req.headers.get('x-real-ip') ?? 'unknown'
@@ -55,4 +56,47 @@ export function rateLimit(
   }
   b.count += 1
   return { ok: b.count <= opts.max, remaining: Math.max(0, opts.max - b.count), resetAt: b.resetAt }
+}
+
+/**
+ * Persistent, shared rate limiter for auth/credential endpoints.
+ *
+ * Backed by `RateLimitBucket` in the DB so limits hold across Fluid Compute
+ * instances and regions. Identifier is whatever you pass (typically IP + email
+ * for login, IP alone for register/forgot) — picks the stricter of the two.
+ *
+ * The fast in-memory `rateLimit()` above is still fine for non-auth endpoints
+ * (voice/whatsapp) where per-instance accuracy is acceptable.
+ */
+export async function rateLimitDb(
+  key: string,
+  identifier: string,
+  opts: { max: number; windowMs: number },
+): Promise<RateLimitResult> {
+  const id      = `${key}:${identifier}`
+  const now     = new Date()
+  const resetAt = new Date(now.getTime() + opts.windowMs)
+
+  // Atomic: create-if-absent, else increment and recycle expired window.
+  // Wrapped in a transaction so we don't race two near-simultaneous requests.
+  const bucket = await prisma.$transaction(async tx => {
+    const existing = await tx.rateLimitBucket.findUnique({ where: { id } })
+    if (!existing || existing.resetAt < now) {
+      return tx.rateLimitBucket.upsert({
+        where:  { id },
+        create: { id, count: 1, resetAt },
+        update: { count: 1, resetAt },
+      })
+    }
+    return tx.rateLimitBucket.update({
+      where: { id },
+      data:  { count: { increment: 1 } },
+    })
+  })
+
+  return {
+    ok:        bucket.count <= opts.max,
+    remaining: Math.max(0, opts.max - bucket.count),
+    resetAt:   bucket.resetAt.getTime(),
+  }
 }

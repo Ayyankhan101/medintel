@@ -13,7 +13,7 @@ export async function GET() {
   } catch {
     db = 'down'
   }
-  const ai = process.env.GROQ_API_KEY ? 'configured' : 'missing'
+  const ai = (process.env.GROQ_API_KEY || process.env.OPENAI_API_KEY) ? 'configured' : 'missing'
   const ok = db === 'ok' && ai === 'configured'
   return NextResponse.json(
     {

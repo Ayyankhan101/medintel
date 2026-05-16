@@ -32,6 +32,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Webhook signature invalid' }, { status: 400 })
   }
 
+  // Idempotency: Stripe retries on non-2xx and can redeliver successful events
+  // too. Insert on the unique `eventId` PK — P2002 means already processed.
+  try {
+    await prisma.processedStripeEvent.create({ data: { eventId: event.id, type: event.type } })
+  } catch (e) {
+    if ((e as { code?: string }).code === 'P2002') {
+      return NextResponse.json({ received: true, duplicate: true })
+    }
+    console.error('[stripe-webhook] dedupe insert failed', e)
+    // Fall through — better to risk re-processing than to drop the event.
+  }
+
   try {
     switch (event.type) {
       case 'payment_intent.payment_failed': {
@@ -70,8 +82,19 @@ export async function POST(req: NextRequest) {
       }
 
       case 'invoice.paid': {
-        const inv = event.data.object as Stripe.Invoice & { subscription?: string | { id: string } | null }
-        const subId = typeof inv.subscription === 'string' ? inv.subscription : inv.subscription?.id
+        const inv = event.data.object as Stripe.Invoice
+        // Stripe API 2026-04 (dahlia): the subscription pointer moved from
+        // `invoice.subscription` onto `invoice.parent.subscription_details.subscription`.
+        // Fall back to the line item's subscription id for older accounts that
+        // still emit the legacy shape, and finally to the deprecated top-level
+        // field so historical replays keep working.
+        const parentSubRef = inv.parent?.type === 'subscription_details'
+          ? inv.parent.subscription_details?.subscription
+          : null
+        const lineSubRef = (inv.lines.data[0] as { subscription?: string | { id: string } | null } | undefined)?.subscription
+        const legacy     = (inv as unknown as { subscription?: string | { id: string } | null }).subscription
+        const subRef     = parentSubRef ?? lineSubRef ?? legacy
+        const subId      = typeof subRef === 'string' ? subRef : subRef?.id
         if (!subId) break
         const clinic = await prisma.clinic.findFirst({ where: { stripeSubscriptionId: subId } })
         if (!clinic) break
@@ -90,16 +113,26 @@ export async function POST(req: NextRequest) {
       }
 
       case 'customer.subscription.updated': {
-        const sub = event.data.object as Stripe.Subscription & { current_period_end?: number }
+        const sub = event.data.object as Stripe.Subscription
         const priceId = sub.items.data[0]?.price?.id
         const plan = planFromPriceId(priceId)
         const clinic = await prisma.clinic.findFirst({ where: { stripeSubscriptionId: sub.id } })
         if (!clinic) break
+        // Stripe API 2026-04 (dahlia): `current_period_end` moved off the
+        // Subscription object and onto each SubscriptionItem. With mixed-cadence
+        // items this can differ per row; for our single-item subscriptions we
+        // take the max so the clinic doesn't expire mid-cycle.
+        const periodEnd = Math.max(
+          0,
+          ...sub.items.data.map(i => i.current_period_end ?? 0),
+          // Fallback for replays of pre-dahlia events still carrying the legacy field.
+          (sub as unknown as { current_period_end?: number }).current_period_end ?? 0,
+        )
         await prisma.clinic.update({
           where: { id: clinic.id },
           data: {
             ...(plan ? { plan, minutesQuota: PLAN_QUOTA[plan] } : {}),
-            currentPeriodEnd: sub.current_period_end ? new Date(sub.current_period_end * 1000) : undefined,
+            currentPeriodEnd: periodEnd > 0 ? new Date(periodEnd * 1000) : undefined,
             active:           sub.status === 'active' || sub.status === 'trialing',
           },
         })
@@ -162,6 +195,8 @@ export async function POST(req: NextRequest) {
     }
   } catch (e) {
     console.error('[stripe-webhook] handler error', { type: event.type, e })
+    // Roll back the dedupe row so Stripe's retry actually re-runs the handler.
+    await prisma.processedStripeEvent.delete({ where: { eventId: event.id } }).catch(() => {})
     // Returning 500 makes Stripe retry — desirable for transient DB errors.
     return NextResponse.json({ error: 'Handler error' }, { status: 500 })
   }

@@ -24,10 +24,19 @@ function LoginForm() {
     const result = await signIn('credentials', { email, password, redirect: false })
     if (result?.error) {
       setLoading(false)
-      setError(result.error.includes('EMAIL_NOT_VERIFIED') ? 'UNVERIFIED' : 'Invalid email or password')
+      setError(result.code === 'email_not_verified' ? 'UNVERIFIED' : 'Invalid email or password')
       return
     }
-    window.location.assign('/login')
+    // Look up the freshly-set session to pick the role-specific home — avoids
+    // a middleware-bounce hop through /login.
+    const me = await fetch('/api/me').then(r => r.ok ? r.json() : null).catch(() => null)
+    const role = me?.role as 'PATIENT' | 'DOCTOR' | 'ADMIN' | 'CLINIC_ADMIN' | undefined
+    const dest = params.get('callbackUrl')
+              ?? (role === 'DOCTOR'       ? '/doctor/dashboard'
+                : role === 'ADMIN'        ? '/admin/dashboard'
+                : role === 'CLINIC_ADMIN' ? '/clinic/dashboard'
+                : '/intake')
+    window.location.assign(dest)
   }
 
   return (

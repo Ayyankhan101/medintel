@@ -4,7 +4,8 @@ import { verifyPatientCNIC, generateMedIntelCode } from '@/lib/kyc'
 describe('generateMedIntelCode', () => {
   it('generates code with MED-PK- prefix', () => {
     const code = generateMedIntelCode()
-    expect(code).toMatch(/^MED-PK-\d{4}$/)
+    // Format: MED-PK-XXX-XXX with Crockford-ish alphabet (no 0/O/1/I).
+    expect(code).toMatch(/^MED-PK-[A-Z2-9]{3}-[A-Z2-9]{3}$/)
   })
 
   it('generates unique codes on repeated calls', () => {

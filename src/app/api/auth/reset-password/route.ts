@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
-import { rateLimit } from '@/lib/rate-limit'
+import { rateLimitDb, clientIp } from '@/lib/rate-limit'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,7 +12,7 @@ const schema = z.object({
 })
 
 export async function POST(req: NextRequest) {
-  const rl = rateLimit(req, { key: 'pw-set', max: 10, windowMs: 15 * 60_000 })
+  const rl = await rateLimitDb('pw-set', clientIp(req), { max: 10, windowMs: 15 * 60_000 })
   if (!rl.ok) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
 
   const body = await req.json().catch(() => ({}))
