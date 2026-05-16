@@ -50,20 +50,45 @@ export async function POST(req: NextRequest) {
   const origin   = req.nextUrl.origin
   const fee      = Number(appointment.doctor.consultationFee)
 
-  const result = await provider.createCheckout({
-    amount:          fee,
-    appointmentId:   appointment.id,
-    doctorAccountId: appointment.doctor.stripeAccountId ?? appointment.doctor.id,
-    successUrl:      `${origin}/booking/${appointment.id}?paid=1`,
-    cancelUrl:       `${origin}/booking/${appointment.id}?paid=0`,
-    patientEmail:    appointment.patient.user.email ?? undefined,
-  })
+  // Reserve the escrow row BEFORE calling the PSP. The unique constraint on
+  // appointmentId makes this our race guard: two parallel requests cannot both
+  // proceed to the PSP, only the winner does. providerRef stays null until the
+  // PSP returns its tracker.
+  let reserved
+  try {
+    reserved = await prisma.escrow.create({
+      data: {
+        appointmentId: appointment.id,
+        amount:        fee,
+        provider:      provider.id,
+      },
+    })
+  } catch (e) {
+    if ((e as { code?: string }).code === 'P2002') {
+      return NextResponse.json({ error: 'Payment already started for this appointment' }, { status: 409 })
+    }
+    throw e
+  }
 
-  await prisma.escrow.create({
-    data: {
-      appointmentId:         appointment.id,
-      amount:                fee,
-      provider:              provider.id,
+  let result
+  try {
+    result = await provider.createCheckout({
+      amount:          fee,
+      appointmentId:   appointment.id,
+      doctorAccountId: appointment.doctor.stripeAccountId ?? appointment.doctor.id,
+      successUrl:      `${origin}/booking/${appointment.id}?paid=1`,
+      cancelUrl:       `${origin}/booking/${appointment.id}?paid=0`,
+      patientEmail:    appointment.patient.user.email ?? undefined,
+    })
+  } catch (e) {
+    // PSP rejected us — release the reservation so the patient can retry.
+    await prisma.escrow.delete({ where: { id: reserved.id } }).catch(() => {})
+    throw e
+  }
+
+  await prisma.escrow.update({
+    where: { id: reserved.id },
+    data:  {
       providerRef:           result.providerRef,
       // Keep this column for back-compat; not used by non-Stripe providers.
       stripePaymentIntentId: provider.id === 'stripe' ? result.providerRef : null,

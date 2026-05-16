@@ -45,11 +45,20 @@ export async function POST(req: NextRequest) {
         })
       }
     }
-    if (event.type === 'payment.failed' && event.appointmentId) {
-      await prisma.appointment.update({
-        where: { id: event.appointmentId },
-        data:  { status: 'CANCELLED', cancellationReason: 'payment_failed' },
+    if (event.type === 'payment.failed' && event.providerRef) {
+      // Look up the appointment via our own escrow row — never trust the
+      // appointmentId echoed back in the webhook payload (an attacker who
+      // forges a signed event could otherwise cancel arbitrary appointments).
+      const escrow = await prisma.escrow.findUnique({
+        where:  { providerRef: event.providerRef },
+        select: { appointmentId: true },
       })
+      if (escrow) {
+        await prisma.appointment.update({
+          where: { id: escrow.appointmentId },
+          data:  { status: 'CANCELLED', cancellationReason: 'payment_failed' },
+        })
+      }
     }
     if (event.type === 'payment.refunded' && event.providerRef) {
       const escrow = await prisma.escrow.findUnique({ where: { providerRef: event.providerRef } })
