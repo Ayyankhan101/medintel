@@ -23,7 +23,14 @@ import type {
 } from './types'
 
 type SafePayEnv = 'sandbox' | 'production'
-const ENV: SafePayEnv = process.env.SAFEPAY_ENV === 'production' ? 'production' : 'sandbox'
+const RAW_ENV = process.env.SAFEPAY_ENV
+if (RAW_ENV && RAW_ENV !== 'sandbox' && RAW_ENV !== 'production') {
+  console.warn(
+    `[safepay] Ignoring unrecognized SAFEPAY_ENV=${JSON.stringify(RAW_ENV)}, ` +
+    `defaulting to 'sandbox'. Valid values: 'sandbox' | 'production'.`,
+  )
+}
+const ENV: SafePayEnv = RAW_ENV === 'production' ? 'production' : 'sandbox'
 
 // Per-env base + checkout endpoints. Production has no `api.` subdomain so
 // previous `BASE.replace('api.','')` trick silently produced a broken URL —
@@ -130,7 +137,10 @@ export const safepayProvider: PaymentProvider = {
     const secret = process.env.SAFEPAY_WEBHOOK_SECRET ?? process.env.SAFEPAY_SECRET_KEY
     const sig    = headers.get('x-safepay-signature') ?? ''
     if (!secret) throw new Error('SAFEPAY_WEBHOOK_SECRET not configured')
-    if (!/^[0-9a-f]+$/i.test(sig)) throw new Error('SafePay webhook signature invalid')
+    // SHA256 = 32 bytes = 64 hex chars. Reject odd-length/short hex up front
+    // so `Buffer.from(sig, 'hex')` can't silently truncate a malformed sig
+    // into one that happens to share leading bytes with the real digest.
+    if (!/^[0-9a-f]{64}$/i.test(sig)) throw new Error('SafePay webhook signature invalid')
     // Compare raw bytes, not utf8 hex strings: lets us tolerate case
     // differences and catches truncation / encoding drift early.
     const a = Buffer.from(sig, 'hex')

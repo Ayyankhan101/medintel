@@ -46,12 +46,25 @@ export async function POST(req: NextRequest) {
       ? await prisma.escrow.findUnique({ where: { providerRef: event.providerRef } })
       : null
 
-    if (event.type === 'payment.succeeded' && escrow && escrow.status === 'HELD') {
-      // Money is at the PSP; no app-level state change needed beyond a
-      // confirmation flag in audit so admins can see the patient paid.
-      void audit('escrow.captured', 'Appointment', escrow.appointmentId, {
-        provider: 'safepay', amount: event.amount,
-      })
+    const orphan = (type: string) => audit(
+      'webhook.orphan',
+      'Escrow',
+      event.providerRef ?? 'unknown',
+      { provider: 'safepay', type, eventId: event.eventId },
+    )
+
+    if (event.type === 'payment.succeeded') {
+      if (escrow && escrow.status === 'HELD') {
+        // Money is at the PSP; no app-level state change needed beyond a
+        // confirmation flag in audit so admins can see the patient paid.
+        void audit('escrow.captured', 'Appointment', escrow.appointmentId, {
+          provider: 'safepay', amount: event.amount,
+        })
+      } else if (!escrow) {
+        // Worst-shape orphan: money landed at PSP, we have no record. Audit
+        // loud so ops can reconcile manually.
+        void orphan('payment.succeeded')
+      }
     }
     if (event.type === 'payment.failed') {
       if (escrow) {
@@ -60,23 +73,23 @@ export async function POST(req: NextRequest) {
           data:  { status: 'CANCELLED', cancellationReason: 'payment_failed' },
         })
       } else {
-        // Orphan event: forged-but-signed, or our reservation was already
-        // swept. Either way ops needs to see it.
-        void audit('webhook.orphan', 'Escrow', event.providerRef ?? 'unknown', {
-          provider: 'safepay', type: 'payment.failed',
-        })
+        void orphan('payment.failed')
       }
     }
-    if (event.type === 'payment.refunded' && escrow && escrow.status !== 'REFUNDED') {
-      await prisma.escrow.update({
-        where: { id: escrow.id },
-        data:  { status: 'REFUNDED', refundedAt: new Date() },
-      })
-      await prisma.appointment.update({
-        where: { id: escrow.appointmentId },
-        data:  { status: 'REFUNDED' },
-      })
-      void audit('escrow.refund_reconcile', 'Appointment', escrow.appointmentId, { provider: 'safepay' })
+    if (event.type === 'payment.refunded') {
+      if (escrow && escrow.status !== 'REFUNDED') {
+        await prisma.escrow.update({
+          where: { id: escrow.id },
+          data:  { status: 'REFUNDED', refundedAt: new Date() },
+        })
+        await prisma.appointment.update({
+          where: { id: escrow.appointmentId },
+          data:  { status: 'REFUNDED' },
+        })
+        void audit('escrow.refund_reconcile', 'Appointment', escrow.appointmentId, { provider: 'safepay' })
+      } else if (!escrow) {
+        void orphan('payment.refunded')
+      }
     }
   } catch (e) {
     await prisma.processedStripeEvent.delete({ where: { eventId } }).catch(() => {})

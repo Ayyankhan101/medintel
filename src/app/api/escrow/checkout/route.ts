@@ -33,7 +33,9 @@ export async function POST(req: NextRequest) {
   const session = await auth()
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const rl = await rateLimitDb('escrow-checkout', session.user.id!, { max: 5, windowMs: 60_000 })
+  // 10/min absorbs fat-fingered refreshes during the PSP redirect; the
+  // stale-reservation sweep below recovers any abandoned row anyway.
+  const rl = await rateLimitDb('escrow-checkout', session.user.id!, { max: 10, windowMs: 60_000 })
   if (!rl.ok) return NextResponse.json({ error: 'Too many checkout attempts. Slow down.' }, { status: 429 })
 
   const body   = await req.json().catch(() => ({}))

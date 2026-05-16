@@ -32,14 +32,16 @@ export async function POST(req: NextRequest) {
   const session = await auth()
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const rl = await rateLimitDb('appt-instant', session.user.id!, { max: 3, windowMs: 60_000 })
-  if (!rl.ok) return NextResponse.json({ error: 'Too many consult-now requests. Slow down.' }, { status: 429 })
-
   const parsed = schema.safeParse(await req.json().catch(() => ({})))
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
 
   const patient = await prisma.patient.findUnique({ where: { userId: session.user.id! } })
   if (!patient) return NextResponse.json({ error: 'Patient profile not found' }, { status: 404 })
+
+  // Rate-limit AFTER role/role-fixture checks so non-patients don't burn the
+  // patient's bucket.
+  const rl = await rateLimitDb('appt-instant', session.user.id!, { max: 3, windowMs: 60_000 })
+  if (!rl.ok) return NextResponse.json({ error: 'Too many consult-now requests. Slow down.' }, { status: 429 })
 
   const triage = parsed.data.triageId
     ? await prisma.triage.findUnique({ where: { id: parsed.data.triageId } })
