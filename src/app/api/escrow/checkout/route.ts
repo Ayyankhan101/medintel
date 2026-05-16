@@ -54,6 +54,19 @@ export async function POST(req: NextRequest) {
   // appointmentId makes this our race guard: two parallel requests cannot both
   // proceed to the PSP, only the winner does. providerRef stays null until the
   // PSP returns its tracker.
+  // Sweep abandoned reservations (providerRef null and older than the PSP
+  // round-trip window) before trying to claim the slot. Without this, a
+  // previous failed-cleanup leaves the row sticking around forever and the
+  // unique constraint blocks all future retries.
+  const STALE_RESERVATION_MS = 2 * 60_000
+  await prisma.escrow.deleteMany({
+    where: {
+      appointmentId: appointment.id,
+      providerRef:   null,
+      heldAt:        { lt: new Date(Date.now() - STALE_RESERVATION_MS) },
+    },
+  })
+
   let reserved
   try {
     reserved = await prisma.escrow.create({
@@ -81,9 +94,12 @@ export async function POST(req: NextRequest) {
       patientEmail:    appointment.patient.user.email ?? undefined,
     })
   } catch (e) {
-    // PSP rejected us — release the reservation so the patient can retry.
+    // PSP rejected us — release the reservation so the patient can retry. If
+    // this delete fails, the staleness sweep at the top of the next request
+    // recovers it after STALE_RESERVATION_MS.
     await prisma.escrow.delete({ where: { id: reserved.id } }).catch(() => {})
-    throw e
+    console.error('[escrow/checkout] provider.createCheckout failed', e)
+    return NextResponse.json({ error: 'Payment provider unavailable. Try again in a moment.' }, { status: 502 })
   }
 
   await prisma.escrow.update({
