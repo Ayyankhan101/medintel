@@ -15,7 +15,13 @@ function startsWithAny(path: string, prefixes: string[]): boolean {
 }
 
 // Dynamic public routes: pattern-match prefixes that take params.
-const PUBLIC_PREFIXES = ['/clinic/invite/', '/c/', '/api/clinics/', '/api/cron/', '/legal/']
+const PUBLIC_PREFIXES = [
+  '/clinic/invite/', '/c/', '/legal/',
+  // Public APIs: health check, public clinic profile, cron jobs (CRON_SECRET-gated),
+  // Stripe + Twilio webhooks (signature-verified inside the handler).
+  '/api/clinics/', '/api/cron/', '/api/health',
+  '/api/stripe/webhook', '/api/whatsapp/inbound', '/api/voice-call/',
+]
 
 export default auth(req => {
   const { nextUrl } = req
