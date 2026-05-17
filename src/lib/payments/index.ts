@@ -32,5 +32,6 @@ export function providerFor(id: ProviderId): PaymentProvider {
     case 'stripe':  return stripeProvider
     case 'safepay': return safepayProvider
     case 'mock':    return mockProvider
+    default:        throw new Error(`Unknown payment provider: ${id as string}`)
   }
 }

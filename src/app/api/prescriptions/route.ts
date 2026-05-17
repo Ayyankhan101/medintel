@@ -73,6 +73,13 @@ export async function POST(req: NextRequest) {
         data:  { status: 'COMPLETED', completedAt: new Date() },
       }),
     ])
+  } else if (appointment.escrow?.status === 'HELD' && !appointment.doctor.stripeAccountId) {
+    // Escrow is held but the doctor has no payout account — release skipped.
+    // Ops must trigger manual disbursement.
+    void audit('escrow.release_skipped', 'Appointment', appointment.id, {
+      actorId: session.user.id, escrowId: appointment.escrow.id,
+      provider: appointment.escrow.provider, reason: 'no_payout_account',
+    })
   }
 
   await audit('prescription.upload', 'Appointment', appointment.id, {

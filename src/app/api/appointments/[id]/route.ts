@@ -163,19 +163,28 @@ export async function PATCH(
   // that needs admin + Stripe dashboard for partial refunds.
   const willRefund = appointment.escrow?.status === 'HELD'
   if (willRefund) {
+    // Step 1: PSP call. If this fails the PI is still cancellable on retry — 502 is safe.
     try {
       await providerFor(appointment.escrow!.provider as ProviderId).refund({
         providerRef: appointment.escrow!.providerRef ?? appointment.escrow!.stripePaymentIntentId!,
         amount:      Number(appointment.escrow!.amount),
       })
-      await prisma.escrow.update({
-        where: { id: appointment.escrow!.id },
-        data:  { status: 'REFUNDED', refundedAt: new Date(), refundReason: reason ?? `Cancelled by ${cancelledBy.toLowerCase()}` },
-      })
     } catch (e) {
-      console.error('[appointments PATCH cancel] refund error', e)
+      console.error('[appointments PATCH cancel] PSP refund error', e)
       return NextResponse.json({ error: 'Refund failed — try again or contact support' }, { status: 502 })
     }
+    // Step 2: record in DB. PSP refund already happened — if this write fails,
+    // don't 502 (money is gone; retrying would re-attempt an already-cancelled PI).
+    // Audit so ops can reconcile the HELD→money-gone inconsistency.
+    await prisma.escrow.update({
+      where: { id: appointment.escrow!.id },
+      data:  { status: 'REFUNDED', refundedAt: new Date(), refundReason: reason ?? `Cancelled by ${cancelledBy.toLowerCase()}` },
+    }).catch(e => {
+      console.error('[appointments PATCH cancel] escrow DB update failed after PSP refund', e)
+      void audit('escrow.refund_db_failed', 'Appointment', id, {
+        escrowId: appointment.escrow!.id, error: String(e),
+      })
+    })
   }
 
   const updated = await prisma.appointment.update({

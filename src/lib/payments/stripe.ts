@@ -9,7 +9,8 @@ export const stripeProvider: PaymentProvider = {
 
   async createCheckout(input: CheckoutInput): Promise<CheckoutResult> {
     const pi = await createEscrowPaymentIntent(input.amount, input.doctorAccountId, input.appointmentId)
-    return { providerRef: pi.id, kind: 'client_secret', clientSecret: pi.client_secret! }
+    if (!pi.client_secret) throw new Error(`Stripe PI ${pi.id} has no client_secret`)
+    return { providerRef: pi.id, kind: 'client_secret', clientSecret: pi.client_secret }
   },
 
   async capture(input: CaptureInput): Promise<void> {
@@ -17,6 +18,7 @@ export const stripeProvider: PaymentProvider = {
   },
 
   async refund(input: RefundInput): Promise<RefundResult> {
+    // Only valid for uncaptured (HELD) PIs. Captured PIs need refundCapturedEscrow instead.
     await refundEscrow(input.providerRef)
     return { refundRef: `stripe_cancel_${input.providerRef}`, amount: input.amount ?? 0 }
   },

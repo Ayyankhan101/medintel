@@ -90,6 +90,7 @@ export async function POST(req: NextRequest) {
       } else if (!escrow) {
         void orphan('payment.refunded')
       }
+      // escrow exists and status === 'REFUNDED': duplicate delivery, already idempotent — no-op.
     }
   } catch (e) {
     await prisma.processedStripeEvent.delete({ where: { eventId } }).catch(() => {})

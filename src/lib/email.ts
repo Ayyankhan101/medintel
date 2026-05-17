@@ -45,7 +45,7 @@ async function send({ to, subject, html }: SendArgs): Promise<boolean> {
     const { error } = await c.emails.send({ from: FROM, to, subject, html })
     if (error) {
       console.error('[email] resend error:', error)
-      void audit('email.failed', 'email', to, { subject, error: error.message })
+      void audit('email.failed', 'email', to, { subject, error: error.message }) // audit is itself fire-and-forget with internal catch
       return false
     }
     return true

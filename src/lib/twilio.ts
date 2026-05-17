@@ -28,7 +28,8 @@ export async function completeVideoRoom(roomName: string): Promise<void> {
   try {
     await c.video.v1.rooms(roomName).update({ status: 'completed' })
   } catch (e: unknown) {
-    // 20404 = room not found (never started or already torn down)
+    // Twilio SDK throws TwilioRestException with .code = Twilio error code (number).
+    // 20404 = "Room not found" — never started or already completed; safe to ignore.
     if (typeof e === 'object' && e !== null && 'code' in e && (e as { code: number }).code === 20404) return
     console.error('[twilio] completeVideoRoom failed', roomName, e)
   }

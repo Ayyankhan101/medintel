@@ -33,6 +33,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Escrow is not in HELD state' }, { status: 409 })
   if (!appointment.prescriptionUrl)
     return NextResponse.json({ error: 'Prescription must be uploaded before releasing payment' }, { status: 422 })
+  if (appointment.escrow.provider === 'stripe' && !appointment.doctor.stripeAccountId)
+    return NextResponse.json({ error: 'Doctor Stripe account not configured' }, { status: 422 })
 
   await providerFor(appointment.escrow.provider as ProviderId).capture({
     providerRef:     appointment.escrow.providerRef ?? appointment.escrow.stripePaymentIntentId!,
