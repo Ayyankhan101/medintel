@@ -17,6 +17,7 @@
  */
 
 import { Resend } from 'resend'
+import { audit } from './audit'
 
 let _client: Resend | null = null
 function client(): Resend | null {
@@ -44,11 +45,13 @@ async function send({ to, subject, html }: SendArgs): Promise<boolean> {
     const { error } = await c.emails.send({ from: FROM, to, subject, html })
     if (error) {
       console.error('[email] resend error:', error)
+      void audit('email.failed', 'email', to, { subject, error: error.message })
       return false
     }
     return true
   } catch (e) {
     console.error('[email] unexpected error:', e)
+    void audit('email.failed', 'email', to, { subject, error: String(e) })
     return false
   }
 }

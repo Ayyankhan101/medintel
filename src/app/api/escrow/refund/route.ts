@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { refundEscrow, isPatientRefundEligible } from '@/lib/stripe'
+import { isPatientRefundEligible } from '@/lib/stripe'
+import { providerFor, type ProviderId } from '@/lib/payments'
 import { audit } from '@/lib/audit'
 
 const schema = z.object({ appointmentId: z.string().min(1) })
@@ -34,7 +35,10 @@ export async function POST(req: NextRequest) {
   if (!isAdmin && !isPatientRefundEligible(appointment.scheduledAt, appointment.status))
     return NextResponse.json({ error: 'Appointment is not eligible for refund' }, { status: 422 })
 
-  await refundEscrow(appointment.escrow.stripePaymentIntentId!)
+  await providerFor(appointment.escrow.provider as ProviderId).refund({
+    providerRef: appointment.escrow.providerRef ?? appointment.escrow.stripePaymentIntentId!,
+    amount:      Number(appointment.escrow.amount),
+  })
 
   await Promise.all([
     prisma.escrow.update({

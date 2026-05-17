@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { releaseEscrowToDoctor } from '@/lib/stripe'
+import { providerFor, type ProviderId } from '@/lib/payments'
 import { audit } from '@/lib/audit'
 import { sendPrescriptionReady, sendEscrowReleased, sendReviewNudge } from '@/lib/email'
 
@@ -58,11 +58,11 @@ export async function POST(req: NextRequest) {
 
   // Auto-release escrow
   if (appointment.escrow?.status === 'HELD' && appointment.doctor.stripeAccountId) {
-    await releaseEscrowToDoctor(
-      appointment.escrow.stripePaymentIntentId!,
-      appointment.doctor.stripeAccountId,
-      Number(appointment.escrow.amount)
-    )
+    await providerFor(appointment.escrow.provider as ProviderId).capture({
+      providerRef:     appointment.escrow.providerRef ?? appointment.escrow.stripePaymentIntentId!,
+      amount:          Number(appointment.escrow.amount),
+      doctorAccountId: appointment.doctor.stripeAccountId,
+    })
     await Promise.all([
       prisma.escrow.update({
         where: { id: appointment.escrow.id },

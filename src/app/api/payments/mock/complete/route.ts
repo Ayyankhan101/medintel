@@ -36,6 +36,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   if (parsed.data.type === 'payment.failed') {
+    // Idempotent: already cancelled → nothing to do.
+    if (escrow.appointment.status === 'CANCELLED' || escrow.appointment.status === 'REFUNDED')
+      return NextResponse.json({ ok: true })
     await prisma.appointment.update({
       where: { id: escrow.appointmentId },
       data:  { status: 'CANCELLED', cancellationReason: 'payment_failed' },
@@ -45,6 +48,9 @@ export async function POST(req: NextRequest) {
 
   // payment.succeeded: keep escrow HELD (funds at PSP). Audit so the dashboard
   // shows the patient paid; the appointment status stays SCHEDULED.
+  // Idempotent: if escrow already moved past HELD, the payment was already counted.
+  if (escrow.status !== 'HELD') return NextResponse.json({ ok: true })
+
   void audit('escrow.captured', 'Appointment', escrow.appointmentId, {
     provider: 'mock', amount: parsed.data.amount, actorId: session.user.id, actorRole: session.user.role,
   })

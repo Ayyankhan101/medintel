@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { refundEscrow } from '@/lib/stripe'
+import { providerFor, type ProviderId } from '@/lib/payments'
 import { sendAppointmentCancelled, sendAppointmentRescheduled } from '@/lib/email'
+import { completeVideoRoom, appointmentRoomName } from '@/lib/twilio'
 import { audit } from '@/lib/audit'
 
 export async function GET(
@@ -163,7 +164,10 @@ export async function PATCH(
   const willRefund = appointment.escrow?.status === 'HELD'
   if (willRefund) {
     try {
-      await refundEscrow(appointment.escrow!.stripePaymentIntentId!)
+      await providerFor(appointment.escrow!.provider as ProviderId).refund({
+        providerRef: appointment.escrow!.providerRef ?? appointment.escrow!.stripePaymentIntentId!,
+        amount:      Number(appointment.escrow!.amount),
+      })
       await prisma.escrow.update({
         where: { id: appointment.escrow!.id },
         data:  { status: 'REFUNDED', refundedAt: new Date(), refundReason: reason ?? `Cancelled by ${cancelledBy.toLowerCase()}` },
@@ -183,6 +187,8 @@ export async function PATCH(
       cancelledBy,
     },
   })
+
+  void completeVideoRoom(appointmentRoomName(id))
 
   const refunded = willRefund
   await audit('appointment.cancel', 'Appointment', id, {
