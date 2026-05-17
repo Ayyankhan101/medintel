@@ -19,8 +19,9 @@ export const stripeProvider: PaymentProvider = {
 
   async refund(input: RefundInput): Promise<RefundResult> {
     // Only valid for uncaptured (HELD) PIs. Captured PIs need refundCapturedEscrow instead.
+    // PI cancel does not return the refunded amount; callers must supply it via input.amount.
     await refundEscrow(input.providerRef)
-    return { refundRef: `stripe_cancel_${input.providerRef}`, amount: input.amount ?? 0 }
+    return { refundRef: `stripe_cancel_${input.providerRef}`, amount: input.amount! }
   },
 
   async verifyWebhook(_rawBody: string, _headers: Headers): Promise<NormalizedEvent> {

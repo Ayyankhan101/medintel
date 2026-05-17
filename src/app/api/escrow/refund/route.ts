@@ -35,11 +35,19 @@ export async function POST(req: NextRequest) {
   if (!isAdmin && !isPatientRefundEligible(appointment.scheduledAt, appointment.status))
     return NextResponse.json({ error: 'Appointment is not eligible for refund' }, { status: 422 })
 
-  await providerFor(appointment.escrow.provider as ProviderId).refund({
-    providerRef: appointment.escrow.providerRef ?? appointment.escrow.stripePaymentIntentId!,
-    amount:      Number(appointment.escrow.amount),
-  })
+  // Step 1: PSP call — if this fails the PI is still cancellable on retry.
+  try {
+    await providerFor(appointment.escrow.provider as ProviderId).refund({
+      providerRef: appointment.escrow.providerRef ?? appointment.escrow.stripePaymentIntentId!,
+      amount:      Number(appointment.escrow.amount),
+    })
+  } catch (e) {
+    console.error('[escrow/refund] PSP refund error', e)
+    return NextResponse.json({ error: 'Refund failed — try again or contact support' }, { status: 502 })
+  }
 
+  // Step 2: record in DB. PSP refund already happened — if this write fails,
+  // don't 502 (money is gone; retrying would re-attempt an already-cancelled payment).
   await Promise.all([
     prisma.escrow.update({
       where: { id: appointment.escrow.id },
@@ -49,7 +57,12 @@ export async function POST(req: NextRequest) {
       where: { id: appointment.id },
       data:  { status: 'REFUNDED' },
     }),
-  ])
+  ]).catch(e => {
+    console.error('[escrow/refund] DB update failed after PSP refund', e)
+    void audit('escrow.refund_db_failed', 'Appointment', appointment.id, {
+      escrowId: appointment.escrow!.id, error: String(e),
+    })
+  })
 
   await audit('escrow.refund', 'Appointment', appointment.id, {
     actorId: session.user.id, actorRole: session.user.role,

@@ -39,10 +39,18 @@ export async function POST(req: NextRequest) {
     // Idempotent: already cancelled → nothing to do.
     if (escrow.appointment.status === 'CANCELLED' || escrow.appointment.status === 'REFUNDED')
       return NextResponse.json({ ok: true })
-    await prisma.appointment.update({
-      where: { id: escrow.appointmentId },
-      data:  { status: 'CANCELLED', cancellationReason: 'payment_failed' },
-    })
+    await Promise.all([
+      prisma.appointment.update({
+        where: { id: escrow.appointmentId },
+        data:  { status: 'CANCELLED', cancellationReason: 'payment_failed' },
+      }),
+      // Mark escrow REFUNDED (no money ever moved) so /api/escrow/refund can't
+      // re-fire on a payment that was never captured.
+      prisma.escrow.update({
+        where: { id: escrow.id },
+        data:  { status: 'REFUNDED', refundedAt: new Date() },
+      }),
+    ])
     return NextResponse.json({ ok: true })
   }
 

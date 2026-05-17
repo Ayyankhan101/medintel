@@ -56,26 +56,48 @@ export async function POST(req: NextRequest) {
     },
   })
 
-  // Auto-release escrow
-  if (appointment.escrow?.status === 'HELD' && appointment.doctor.stripeAccountId) {
-    await providerFor(appointment.escrow.provider as ProviderId).capture({
-      providerRef:     appointment.escrow.providerRef ?? appointment.escrow.stripePaymentIntentId!,
-      amount:          Number(appointment.escrow.amount),
-      doctorAccountId: appointment.doctor.stripeAccountId,
-    })
-    await Promise.all([
-      prisma.escrow.update({
-        where: { id: appointment.escrow.id },
-        data:  { status: 'RELEASED', releasedAt: new Date() },
-      }),
-      prisma.appointment.update({
-        where: { id: appointment.id },
-        data:  { status: 'COMPLETED', completedAt: new Date() },
-      }),
-    ])
-  } else if (appointment.escrow?.status === 'HELD' && !appointment.doctor.stripeAccountId) {
-    // Escrow is held but the doctor has no payout account — release skipped.
-    // Ops must trigger manual disbursement.
+  // Auto-release escrow. SafePay disbursement not yet implemented — skip for
+  // SafePay-held escrows even if the doctor happens to have a stripeAccountId,
+  // to prevent a NotImplemented throw from blowing up the prescription upload.
+  const canAutoRelease =
+    appointment.escrow?.status === 'HELD' &&
+    appointment.escrow.provider !== 'safepay' &&
+    !!appointment.doctor.stripeAccountId
+
+  if (canAutoRelease) {
+    let captured = false
+    try {
+      await providerFor(appointment.escrow!.provider as ProviderId).capture({
+        providerRef:     appointment.escrow!.providerRef ?? appointment.escrow!.stripePaymentIntentId!,
+        amount:          Number(appointment.escrow!.amount),
+        doctorAccountId: appointment.doctor.stripeAccountId!,
+      })
+      captured = true
+    } catch (e) {
+      console.error('[prescriptions] auto-release capture failed', e)
+      void audit('escrow.capture_failed', 'Appointment', appointment.id, {
+        escrowId: appointment.escrow!.id, error: String(e),
+      })
+    }
+    if (captured) {
+      await Promise.all([
+        prisma.escrow.update({
+          where: { id: appointment.escrow!.id },
+          data:  { status: 'RELEASED', releasedAt: new Date() },
+        }),
+        prisma.appointment.update({
+          where: { id: appointment.id },
+          data:  { status: 'COMPLETED', completedAt: new Date() },
+        }),
+      ]).catch(e => {
+        console.error('[prescriptions] DB update failed after capture', e)
+        void audit('escrow.release_db_failed', 'Appointment', appointment.id, {
+          escrowId: appointment.escrow!.id, error: String(e),
+        })
+      })
+    }
+  } else if (appointment.escrow?.status === 'HELD') {
+    // Escrow held but auto-release not possible — ops must disburse manually.
     void audit('escrow.release_skipped', 'Appointment', appointment.id, {
       actorId: session.user.id, escrowId: appointment.escrow.id,
       provider: appointment.escrow.provider, reason: 'no_payout_account',

@@ -4,6 +4,7 @@ import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { providerFor, type ProviderId } from '@/lib/payments'
 import { sendReviewNudge } from '@/lib/email'
+import { audit } from '@/lib/audit'
 
 const schema = z.object({ appointmentId: z.string().min(1) })
 
@@ -36,12 +37,20 @@ export async function POST(req: NextRequest) {
   if (appointment.escrow.provider === 'stripe' && !appointment.doctor.stripeAccountId)
     return NextResponse.json({ error: 'Doctor Stripe account not configured' }, { status: 422 })
 
-  await providerFor(appointment.escrow.provider as ProviderId).capture({
-    providerRef:     appointment.escrow.providerRef ?? appointment.escrow.stripePaymentIntentId!,
-    amount:          Number(appointment.escrow.amount),
-    doctorAccountId: appointment.doctor.stripeAccountId ?? '',
-  })
+  // Step 1: PSP call — if this fails no money has moved, doctor can retry.
+  try {
+    await providerFor(appointment.escrow.provider as ProviderId).capture({
+      providerRef:     appointment.escrow.providerRef ?? appointment.escrow.stripePaymentIntentId!,
+      amount:          Number(appointment.escrow.amount),
+      doctorAccountId: appointment.doctor.stripeAccountId ?? '',
+    })
+  } catch (e) {
+    console.error('[escrow/release] PSP capture error', e)
+    return NextResponse.json({ error: 'Payment release failed — try again or contact support' }, { status: 502 })
+  }
 
+  // Step 2: record in DB. Capture succeeded — if this write fails, doctor was paid
+  // but escrow stays HELD. Audit so ops can reconcile; don't 502 the doctor.
   await Promise.all([
     prisma.escrow.update({
       where: { id: appointment.escrow.id },
@@ -51,7 +60,12 @@ export async function POST(req: NextRequest) {
       where: { id: appointment.id },
       data:  { status: 'COMPLETED', completedAt: new Date() },
     }),
-  ])
+  ]).catch(e => {
+    console.error('[escrow/release] DB update failed after PSP capture', e)
+    void audit('escrow.release_db_failed', 'Appointment', appointment.id, {
+      escrowId: appointment.escrow!.id, error: String(e),
+    })
+  })
 
   if (appointment.patient.user.email) {
     void sendReviewNudge({
