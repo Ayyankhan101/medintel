@@ -27,6 +27,7 @@ interface Identity {
   city: string
   allergies: string
   consent: boolean
+  researchConsent: boolean
 }
 
 export default function OnboardingPage() {
@@ -37,7 +38,7 @@ export default function OnboardingPage() {
   const [otp, setOtp]     = useState('')
   const [sent, setSent]   = useState(false)
   const [data, setData]   = useState<Identity>({
-    name: '', age: '', sex: 'Female', city: 'Karachi', allergies: '', consent: false,
+    name: '', age: '', sex: 'Female', city: 'Karachi', allergies: '', consent: false, researchConsent: false,
   })
 
   const setField = <K extends keyof Identity>(k: K, v: Identity[K]) =>
@@ -432,6 +433,20 @@ function IdentityStep({
           style={{ marginTop: 3, accentColor: 'var(--blue-600)' }}
         />
         <span>I agree to share these details with treating doctors only, encrypted in transit and at rest.</span>
+      </label>
+
+      <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, fontSize: 13, color: 'var(--ink-2)', cursor: 'pointer' }}>
+        <input
+          type="checkbox"
+          checked={data.researchConsent}
+          onChange={e => set('researchConsent', e.target.checked)}
+          style={{ marginTop: 3, accentColor: 'var(--violet-600)' }}
+        />
+        <span>
+          <strong style={{ color: 'var(--ink)' }}>Optional: </strong>
+          Allow anonymized, de-identified versions of my health data to be used for medical research.
+          Your name, CNIC, and contact details are never shared.
+        </span>
       </label>
     </div>
   )

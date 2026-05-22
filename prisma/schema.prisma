@@ -30,6 +30,17 @@ enum VerificationStatus {
   REJECTED
 }
 
+enum DoctorTier {
+  JUNIOR
+  SENIOR
+}
+
+enum RecoveryStatus {
+  IMPROVED
+  UNCHANGED
+  WORSE
+}
+
 enum AppointmentStatus {
   SCHEDULED
   IN_PROGRESS
@@ -171,6 +182,7 @@ model Patient {
   gender           String?
   address          String?
   emergencyContact String?
+  researchConsent  Boolean   @default(false)
 
   medicalRecords MedicalRecord[]
   appointments   Appointment[]
@@ -208,6 +220,7 @@ model Doctor {
   kydTier1At      DateTime?
   kydTier2At      DateTime?
   kydTier3At      DateTime?
+  tier            DoctorTier         @default(JUNIOR)
   trustBadge      Boolean            @default(false)
   rating          Decimal?           @db.Decimal(3, 2)
   reviewCount     Int                @default(0)
@@ -275,6 +288,9 @@ model Appointment {
 
   prescriptionUrl  String?
   prescriptionText String?  @db.Text
+
+  // Set by the doctor at follow-up to track patient outcome.
+  recoveryStatus RecoveryStatus?
 
   escrow    Escrow?
   note      ConsultationNote?
@@ -375,6 +391,23 @@ model RateLimitBucket {
   resetAt DateTime
 
   @@index([resetAt])
+}
+
+/// Weekly AI-generated research insight over anonymized triage + outcome data.
+/// Stored so the admin dashboard can show the latest summary without re-running
+/// the LLM on every page load.
+model ResearchInsight {
+  id            String   @id @default(cuid())
+  generatedAt   DateTime @default(now())
+  windowDays    Int
+  totalCases    Int
+  avgSeverity   Float
+  summary       String   @db.Text
+  keyFindings   String[]
+  topDiseases   Json
+  modelUsed     String?
+
+  @@index([generatedAt(sort: Desc)])
 }
 
 /// Stripe webhook dedupe. PK = Stripe event.id. Insert before handling;

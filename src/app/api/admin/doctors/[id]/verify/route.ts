@@ -6,8 +6,12 @@ import { sendDoctorVerificationDecision } from '@/lib/email'
 import { audit } from '@/lib/audit'
 
 const schema = z.discriminatedUnion('decision', [
-  z.object({ decision: z.literal('approve'),  trustBadge: z.boolean().optional() }),
-  z.object({ decision: z.literal('reject'),   reason: z.string().min(3).max(400) }),
+  z.object({
+    decision:   z.literal('approve'),
+    trustBadge: z.boolean().optional(),
+    tier:       z.enum(['JUNIOR', 'SENIOR']).optional(),
+  }),
+  z.object({ decision: z.literal('reject'), reason: z.string().min(3).max(400) }),
 ])
 
 export async function POST(
@@ -33,15 +37,17 @@ export async function POST(
     const updated = await prisma.doctor.update({
       where: { id },
       data: {
-        kydStatus:    'VERIFIED',
-        kydTier2At:   new Date(),
-        kydTier3At:   parsed.data.trustBadge ? new Date() : doctor.kydTier3At,
-        trustBadge:   parsed.data.trustBadge ?? doctor.trustBadge,
+        kydStatus:  'VERIFIED',
+        kydTier2At: new Date(),
+        kydTier3At: parsed.data.trustBadge ? new Date() : doctor.kydTier3At,
+        trustBadge: parsed.data.trustBadge ?? doctor.trustBadge,
+        tier:       parsed.data.tier ?? doctor.tier,
       },
     })
     await audit('kyd.approve', 'Doctor', id, {
       actorId: session.user.id, actorRole: 'ADMIN',
       trustBadge: parsed.data.trustBadge ?? false,
+      tier: parsed.data.tier ?? doctor.tier,
     })
     void sendDoctorVerificationDecision({
       to:         doctor.user.email,

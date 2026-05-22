@@ -18,6 +18,7 @@ import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { sendBookingConfirmation, sendDoctorNewBooking } from '@/lib/email'
 import { rateLimitDb } from '@/lib/rate-limit'
+import { requiresSenior } from '@/lib/triage'
 
 const STALE_AFTER_MS = 3 * 60_000
 
@@ -27,6 +28,7 @@ const schema = z.object({
 })
 
 class DoctorUnavailable extends Error {}
+class TierMismatch extends Error {}
 
 export async function POST(req: NextRequest) {
   const session = await auth()
@@ -57,6 +59,19 @@ export async function POST(req: NextRequest) {
           || !doctor.lastSeenAt || doctor.lastSeenAt.getTime() < Date.now() - STALE_AFTER_MS) {
         throw new DoctorUnavailable()
       }
+
+      // Tier enforcement: if triage requires a SENIOR doctor, reject JUNIOR.
+      if (triage) {
+        const needsSenior = requiresSenior(
+          triage.severityScore,
+          triage.severityLevel,
+          triage.department,
+        )
+        if (needsSenior && doctor.tier !== 'SENIOR') {
+          throw new TierMismatch()
+        }
+      }
+
       // Reject if the doctor already has any active appointment within ±30m
       // of `now`. Catches both "they're mid-call with someone" and "they have
       // a scheduled slot starting in 10m" — Consult-Now must not overlap.
@@ -118,6 +133,8 @@ export async function POST(req: NextRequest) {
   } catch (e) {
     if (e instanceof DoctorUnavailable)
       return NextResponse.json({ error: 'Doctor just went offline. Pick another or schedule for later.' }, { status: 409 })
+    if (e instanceof TierMismatch)
+      return NextResponse.json({ error: 'Your case requires a senior specialist. Please select a senior doctor.' }, { status: 422 })
     console.error('[appointments/instant]', e)
     return NextResponse.json({ error: 'Failed to create appointment' }, { status: 500 })
   }

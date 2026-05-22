@@ -47,6 +47,7 @@ const patchSchema = z.union([
   z.object({ action: z.literal('cancel'), reason: z.string().trim().max(500).optional() }),
   z.object({ action: z.literal('start') }),     // doctor: SCHEDULED -> IN_PROGRESS
   z.object({ action: z.literal('complete') }),  // doctor: IN_PROGRESS -> COMPLETED (without Rx; abandoned visit)
+  z.object({ recoveryStatus: z.enum(['IMPROVED', 'UNCHANGED', 'WORSE']) }),
 ])
 
 const RESCHEDULE_MIN_LEAD_MS = 30 * 60_000   // can't reschedule into < 30 min
@@ -140,6 +141,21 @@ export async function PATCH(
     // want === 'complete'
     if (appointment.status !== 'IN_PROGRESS') return NextResponse.json({ error: 'Only IN_PROGRESS consultations can be completed' }, { status: 409 })
     const updated = await prisma.appointment.update({ where: { id }, data: { status: 'COMPLETED', completedAt: new Date() } })
+    return NextResponse.json(updated)
+  }
+
+  // ── RECOVERY STATUS (doctor only) ───────────────────────────────────────
+  if ('recoveryStatus' in parsed.data) {
+    if (!isDoctor && !isAdmin) return NextResponse.json({ error: 'Only the assigned doctor can set recovery status' }, { status: 403 })
+    if (appointment.status !== 'COMPLETED') return NextResponse.json({ error: 'Recovery status can only be set on completed appointments' }, { status: 409 })
+    const updated = await prisma.appointment.update({
+      where: { id },
+      data:  { recoveryStatus: parsed.data.recoveryStatus },
+    })
+    await audit('appointment.recovery_status', 'Appointment', id, {
+      actorId: session.user.id, actorRole: 'DOCTOR',
+      recoveryStatus: parsed.data.recoveryStatus,
+    })
     return NextResponse.json(updated)
   }
 

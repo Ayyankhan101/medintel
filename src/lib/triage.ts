@@ -83,3 +83,32 @@ export function computeSeverityLevel(score: number): SeverityLevel {
 export function mapDepartment(text: string): string {
   return inferSpecialtyFromKeywords(text)
 }
+
+// Departments that always require a SENIOR doctor regardless of score.
+const SENIOR_DEPARTMENTS = new Set([
+  'Emergency Medicine',
+  'Cardiology',
+  'Neurology',
+  'Pulmonology',
+  'Oncology',
+  'Nephrology',
+  'Gastroenterology',
+])
+
+/**
+ * Returns true when a SENIOR doctor is required.
+ * Rules (any match → senior):
+ *   1. severityScore ≥ 7
+ *   2. severityLevel is CRITICAL
+ *   3. department is in the high-acuity set (chest pain / neuro / airway etc.)
+ */
+export function requiresSenior(
+  severityScore: number,
+  severityLevel: string,
+  department: string,
+): boolean {
+  if (severityScore >= 7) return true
+  if (severityLevel === 'CRITICAL') return true
+  if (SENIOR_DEPARTMENTS.has(department)) return true
+  return false
+}

@@ -3,7 +3,7 @@ import { use, useEffect, useState } from 'react'
 import Link from 'next/link'
 import {
   Loader2, Mic, Sparkles, CheckCircle2, ShieldAlert, Save,
-  Stethoscope, ArrowLeft,
+  Stethoscope, ArrowLeft, Heart,
 } from 'lucide-react'
 import { Btn } from '@/components/design/Btn'
 
@@ -22,14 +22,31 @@ interface Note {
   approvedBy:    string | null
 }
 
+type RecoveryStatus = 'IMPROVED' | 'UNCHANGED' | 'WORSE'
+
+const RECOVERY_OPTIONS: { value: RecoveryStatus; label: string; color: string; bg: string }[] = [
+  { value: 'IMPROVED',  label: 'Improved',  color: '#047857', bg: 'rgba(16,185,129,.12)' },
+  { value: 'UNCHANGED', label: 'Unchanged', color: '#a16207', bg: 'rgba(245,158,11,.12)' },
+  { value: 'WORSE',     label: 'Worse',     color: '#b91c1c', bg: 'rgba(220,38,38,.10)'  },
+]
+
 export default function Page({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
-  const [note,       setNote]       = useState<Note | null>(null)
-  const [draft,      setDraft]      = useState<Partial<Note>>({})
-  const [transcript, setTranscript] = useState('')
-  const [loading,    setLoading]    = useState(true)
-  const [working,    setWorking]    = useState<'gen' | 'save' | 'approve' | null>(null)
-  const [err,        setErr]        = useState<string | null>(null)
+  const [note,           setNote]           = useState<Note | null>(null)
+  const [draft,          setDraft]          = useState<Partial<Note>>({})
+  const [transcript,     setTranscript]     = useState('')
+  const [loading,        setLoading]        = useState(true)
+  const [working,        setWorking]        = useState<'gen' | 'save' | 'approve' | 'recovery' | null>(null)
+  const [err,            setErr]            = useState<string | null>(null)
+  const [apptStatus,     setApptStatus]     = useState<string | null>(null)
+  const [recoveryStatus, setRecoveryStatus] = useState<RecoveryStatus | null>(null)
+
+  useEffect(() => {
+    fetch(`/api/appointments/${id}`)
+      .then(r => r.json())
+      .then(a => { setApptStatus(a.status); setRecoveryStatus(a.recoveryStatus ?? null) })
+      .catch(() => {})
+  }, [id])
 
   useEffect(() => { load() }, [id])
 
@@ -78,6 +95,19 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
     setWorking(null)
     if (!r.ok) { setErr(d.error ?? 'Save failed'); return }
     setNote(d); setDraft(d)
+  }
+
+  async function saveRecovery(status: RecoveryStatus) {
+    setWorking('recovery'); setErr(null)
+    const r = await fetch(`/api/appointments/${id}`, {
+      method:  'PATCH',
+      headers: { 'content-type': 'application/json' },
+      body:    JSON.stringify({ recoveryStatus: status }),
+    })
+    const d = await r.json().catch(() => ({}))
+    setWorking(null)
+    if (!r.ok) { setErr(d.error ?? 'Failed to save recovery status'); return }
+    setRecoveryStatus(status)
   }
 
   if (loading) return (
@@ -152,6 +182,52 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
           {note ? 'Re-generate SOAP' : 'Generate SOAP'}
         </Btn>
       </section>
+
+      {apptStatus === 'COMPLETED' && (
+        <section style={{
+          background: 'var(--bg-elev)', border: '1px solid var(--border)',
+          borderRadius: 22, padding: 20, boxShadow: 'var(--shadow-card)',
+          display: 'flex', flexDirection: 'column', gap: 14,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Heart size={15} style={{ color: 'var(--ink-3)' }} />
+            <h2 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: 'var(--ink)' }}>Patient recovery outcome</h2>
+            {recoveryStatus && (
+              <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--ink-3)' }}>
+                Current: <strong style={{ color: 'var(--ink)' }}>{recoveryStatus}</strong>
+              </span>
+            )}
+          </div>
+          <p style={{ margin: 0, fontSize: 13, color: 'var(--ink-3)' }}>
+            Record how the patient responded to treatment. Used in your clinical analytics.
+          </p>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {RECOVERY_OPTIONS.map(opt => {
+              const active = recoveryStatus === opt.value
+              return (
+                <button
+                  key={opt.value}
+                  onClick={() => saveRecovery(opt.value)}
+                  disabled={working === 'recovery'}
+                  style={{
+                    padding: '8px 16px', borderRadius: 10, cursor: 'pointer',
+                    border: `1.5px solid ${active ? opt.color : 'var(--border)'}`,
+                    background: active ? opt.bg : 'var(--bg-soft)',
+                    color: active ? opt.color : 'var(--ink-2)',
+                    fontSize: 13, fontWeight: active ? 700 : 500,
+                    transition: 'all 180ms ease',
+                    opacity: working === 'recovery' ? 0.6 : 1,
+                  }}
+                >
+                  {working === 'recovery' && recoveryStatus !== opt.value
+                    ? opt.label
+                    : opt.label}
+                </button>
+              )
+            })}
+          </div>
+        </section>
+      )}
 
       {note && (
         <section style={{

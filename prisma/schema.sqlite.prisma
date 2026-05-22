@@ -110,6 +110,7 @@ model Patient {
   gender           String?
   address          String?
   emergencyContact String?
+  researchConsent  Boolean   @default(false)
 
   medicalRecords MedicalRecord[]
   appointments   Appointment[]
@@ -144,6 +145,8 @@ model Doctor {
   bio             String?
   consultationFee Decimal
   stripeAccountId String?
+  // tier: JUNIOR | SENIOR — set by admin during verification
+  tier            String    @default("JUNIOR")
   // kydStatus: PENDING | VERIFIED | REJECTED
   kydStatus       String    @default("PENDING")
   kydTier1At      DateTime?
@@ -215,6 +218,9 @@ model Appointment {
 
   prescriptionUrl  String?
   prescriptionText String?
+
+  // recoveryStatus: IMPROVED | UNCHANGED | WORSE — set by doctor at follow-up
+  recoveryStatus String?
 
   escrow    Escrow?
   note      ConsultationNote?
@@ -326,4 +332,18 @@ model ProcessedStripeEvent {
   createdAt DateTime @default(now())
 
   @@index([createdAt])
+}
+
+model ResearchInsight {
+  id           String   @id @default(cuid())
+  generatedAt  DateTime @default(now())
+  windowDays   Int
+  totalCases   Int
+  avgSeverity  Float
+  summary      String
+  keyFindings  String   @default("[]")
+  topDiseases  String   @default("[]")
+  modelUsed    String?
+
+  @@index([generatedAt])
 }

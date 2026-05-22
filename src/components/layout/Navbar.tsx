@@ -19,12 +19,14 @@ const PATIENT_LINKS: NavLink[] = [
 const DOCTOR_LINKS: NavLink[] = [
   { label: 'Dashboard', href: '/doctor/dashboard' },
   { label: 'Patients',  href: '/doctor/patients'  },
+  { label: 'Analytics', href: '/doctor/analytics' },
   { label: 'Settings',  href: '/doctor/settings'  },
 ]
 
 const ADMIN_LINKS: NavLink[] = [
   { label: 'Overview', href: '/admin/dashboard' },
   { label: 'Metrics',  href: '/admin/metrics'   },
+  { label: 'Research', href: '/admin/research'  },
   { label: 'Doctors',  href: '/admin/doctors'   },
   { label: 'Audit',    href: '/admin/audit'     },
 ]
