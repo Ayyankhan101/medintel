@@ -136,7 +136,7 @@ Be factual. Use clinical language. Do not invent specific numbers not present in
       avgSeverity,
       summary:     insight.summary ?? '',
       keyFindings: insight.keyFindings ?? [],
-      topDiseases: topDepts,
+      topDiseases: topDepts.map(([dept, count]) => ({ dept, count })),
       modelUsed:   CHAT_MODEL,
     },
   })

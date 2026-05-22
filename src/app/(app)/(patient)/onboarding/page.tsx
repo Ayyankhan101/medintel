@@ -50,7 +50,15 @@ export default function OnboardingPage() {
     : step === 2 ? data.name.length > 1 && !!data.age && data.consent
     : true
 
-  const next = () => {
+  const next = async () => {
+    // Persist research consent when leaving the identity step.
+    if (step === 2) {
+      void fetch('/api/patient/consent', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ researchConsent: data.researchConsent }),
+      })
+    }
     if (step < STEPS.length - 1) setStep(step + 1)
     else router.push('/intake')
   }

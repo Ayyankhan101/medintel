@@ -219,8 +219,8 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
                     opacity: working === 'recovery' ? 0.6 : 1,
                   }}
                 >
-                  {working === 'recovery' && recoveryStatus !== opt.value
-                    ? opt.label
+                  {working === 'recovery' && recoveryStatus === opt.value
+                    ? 'Saving…'
                     : opt.label}
                 </button>
               )

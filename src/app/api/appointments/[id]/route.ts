@@ -153,7 +153,7 @@ export async function PATCH(
       data:  { recoveryStatus: parsed.data.recoveryStatus },
     })
     await audit('appointment.recovery_status', 'Appointment', id, {
-      actorId: session.user.id, actorRole: 'DOCTOR',
+      actorId: session.user.id, actorRole: session.user.role,
       recoveryStatus: parsed.data.recoveryStatus,
     })
     return NextResponse.json(updated)
