@@ -7,6 +7,7 @@
  * UUID), and a printed timestamp + system signature so an insurer can verify
  * tampering.
  */
+import 'server-only'
 import { Document, Page, Text, View, StyleSheet, renderToBuffer } from '@react-pdf/renderer'
 import React from 'react'
 

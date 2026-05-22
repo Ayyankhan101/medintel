@@ -2,12 +2,20 @@
 import { useEffect, useState, use } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import dynamic from 'next/dynamic'
 import { Loader2, CheckCircle2, FileText, Video, AlertCircle, Stethoscope } from 'lucide-react'
-import { VideoCall } from '@/components/consultation/VideoCall'
 import { PrescriptionUploader } from '@/components/consultation/PrescriptionUploader'
-import { PaymentFlow } from '@/components/escrow/PaymentFlow'
 import { Btn } from '@/components/design/Btn'
 import { SeverityPill } from '@/components/design/badges'
+
+const VideoCall   = dynamic(() => import('@/components/consultation/VideoCall').then(m => m.VideoCall), {
+  loading: () => <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 320, background: '#0f172a', borderRadius: 16, color: '#94a3b8' }}><Loader2 className="animate-spin" /></div>,
+  ssr: false,
+})
+const PaymentFlow = dynamic(() => import('@/components/escrow/PaymentFlow').then(m => m.PaymentFlow), {
+  loading: () => <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 120 }}><Loader2 className="animate-spin" /></div>,
+  ssr: false,
+})
 
 // ── shared types ──────────────────────────────────────────────────────────────
 

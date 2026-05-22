@@ -5,7 +5,13 @@ import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-
 import { Button } from '@/components/ui/button'
 import { ShieldCheck } from 'lucide-react'
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
+// Lazy — only call loadStripe when the component actually mounts so the
+// Stripe SDK (~200KB) is never fetched on pages that don't render PaymentFlow.
+let stripePromise: ReturnType<typeof loadStripe> | null = null
+function getStripePromise() {
+  if (!stripePromise) stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
+  return stripePromise
+}
 
 interface CheckoutFormProps {
   appointmentId: string
@@ -105,7 +111,7 @@ export function PaymentFlow({ appointmentId, doctorName, fee, onPaymentComplete 
   }
 
   return (
-    <Elements stripe={stripePromise} options={{ clientSecret, appearance: { theme: 'stripe' } }}>
+    <Elements stripe={getStripePromise()} options={{ clientSecret, appearance: { theme: 'stripe' } }}>
       <CheckoutForm appointmentId={appointmentId} onSuccess={onPaymentComplete} />
     </Elements>
   )

@@ -30,8 +30,28 @@ const securityHeaders = [
 ]
 
 const nextConfig: NextConfig = {
+  compress: true,
+  poweredByHeader: false,
+
+  experimental: {
+    // Tree-shake large icon/component libraries — only bundle what's imported.
+    optimizePackageImports: ['lucide-react', '@base-ui/react', 'tailwind-merge'],
+  },
+
   async headers() {
-    return [{ source: '/:path*', headers: securityHeaders }]
+    return [
+      { source: '/:path*', headers: securityHeaders },
+      // Cache static doctor list for 30s at CDN edge; clients revalidate stale.
+      {
+        source: '/api/doctors/online',
+        headers: [{ key: 'Cache-Control', value: 's-maxage=30, stale-while-revalidate=60' }],
+      },
+      // Immutable static assets — aggressive caching for fonts/images/_next.
+      {
+        source: '/_next/static/:path*',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
+      },
+    ]
   },
 }
 

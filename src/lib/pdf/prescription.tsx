@@ -1,3 +1,4 @@
+import 'server-only'
 import { Document, Page, Text, View, StyleSheet, renderToBuffer } from '@react-pdf/renderer'
 import React from 'react'
 
