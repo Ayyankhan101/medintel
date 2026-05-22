@@ -85,7 +85,10 @@ export interface NormalizedEvent {
 export interface PaymentProvider {
   id: ProviderId
   createCheckout(input: CheckoutInput): Promise<CheckoutResult>
-  capture(input: CaptureInput):           Promise<void>
-  refund(input: RefundInput):             Promise<RefundResult>
+  capture(input: CaptureInput):              Promise<void>
+  /** Refund an uncaptured (HELD) payment — cancel the authorisation. */
+  refund(input: RefundInput):                Promise<RefundResult>
+  /** Refund a captured (RELEASED) payment — reverse transfer + issue refund. */
+  refundCaptured(input: RefundInput):        Promise<RefundResult>
   verifyWebhook(rawBody: string, headers: Headers): Promise<NormalizedEvent>
 }

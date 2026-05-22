@@ -133,6 +133,11 @@ export const safepayProvider: PaymentProvider = {
     return { refundRef: resp.data.refund_id, amount: resp.data.amount }
   },
 
+  async refundCaptured(input: RefundInput): Promise<RefundResult> {
+    // SafePay uses the same refund endpoint for both held and captured payments.
+    return this.refund(input)
+  },
+
   async verifyWebhook(rawBody: string, headers: Headers): Promise<NormalizedEvent> {
     const secret = process.env.SAFEPAY_WEBHOOK_SECRET ?? process.env.SAFEPAY_SECRET_KEY
     const sig    = headers.get('x-safepay-signature') ?? ''

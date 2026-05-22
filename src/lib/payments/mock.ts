@@ -37,6 +37,10 @@ export const mockProvider: PaymentProvider = {
     return { refundRef: `mock_refund_${randomBytes(6).toString('hex')}`, amount: input.amount ?? 0 }
   },
 
+  async refundCaptured(input: RefundInput): Promise<RefundResult> {
+    return { refundRef: `mock_refund_captured_${randomBytes(6).toString('hex')}`, amount: input.amount ?? 0 }
+  },
+
   async verifyWebhook(rawBody: string): Promise<NormalizedEvent> {
     const event = JSON.parse(rawBody) as {
       eventId?:      string

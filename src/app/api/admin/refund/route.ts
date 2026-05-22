@@ -14,7 +14,6 @@ import { z } from 'zod'
 import { Prisma } from '@prisma/client'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { refundCapturedEscrow } from '@/lib/stripe'
 import { providerFor, type ProviderId } from '@/lib/payments'
 import { audit } from '@/lib/audit'
 
@@ -63,7 +62,11 @@ export async function POST(req: NextRequest) {
       })
     } else {
       // RELEASED → captured + transferred. Refund + reverse transfer.
-      await refundCapturedEscrow(escrow.stripePaymentIntentId!, requestedAmt === totalPkr ? undefined : requestedAmt)
+      await providerFor(escrow.provider as ProviderId).refundCaptured({
+        providerRef: escrow.providerRef ?? escrow.stripePaymentIntentId!,
+        amount:      requestedAmt === totalPkr ? undefined : requestedAmt,
+        reason:      parsed.data.reason,
+      })
     }
 
     const newTotal = alreadyRefunded + requestedAmt

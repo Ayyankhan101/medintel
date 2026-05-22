@@ -2,7 +2,7 @@ import type {
   PaymentProvider, CheckoutInput, CheckoutResult,
   CaptureInput, RefundInput, RefundResult, NormalizedEvent,
 } from './types'
-import { createEscrowPaymentIntent, releaseEscrowToDoctor, refundEscrow } from '@/lib/stripe'
+import { createEscrowPaymentIntent, releaseEscrowToDoctor, refundEscrow, refundCapturedEscrow } from '@/lib/stripe'
 
 export const stripeProvider: PaymentProvider = {
   id: 'stripe',
@@ -18,10 +18,15 @@ export const stripeProvider: PaymentProvider = {
   },
 
   async refund(input: RefundInput): Promise<RefundResult> {
-    // Only valid for uncaptured (HELD) PIs. Captured PIs need refundCapturedEscrow instead.
-    // PI cancel does not return the refunded amount; callers must supply it via input.amount.
+    // Uncaptured (HELD) PI — cancel the authorisation.
     await refundEscrow(input.providerRef)
     return { refundRef: `stripe_cancel_${input.providerRef}`, amount: input.amount! }
+  },
+
+  async refundCaptured(input: RefundInput): Promise<RefundResult> {
+    // Captured (RELEASED) PI — create a refund and reverse the transfer.
+    const { refundId, amount } = await refundCapturedEscrow(input.providerRef, input.amount)
+    return { refundRef: refundId, amount }
   },
 
   async verifyWebhook(_rawBody: string, _headers: Headers): Promise<NormalizedEvent> {
