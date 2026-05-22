@@ -20,6 +20,7 @@ export const dynamic = 'force-dynamic'
 function ageBand(dob: Date | null): string {
   if (!dob) return 'unknown'
   const age = Math.floor((Date.now() - dob.getTime()) / (365.25 * 24 * 60 * 60_000))
+  if (age < 0)   return 'unknown'
   if (age < 12)  return '0-11'
   if (age < 18)  return '12-17'
   if (age < 30)  return '18-29'

@@ -12,7 +12,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { refundEscrow } from '@/lib/stripe'
+import { providerFor, type ProviderId } from '@/lib/payments'
 import { sendAppointmentCancelled } from '@/lib/email'
 import { audit } from '@/lib/audit'
 
@@ -64,7 +64,10 @@ export async function GET(req: NextRequest) {
       })
       if (lock.count === 0) continue
 
-      await refundEscrow(a.escrow.stripePaymentIntentId!)
+      await providerFor(a.escrow.provider as ProviderId).refund({
+        providerRef: a.escrow.providerRef ?? a.escrow.stripePaymentIntentId!,
+        amount:      Number(a.escrow.amount),
+      })
       await prisma.escrow.update({
         where: { id: a.escrow.id },
         data:  { status: 'REFUNDED', refundedAt: new Date(), refundReason: 'Doctor no-show (auto)' },

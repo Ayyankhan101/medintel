@@ -14,7 +14,8 @@ import { z } from 'zod'
 import { Prisma } from '@prisma/client'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { refundEscrow, refundCapturedEscrow } from '@/lib/stripe'
+import { refundCapturedEscrow } from '@/lib/stripe'
+import { providerFor, type ProviderId } from '@/lib/payments'
 import { audit } from '@/lib/audit'
 
 export const dynamic = 'force-dynamic'
@@ -53,10 +54,13 @@ export async function POST(req: NextRequest) {
 
   try {
     if (escrow.status === 'HELD') {
-      // No partial refunds for uncaptured PIs — Stripe will just cancel the auth.
+      // No partial refunds for uncaptured payments — just cancel the authorisation.
       if (requestedAmt !== totalPkr)
         return NextResponse.json({ error: 'HELD escrows can only be fully refunded (not yet captured)' }, { status: 422 })
-      await refundEscrow(escrow.stripePaymentIntentId!)
+      await providerFor(escrow.provider as ProviderId).refund({
+        providerRef: escrow.providerRef ?? escrow.stripePaymentIntentId!,
+        amount:      totalPkr,
+      })
     } else {
       // RELEASED → captured + transferred. Refund + reverse transfer.
       await refundCapturedEscrow(escrow.stripePaymentIntentId!, requestedAmt === totalPkr ? undefined : requestedAmt)

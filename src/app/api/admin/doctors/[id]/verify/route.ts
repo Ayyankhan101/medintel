@@ -33,6 +33,9 @@ export async function POST(
   })
   if (!doctor) return NextResponse.json({ error: 'Doctor not found' }, { status: 404 })
 
+  if (parsed.data.decision === 'approve' && doctor.kydStatus === 'VERIFIED')
+    return NextResponse.json({ error: 'Doctor already verified' }, { status: 409 })
+
   if (parsed.data.decision === 'approve') {
     const updated = await prisma.doctor.update({
       where: { id },
