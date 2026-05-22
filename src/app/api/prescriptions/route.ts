@@ -4,6 +4,7 @@ import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { providerFor, type ProviderId } from '@/lib/payments'
 import { audit } from '@/lib/audit'
+import { rateLimitDb } from '@/lib/rate-limit'
 import { sendPrescriptionReady, sendEscrowReleased, sendReviewNudge } from '@/lib/email'
 
 const schema = z.object({
@@ -16,6 +17,9 @@ export async function POST(req: NextRequest) {
   const session = await auth()
   if (!session?.user || session.user.role !== 'DOCTOR')
     return NextResponse.json({ error: 'Only doctors can upload prescriptions' }, { status: 403 })
+
+  const rl = await rateLimitDb('prescriptions', session.user.id!, { max: 20, windowMs: 10 * 60_000 })
+  if (!rl.ok) return NextResponse.json({ error: 'Too many prescription uploads. Slow down.' }, { status: 429 })
 
   const body   = await req.json()
   const parsed = schema.safeParse(body)

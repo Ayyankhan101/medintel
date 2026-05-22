@@ -5,12 +5,16 @@ import { prisma } from '@/lib/prisma'
 import { isPatientRefundEligible } from '@/lib/stripe'
 import { providerFor, type ProviderId } from '@/lib/payments'
 import { audit } from '@/lib/audit'
+import { rateLimitDb } from '@/lib/rate-limit'
 
 const schema = z.object({ appointmentId: z.string().min(1) })
 
 export async function POST(req: NextRequest) {
   const session = await auth()
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const rl = await rateLimitDb('escrow-refund', session.user.id!, { max: 5, windowMs: 60 * 60_000 })
+  if (!rl.ok) return NextResponse.json({ error: 'Too many refund attempts. Try again in an hour.' }, { status: 429 })
 
   const body   = await req.json()
   const parsed = schema.safeParse(body)

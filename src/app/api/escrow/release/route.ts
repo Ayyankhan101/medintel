@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { providerFor, type ProviderId } from '@/lib/payments'
 import { sendReviewNudge } from '@/lib/email'
 import { audit } from '@/lib/audit'
+import { rateLimitDb } from '@/lib/rate-limit'
 
 const schema = z.object({ appointmentId: z.string().min(1) })
 
@@ -12,6 +13,9 @@ export async function POST(req: NextRequest) {
   const session = await auth()
   if (!session?.user || session.user.role !== 'DOCTOR')
     return NextResponse.json({ error: 'Only doctors can release escrow' }, { status: 403 })
+
+  const rl = await rateLimitDb('escrow-release', session.user.id!, { max: 10, windowMs: 5 * 60_000 })
+  if (!rl.ok) return NextResponse.json({ error: 'Too many release attempts. Slow down.' }, { status: 429 })
 
   const body   = await req.json()
   const parsed = schema.safeParse(body)
@@ -75,6 +79,12 @@ export async function POST(req: NextRequest) {
       appointmentId: appointment.id,
     })
   }
+
+  void audit('escrow.release', 'Appointment', appointment.id, {
+    actorId:   session.user.id, actorRole: 'DOCTOR',
+    escrowId:  appointment.escrow.id,
+    amount:    Number(appointment.escrow.amount),
+  })
 
   return NextResponse.json({ message: 'Payment released to doctor' })
 }

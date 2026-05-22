@@ -89,7 +89,7 @@ export async function GET(_req: NextRequest) {
         status:   a.escrow.status,
         heldAt:   a.escrow.heldAt,
       } : null,
-      note:   a.note,
+      note:   a.note?.approvedAt ? a.note : null,
       review: a.review,
     })),
     medicalRecords: user.patient.medicalRecords,
