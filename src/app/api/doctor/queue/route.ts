@@ -28,11 +28,21 @@ export async function GET(req: NextRequest) {
 
   const appointments = await prisma.appointment.findMany({
     where,
-    // Critical cases first, then chronological within same score.
     orderBy: [{ severityScore: 'desc' }, { scheduledAt: 'asc' }],
-    include: {
+    // Hard cap — a doctor with 200+ open appointments is a data issue, not a UX one.
+    take: 200,
+    select: {
+      id:            true,
+      status:        true,
+      scheduledAt:   true,
+      severityLevel: true,
+      severityScore: true,
+      department:    true,
+      aiSummary:     true,
       patient: {
-        include: { user: { select: { name: true, email: true, medIntelCode: true } } },
+        select: {
+          user: { select: { name: true, email: true, medIntelCode: true } },
+        },
       },
       escrow: { select: { status: true } },
     },

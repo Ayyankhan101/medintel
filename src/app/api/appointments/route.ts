@@ -126,21 +126,44 @@ export async function POST(req: NextRequest) {
   }
 }
 
+const PAGE_SIZE = 20
+
 export async function GET(req: NextRequest) {
   const session = await auth()
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const patient = await prisma.patient.findUnique({ where: { userId: session.user.id } })
-  if (!patient) return NextResponse.json({ appointments: [] })
+  if (!patient) return NextResponse.json({ appointments: [], nextCursor: null })
+
+  const cursor = req.nextUrl.searchParams.get('cursor') ?? undefined
 
   const appointments = await prisma.appointment.findMany({
     where:   { patientId: patient.id },
     orderBy: { createdAt: 'desc' },
-    include: {
-      doctor: { include: { user: true } },
+    take:    PAGE_SIZE + 1,
+    ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+    select: {
+      id:               true,
+      scheduledAt:      true,
+      completedAt:      true,
+      status:           true,
+      department:       true,
+      severityLevel:    true,
+      severityScore:    true,
+      prescriptionText: true,
+      doctor: {
+        select: {
+          specialization: true,
+          user: { select: { name: true, email: true } },
+        },
+      },
       review: { select: { id: true, rating: true } },
     },
   })
 
-  return NextResponse.json({ appointments })
+  const hasMore    = appointments.length > PAGE_SIZE
+  const page       = hasMore ? appointments.slice(0, PAGE_SIZE) : appointments
+  const nextCursor = hasMore ? page[page.length - 1].id : null
+
+  return NextResponse.json({ appointments: page, nextCursor })
 }

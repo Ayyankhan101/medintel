@@ -1,0 +1,27 @@
+{
+  "name": "MedIntel — آن لائن ڈاکٹر",
+  "short_name": "MedIntel",
+  "description": "Voice-first online consultations for Pakistan. Speak in Urdu, get a doctor in minutes.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0f172a",
+  "theme_color": "#2563eb",
+  "lang": "ur",
+  "dir": "rtl",
+  "categories": ["medical", "health"],
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "مشاورت شروع کریں",
+      "short_name": "Consult",
+      "url": "/intake",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

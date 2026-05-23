@@ -367,4 +367,17 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
   }
+  /* Strip GPU-heavy effects — low-end devices often set reduced-motion */
+  * { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+  /* Replace moving shimmer skeletons with a static tint */
+  [style*="mi-shimmer"] { background: var(--bg-soft) !important; animation: none !important; }
 }
+
+/* ── Data-saver mode (set via JS on <html data-save>) ─────────────────────── */
+/* Navigator.connection.saveData === true → JS adds data-save attr to <html>. */
+/* Hide decorative images, gradients, and heavy backgrounds to cut bytes.      */
+[data-save] img:not([alt]):not([role="img"]) { display: none; }
+[data-save] [style*="gradient"] { background-image: none !important; }
+[data-save] * { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+[data-save] [style*="mi-shimmer"],
+[data-save] [style*="animate"] { animation: none !important; }

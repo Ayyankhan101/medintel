@@ -6,9 +6,11 @@ import { SymptomSummary } from '@/components/intake/SymptomSummary'
 import { UploadDocs } from '@/components/intake/UploadDocs'
 import { NearbyHospitals } from '@/components/resources/NearbyHospitals'
 import { DoctorCard } from '@/components/triage/DoctorCard'
-import { Mic, Keyboard, ChevronLeft, Loader2, ArrowRight, AlertCircle, Stethoscope, MapPin } from 'lucide-react'
+import { Mic, Keyboard, ChevronLeft, Loader2, ArrowRight, AlertCircle, Stethoscope, MapPin, WifiOff, Clock } from 'lucide-react'
 import type { TriageResult } from '@/types'
 import { Btn } from '@/components/design/Btn'
+import { useOnlineStatus } from '@/hooks/useOnlineStatus'
+import { useVoiceQueue } from '@/hooks/useVoiceQueue'
 
 interface DoctorMatch {
   id: string
@@ -47,6 +49,22 @@ function IntakeInner() {
   const [error,     setError]     = useState<string | null>(null)
   const [doctors,    setDoctors]    = useState<DoctorMatch[]>([])
   const [docsLoading, setDocsLoading] = useState(false)
+  const [queued,    setQueued]    = useState(false)
+
+  const isOnline = useOnlineStatus()
+
+  async function uploadVoice(blob: Blob, filename: string, language: string) {
+    const form = new FormData()
+    form.append('audio', blob, filename)
+    form.append('language', language)
+    const res  = await fetch('/api/voice/transcribe', { method: 'POST', body: form })
+    const raw  = await res.text()
+    const data = raw ? JSON.parse(raw) : {}
+    if (!res.ok) throw new Error(data.error ?? 'Transcription failed')
+    setResult(data)
+  }
+
+  const { queueLength, draining, addToQueue } = useVoiceQueue(uploadVoice)
 
   useEffect(() => {
     if (!result?.department) { setDoctors([]); return }
@@ -68,18 +86,19 @@ function IntakeInner() {
   }, [])
 
   async function handleVoiceComplete(blob: Blob, filename: string, language: string) {
-    setLoading(true); setError(null)
+    setLoading(true); setError(null); setQueued(false)
     try {
-      const form = new FormData()
-      form.append('audio', blob, filename)
-      form.append('language', language)
-      const res  = await fetch('/api/voice/transcribe', { method: 'POST', body: form })
-      const raw  = await res.text()
-      const data = raw ? JSON.parse(raw) : {}
-      if (!res.ok) throw new Error(data.error ?? 'Transcription failed')
-      setResult(data)
-    } catch (e) { setError(e instanceof Error ? e.message : 'Processing failed') }
-    finally { setLoading(false) }
+      await uploadVoice(blob, filename, language)
+    } catch (e) {
+      // Network failure → queue locally, upload when back online
+      if (!isOnline || e instanceof TypeError) {
+        await addToQueue(blob, filename, language)
+        setQueued(true)
+        setError(null)
+      } else {
+        setError(e instanceof Error ? e.message : 'Processing failed')
+      }
+    } finally { setLoading(false) }
   }
 
   async function handleTextSubmit() {
@@ -212,24 +231,85 @@ function IntakeInner() {
         </p>
       </header>
 
+      {/* ── Offline banner ── */}
+      {!isOnline && (
+        <div style={{
+          display: 'flex', alignItems: 'flex-start', gap: 10,
+          background: 'rgba(245,158,11,.10)', border: '1px solid rgba(245,158,11,.35)',
+          borderRadius: 14, padding: '14px 16px',
+        }}>
+          <WifiOff size={16} style={{ color: '#d97706', flex: 'none', marginTop: 2 }} />
+          <div>
+            <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: '#92400e' }}>No internet connection</p>
+            <p style={{ margin: '4px 0 0', fontSize: 12, color: '#b45309' }}>
+              You can record and type symptoms — they&apos;ll upload automatically when you reconnect.
+              For emergencies call <strong>1122</strong> or <strong>115</strong>.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* ── Upload queued notice ── */}
+      {(queued || queueLength > 0) && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 10,
+          background: 'rgba(37,99,235,.08)', border: '1px solid rgba(37,99,235,.25)',
+          borderRadius: 14, padding: '12px 16px',
+        }}>
+          {draining
+            ? <Loader2 size={15} style={{ color: 'var(--blue-600)', flex: 'none', animation: 'spin 1s linear infinite' }} />
+            : <Clock size={15} style={{ color: 'var(--blue-600)', flex: 'none' }} />
+          }
+          <p style={{ margin: 0, fontSize: 13, color: 'var(--blue-700)' }}>
+            {draining
+              ? 'Uploading your saved recording…'
+              : `${queueLength} recording${queueLength > 1 ? 's' : ''} saved — will upload when connected.`}
+          </p>
+        </div>
+      )}
+
       {mode === 'choose' && (
         <div style={{
-          display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14,
+          display: 'grid',
+          // When offline, put text first (it always works); otherwise voice first
+          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+          gap: 14,
         }}>
-          <ModeCard
-            Icon={Mic}
-            accent="red"
-            title="Speak"
-            sub="Urdu یا English"
-            onClick={() => setMode('voice')}
-          />
-          <ModeCard
-            Icon={Keyboard}
-            accent="blue"
-            title="Type"
-            sub="Write symptoms"
-            onClick={() => setMode('text')}
-          />
+          {!isOnline ? (
+            <>
+              <ModeCard
+                Icon={Keyboard}
+                accent="blue"
+                title="Type"
+                sub="Works offline"
+                onClick={() => setMode('text')}
+              />
+              <ModeCard
+                Icon={Mic}
+                accent="red"
+                title="Speak"
+                sub="Urdu یا English"
+                onClick={() => setMode('voice')}
+              />
+            </>
+          ) : (
+            <>
+              <ModeCard
+                Icon={Mic}
+                accent="red"
+                title="Speak"
+                sub="Urdu یا English"
+                onClick={() => setMode('voice')}
+              />
+              <ModeCard
+                Icon={Keyboard}
+                accent="blue"
+                title="Type"
+                sub="Write symptoms"
+                onClick={() => setMode('text')}
+              />
+            </>
+          )}
         </div>
       )}
 

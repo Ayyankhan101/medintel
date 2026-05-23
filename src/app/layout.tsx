@@ -3,6 +3,7 @@ import { Inter, JetBrains_Mono, Noto_Nastaliq_Urdu } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { ThemeProvider } from '@/components/ThemeProvider'
 import { I18nProvider } from '@/lib/i18n/client'
+import { ServiceWorkerRegistration } from '@/components/ServiceWorkerRegistration'
 import './globals.css'
 
 const sans = Inter({
@@ -27,6 +28,13 @@ const urdu = Noto_Nastaliq_Urdu({
 export const metadata: Metadata = {
   title: 'MedIntel — Voice-First Healthcare',
   description: 'AI-powered online consultations for Pakistan. Speak in Urdu or English.',
+  manifest: '/manifest.json',
+  themeColor: '#2563eb',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'MedIntel',
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -42,6 +50,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       >
         <ThemeProvider><I18nProvider>{children}</I18nProvider></ThemeProvider>
         <Analytics />
+        <ServiceWorkerRegistration />
       </body>
     </html>
   )

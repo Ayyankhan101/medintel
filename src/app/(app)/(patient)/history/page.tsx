@@ -44,6 +44,8 @@ export default function HistoryPage() {
   const [loading,      setLoading]      = useState(true)
   const [showUpload,   setShowUpload]   = useState(false)
   const [filter,       setFilter]       = useState('ALL')
+  const [nextCursor,   setNextCursor]   = useState<string | null>(null)
+  const [loadingMore,  setLoadingMore]  = useState(false)
 
   async function loadAll() {
     setLoading(true)
@@ -53,10 +55,24 @@ export default function HistoryPage() {
       if (r2.ok) {
         const d = await r2.json()
         setAppointments(d.appointments ?? [])
+        setNextCursor(d.nextCursor ?? null)
       }
     } finally { setLoading(false) }
   }
   useEffect(() => { loadAll() }, [])
+
+  async function loadMore() {
+    if (!nextCursor) return
+    setLoadingMore(true)
+    try {
+      const r = await fetch(`/api/appointments?cursor=${nextCursor}`)
+      if (r.ok) {
+        const d = await r.json()
+        setAppointments(prev => [...prev, ...(d.appointments ?? [])])
+        setNextCursor(d.nextCursor ?? null)
+      }
+    } finally { setLoadingMore(false) }
+  }
 
   const [rescheduling, setRescheduling] = useState<string | null>(null)
   const [newAt,        setNewAt]        = useState('')
@@ -272,6 +288,12 @@ export default function HistoryPage() {
               </li>
             ))}
           </ul>
+          {nextCursor && (
+            <Btn kind="secondary" onClick={loadMore} disabled={loadingMore}
+                 style={{ alignSelf: 'center', marginTop: 4 }}>
+              {loadingMore ? <Loader2 size={14} className="animate-spin" /> : 'Load more'}
+            </Btn>
+          )}
         </section>
       )}
     </div>
