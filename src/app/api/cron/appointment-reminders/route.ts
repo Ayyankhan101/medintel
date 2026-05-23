@@ -9,6 +9,7 @@
  * Auth: Vercel attaches Authorization: Bearer ${CRON_SECRET} to scheduled
  * invocations. We accept that, OR a manual call with x-cron-secret for debug.
  */
+import { timingSafeEqual } from 'node:crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { sendSms } from '@/lib/sms'
@@ -24,12 +25,16 @@ const LEAD_MIN_MS = 45 * 60_000
 const LEAD_MAX_MS = 75 * 60_000
 const BATCH_LIMIT = 200
 
+function safeEq(a: string, b: string): boolean {
+  const ba = Buffer.from(a); const bb = Buffer.from(b)
+  return ba.length === bb.length && timingSafeEqual(ba, bb)
+}
+
 function authed(req: NextRequest): boolean {
   const secret = process.env.CRON_SECRET
   if (!secret) return false
-  const bearer = req.headers.get('authorization')
-  if (bearer === `Bearer ${secret}`)   return true
-  if (req.headers.get('x-cron-secret') === secret) return true
+  if (safeEq(req.headers.get('authorization') ?? '', `Bearer ${secret}`)) return true
+  if (safeEq(req.headers.get('x-cron-secret') ?? '', secret)) return true
   return false
 }
 

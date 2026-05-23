@@ -23,6 +23,7 @@ const PUBLIC_PREFIXES = [
   '/api/stripe/webhook', '/api/whatsapp/inbound', '/api/voice-call/',
   // PSP webhooks are signature-verified inside the handler.
   '/api/payments/safepay/webhook',
+  '/api/payments/jazzcash/webhook',
 ]
 
 export default auth(req => {

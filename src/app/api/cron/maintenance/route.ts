@@ -10,6 +10,7 @@
  *  4. Subscription drift       → re-pull from Stripe when currentPeriodEnd is stale
  *  5. Transcript retention     → null raw transcript on approved notes > 365d old
  */
+import { timingSafeEqual } from 'node:crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import type Stripe from 'stripe'
 import { prisma } from '@/lib/prisma'
@@ -23,11 +24,16 @@ export const maxDuration = 120
 
 const TRANSCRIPT_RETENTION_DAYS = 365
 
+function safeEq(a: string, b: string): boolean {
+  const ba = Buffer.from(a); const bb = Buffer.from(b)
+  return ba.length === bb.length && timingSafeEqual(ba, bb)
+}
+
 function authed(req: NextRequest): boolean {
   const secret = process.env.CRON_SECRET
   if (!secret) return false
-  return req.headers.get('authorization') === `Bearer ${secret}` ||
-         req.headers.get('x-cron-secret') === secret
+  return safeEq(req.headers.get('authorization') ?? '', `Bearer ${secret}`) ||
+         safeEq(req.headers.get('x-cron-secret') ?? '', secret)
 }
 
 async function pruneInvites() {

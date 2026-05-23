@@ -10,6 +10,7 @@
  * cancelledBy = 'SYSTEM' so admins can audit it. Doctors who consistently get
  * caught here should be flagged by an analytics job (not built here).
  */
+import { timingSafeEqual } from 'node:crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { providerFor, type ProviderId } from '@/lib/payments'
@@ -23,11 +24,16 @@ export const maxDuration = 60
 const NO_SHOW_GRACE_MS = 30 * 60_000
 const BATCH_LIMIT      = 100
 
+function safeEq(a: string, b: string): boolean {
+  const ba = Buffer.from(a); const bb = Buffer.from(b)
+  return ba.length === bb.length && timingSafeEqual(ba, bb)
+}
+
 function authed(req: NextRequest): boolean {
   const secret = process.env.CRON_SECRET
   if (!secret) return false
-  return req.headers.get('authorization') === `Bearer ${secret}` ||
-         req.headers.get('x-cron-secret') === secret
+  return safeEq(req.headers.get('authorization') ?? '', `Bearer ${secret}`) ||
+         safeEq(req.headers.get('x-cron-secret') ?? '', secret)
 }
 
 export async function GET(req: NextRequest) {

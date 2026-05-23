@@ -20,7 +20,7 @@ const patientSchema = z.object({
 const doctorSchema = z.object({
   role:            z.literal('DOCTOR'),
   email:           z.string().email(),
-  phone:           z.string().min(10),
+  phone:           z.string().regex(/^\+?92[0-9]{10}$|^0[0-9]{10}$/, 'Enter a valid Pakistani mobile number (e.g. 03001234567 or +923001234567)'),
   password:        z.string().min(8),
   fullName:        z.string().min(2),
   licenseNumber:   z.string().min(3),

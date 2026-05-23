@@ -8,6 +8,7 @@
  *
  * Guarded by CRON_SECRET (same header as other cron routes).
  */
+import { timingSafeEqual } from 'node:crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getLlmClient, CHAT_MODEL } from '@/lib/llm-client'
@@ -19,11 +20,16 @@ export const maxDuration = 120
 const WINDOW_DAYS = 30
 const MIN_CASES   = 5   // skip if too few data points to be meaningful
 
+function safeEq(a: string, b: string): boolean {
+  const ba = Buffer.from(a); const bb = Buffer.from(b)
+  return ba.length === bb.length && timingSafeEqual(ba, bb)
+}
+
 function authed(req: NextRequest): boolean {
   const secret = process.env.CRON_SECRET
   if (!secret) return false
-  return req.headers.get('authorization') === `Bearer ${secret}` ||
-         req.headers.get('x-cron-secret') === secret
+  return safeEq(req.headers.get('authorization') ?? '', `Bearer ${secret}`) ||
+         safeEq(req.headers.get('x-cron-secret') ?? '', secret)
 }
 
 export async function GET(req: NextRequest) {

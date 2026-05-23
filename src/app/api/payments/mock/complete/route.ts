@@ -18,6 +18,10 @@ const schema = z.object({
 })
 
 export async function POST(req: NextRequest) {
+  // Only usable outside production — in prod, real PSP webhooks drive state.
+  if (process.env.NODE_ENV === 'production' && !process.env.ALLOW_MOCK_PAYMENTS) {
+    return NextResponse.json({ error: 'Mock payments disabled in production' }, { status: 403 })
+  }
   // Guard: at minimum the user has to be signed in. The mock provider is for
   // demos, but we don't want a stranger able to flip arbitrary escrow rows.
   const session = await auth()
