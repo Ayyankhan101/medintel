@@ -31,7 +31,11 @@ function LoginForm() {
     // a middleware-bounce hop through /login.
     const me = await fetch('/api/me').then(r => r.ok ? r.json() : null).catch(() => null)
     const role = me?.role as 'PATIENT' | 'DOCTOR' | 'ADMIN' | 'CLINIC_ADMIN' | undefined
-    const dest = params.get('callbackUrl')
+    // Only honour same-origin callbackUrls — reject anything that starts with
+    // // or a scheme (http/https) to prevent open-redirect phishing.
+    const raw = params.get('callbackUrl')
+    const safeCallback = raw && /^\/(?!\/)/.test(raw) ? raw : null
+    const dest = safeCallback
               ?? (role === 'DOCTOR'       ? '/doctor/dashboard'
                 : role === 'ADMIN'        ? '/admin/dashboard'
                 : role === 'CLINIC_ADMIN' ? '/clinic/dashboard'
