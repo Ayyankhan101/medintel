@@ -7,6 +7,9 @@ import { createEscrowPaymentIntent } from '@/lib/stripe'
 const schema = z.object({ appointmentId: z.string().min(1) })
 
 export async function POST(req: NextRequest) {
+  if (!process.env.STRIPE_SECRET_KEY)
+    return NextResponse.json({ error: 'Payment processing not configured' }, { status: 503 })
+
   const session = await auth()
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 

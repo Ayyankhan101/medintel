@@ -10,7 +10,7 @@ import { randomToken, EMAIL_VERIFY_TTL_MS } from '@/lib/tokens'
 const patientSchema = z.object({
   role:        z.literal('PATIENT').default('PATIENT'),
   email:       z.string().email(),
-  phone:       z.string().min(10),
+  phone:       z.string().regex(/^\+?92[0-9]{10}$|^0[0-9]{10}$/, 'Enter a valid Pakistani mobile number (e.g. 03001234567 or +923001234567)'),
   password:    z.string().min(8),
   fullName:    z.string().min(2),
   cnicNumber:  z.string().length(13),

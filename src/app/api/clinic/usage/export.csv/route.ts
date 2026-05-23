@@ -13,8 +13,10 @@ const LOOKBACK_DAYS = 30
 function csvEscape(v: string | number | null): string {
   if (v == null) return ''
   const s = String(v)
-  if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`
-  return s
+  // Prefix formula-injection chars so Excel/LibreOffice won't evaluate them.
+  const safe = /^[=+\-@\t\r]/.test(s) ? `'${s}` : s
+  if (/[",\n]/.test(safe)) return `"${safe.replace(/"/g, '""')}"`
+  return safe
 }
 
 export async function GET() {

@@ -16,6 +16,7 @@ import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { providerFor, type ProviderId } from '@/lib/payments'
 import { audit } from '@/lib/audit'
+import { captureError } from '@/lib/observability'
 
 export const dynamic = 'force-dynamic'
 
@@ -51,9 +52,9 @@ export async function POST(req: NextRequest) {
   if (requestedAmt <= 0 || requestedAmt > remaining)
     return NextResponse.json({ error: `Amount must be between 1 and ${remaining} PKR` }, { status: 422 })
 
+  // Step 1: PSP refund — if this throws, no money moved and it's safe to retry.
   try {
     if (escrow.status === 'HELD') {
-      // No partial refunds for uncaptured payments — just cancel the authorisation.
       if (requestedAmt !== totalPkr)
         return NextResponse.json({ error: 'HELD escrows can only be fully refunded (not yet captured)' }, { status: 422 })
       await providerFor(escrow.provider as ProviderId).refund({
@@ -61,17 +62,24 @@ export async function POST(req: NextRequest) {
         amount:      totalPkr,
       })
     } else {
-      // RELEASED → captured + transferred. Refund + reverse transfer.
       await providerFor(escrow.provider as ProviderId).refundCaptured({
         providerRef: escrow.providerRef ?? escrow.stripePaymentIntentId!,
         amount:      requestedAmt === totalPkr ? undefined : requestedAmt,
         reason:      parsed.data.reason,
       })
     }
+  } catch (e) {
+    captureError(e, { tag: 'admin.refund.psp_error', appointmentId: appt.id })
+    return NextResponse.json({ error: 'Refund failed at payment processor — try again' }, { status: 502 })
+  }
 
-    const newTotal = alreadyRefunded + requestedAmt
-    const isFull   = newTotal >= totalPkr
+  // Step 2: DB reconciliation — PSP already refunded. If this throws, money
+  // is returned to customer but our DB is stale. Log to Sentry so ops can
+  // manually reconcile rather than a retry double-refunding the customer.
+  const newTotal = alreadyRefunded + requestedAmt
+  const isFull   = newTotal >= totalPkr
 
+  try {
     await prisma.$transaction([
       prisma.escrow.update({
         where: { id: escrow.id },
@@ -91,24 +99,25 @@ export async function POST(req: NextRequest) {
         },
       })] : []),
     ])
-
-    void audit('escrow.admin_refund', 'Appointment', appt.id, {
-      actorId:   session.user.id,
-      actorRole: 'ADMIN',
-      amount:    requestedAmt,
-      total:     newTotal,
-      isFull,
-      reason:    parsed.data.reason,
-    })
-
-    return NextResponse.json({
-      ok:             true,
-      refundedAmount: newTotal,
-      remaining:      totalPkr - newTotal,
-      isFull,
-    })
   } catch (e) {
-    console.error('[admin.refund] stripe error', e)
-    return NextResponse.json({ error: 'Refund failed at payment processor — try again' }, { status: 502 })
+    // PSP refunded but DB failed — flag for manual reconciliation.
+    captureError(e, { tag: 'admin.refund.db_error_after_psp_success', appointmentId: appt.id, refundedAmt: requestedAmt })
+    return NextResponse.json({ error: 'Refund processed by payment provider but database update failed — contact support with appointment ID' }, { status: 500 })
   }
+
+  void audit('escrow.admin_refund', 'Appointment', appt.id, {
+    actorId:   session.user.id,
+    actorRole: 'ADMIN',
+    amount:    requestedAmt,
+    total:     newTotal,
+    isFull,
+    reason:    parsed.data.reason,
+  })
+
+  return NextResponse.json({
+    ok:             true,
+    refundedAmount: newTotal,
+    remaining:      totalPkr - newTotal,
+    isFull,
+  })
 }
