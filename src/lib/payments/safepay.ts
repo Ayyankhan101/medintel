@@ -107,17 +107,44 @@ export const safepayProvider: PaymentProvider = {
     return { providerRef: tracker, kind: 'redirect', redirectUrl: u.toString() }
   },
 
-  async capture(_input: CaptureInput): Promise<void> {
-    // SafePay captures synchronously at checkout, so no capture API call is
-    // needed — BUT the release-to-doctor flow in lib/stripe.ts assumes this
-    // method also moves funds to the doctor (transfer_data semantics). For
-    // SafePay we need a separate disbursement call that does not exist yet.
-    // Fail loud rather than silently succeeding so we don't ship a "doctors
-    // never paid" bug to prod.
-    throw new Error(
-      'SafePay disbursement not yet implemented. Wire lib/payouts before ' +
-      'calling capture() on a SafePay-held escrow.',
-    )
+  async capture(input: CaptureInput): Promise<void> {
+    // SafePay has no Stripe-Connect-style split-on-capture. The full amount
+    // lands in the platform's SafePay account on checkout completion.
+    // Release to the doctor = SafePay Payout API → doctor's IBAN/wallet.
+    //
+    // `doctorAccountId` format: "<type>:<account>"
+    //   Bank/IBAN  → "iban:PK36SCBL0000001123456702"
+    //   JazzCash   → "jazzcash:03001234567"
+    //   EasyPaisa  → "easypaisa:03111234567"
+    //
+    // Env required: SAFEPAY_PAYOUT_KEY (separate from API_KEY — SafePay issues
+    // a dedicated payout credential set in their dashboard).
+    if (!process.env.SAFEPAY_PAYOUT_KEY) {
+      throw new Error('SAFEPAY_PAYOUT_KEY not configured — cannot disburse to doctor')
+    }
+
+    const [accountType, accountNumber] = input.doctorAccountId.split(':')
+    if (!accountType || !accountNumber) {
+      throw new Error(
+        `Invalid SafePay doctorAccountId "${input.doctorAccountId}". ` +
+        'Expected format: "jazzcash:03001234567" or "iban:PK36SCBL..."',
+      )
+    }
+
+    const body = {
+      amount:      input.amount,
+      currency:    'PKR',
+      reference:   `escrow_release_${input.providerRef}`,
+      source:      { tracker: input.providerRef },
+      destination: { type: accountType, account: accountNumber },
+    }
+
+    await api<{ data: { payout_id: string } }>('/payout/v1/send', {
+      method:  'POST',
+      headers: { authorization: `Bearer ${process.env.SAFEPAY_PAYOUT_KEY}` },
+      body:    JSON.stringify(body),
+    })
+    // Void return — calling code updates DB; payout_id is audited via webhook.
   },
 
   async refund(input: RefundInput): Promise<RefundResult> {

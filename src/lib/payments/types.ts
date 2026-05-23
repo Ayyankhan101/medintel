@@ -17,7 +17,7 @@
  *    in a normalized shape the route can switch on.
  */
 
-export type ProviderId = 'stripe' | 'safepay' | 'mock'
+export type ProviderId = 'stripe' | 'safepay' | 'jazzcash' | 'mock'
 
 export interface CheckoutInput {
   /** PKR amount (whole rupees). */
