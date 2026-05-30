@@ -1,10 +1,17 @@
 /**
- * Cron — appointment reminders 1h before scheduledAt.
+ * Cron — daily appointment reminders.
  *
- * Scheduled by vercel.json every 10 minutes. Selects SCHEDULED appointments
- * whose start is 45–75 minutes from now and that haven't yet been reminded
- * (Appointment.reminderSentAt IS NULL). Sends SMS to the patient and an
- * email to both patient + doctor, then stamps reminderSentAt to lock the row.
+ * Scheduled by vercel.json once daily at 07:00 UTC (Hobby plan cap = daily
+ * granularity only). Selects SCHEDULED appointments whose start is within the
+ * next 27 hours and that haven't been reminded yet — covers everyone who has
+ * an appointment "today or tomorrow morning" with a single daily run.
+ *
+ * Why 27h: catches "tomorrow at 09:00" while still pruning anything > 27h
+ * away. The reminderSentAt lock guarantees idempotency, so the upper bound
+ * is just a sanity cap to keep the batch small.
+ *
+ * On Pro/Team plans, switch the vercel.json schedule to `*\/10 * * * *` and
+ * narrow LEAD_MAX_MS to 75 * 60_000 to recover hour-of-day precision.
  *
  * Auth: Vercel attaches Authorization: Bearer ${CRON_SECRET} to scheduled
  * invocations. We accept that, OR a manual call with x-cron-secret for debug.
@@ -19,10 +26,9 @@ import { audit } from '@/lib/audit'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 
-// Match window slightly wider than the cron interval so a missed tick can
-// still be caught on the next run, while reminderSentAt prevents duplicates.
-const LEAD_MIN_MS = 45 * 60_000
-const LEAD_MAX_MS = 75 * 60_000
+// Daily run — scan 0 to 27h ahead, idempotent via reminderSentAt.
+const LEAD_MIN_MS = 0
+const LEAD_MAX_MS = 27 * 60 * 60_000
 const BATCH_LIMIT = 200
 
 function safeEq(a: string, b: string): boolean {

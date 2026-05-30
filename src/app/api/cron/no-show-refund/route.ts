@@ -1,7 +1,8 @@
 /**
  * Cron — doctor no-show auto-refund.
  *
- * Runs every 15 minutes. Finds SCHEDULED appointments where:
+ * Runs daily at 13:00 UTC (Hobby plan cap = daily). Finds every SCHEDULED
+ * appointment where:
  *   - scheduledAt was more than NO_SHOW_GRACE_MS ago (doctor never started)
  *   - status is still SCHEDULED (never flipped to IN_PROGRESS)
  *   - escrow exists and is HELD
@@ -9,6 +10,10 @@
  * Refunds the patient automatically and flips the appointment to REFUNDED with
  * cancelledBy = 'SYSTEM' so admins can audit it. Doctors who consistently get
  * caught here should be flagged by an analytics job (not built here).
+ *
+ * Hobby plan trade-off: a no-show that happens just after 13:00 UTC waits
+ * up to ~24h for refund. Pro/Team should switch vercel.json schedule to
+ * `*\/15 * * * *` to recover near-real-time behavior.
  */
 import { timingSafeEqual } from 'node:crypto'
 import { NextRequest, NextResponse } from 'next/server'

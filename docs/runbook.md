@@ -35,10 +35,12 @@ Defined in `vercel.json`. All gated by `CRON_SECRET`.
 
 | Path                                    | Schedule       | Purpose                                |
 |-----------------------------------------|----------------|----------------------------------------|
-| `/api/cron/appointment-reminders`       | `*/10 * * * *` | 1 h-before reminders                   |
-| `/api/cron/no-show-refund`              | `*/15 * * * *` | Auto-refund doctor no-shows            |
-| `/api/cron/maintenance`                 | `0 3 * * *`    | Daily housekeeping                     |
-| `/api/cron/research-insights`           | `0 2 * * 0`    | Weekly LLM research summary            |
+| `/api/cron/appointment-reminders`       | `0 7 * * *`    | Daily — reminders for next 27h         |
+| `/api/cron/no-show-refund`              | `0 13 * * *`   | Daily — refund stuck no-shows          |
+| `/api/cron/maintenance`                 | manual         | Trigger via curl; not scheduled        |
+| `/api/cron/research-insights`           | manual         | Trigger via curl; not scheduled        |
+
+**Hobby plan cap**: Vercel Hobby limits crons to **daily granularity** and **2 entries**. Maintenance + research routes still exist; invoke them by hand or from GitHub Actions cron. On Pro/Team, switch reminders/no-show back to `*/10 * * * *` and `*/15 * * * *` for near-real-time behavior (see comments in each handler).
 
 Manual trigger (for testing):
 
