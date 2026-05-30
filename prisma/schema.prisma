@@ -324,6 +324,12 @@ model Review {
   doctor        Doctor      @relation(fields: [doctorId], references: [id])
   rating        Int         // 1..5, enforced at app + DB-CHECK level
   comment       String?     @db.Text
+  // Moderation: admin can hide a review (defamatory, PHI in comment, etc.).
+  // Filter `hiddenAt IS NULL` in public + doctor-facing queries; the row is
+  // kept so an audit can show what was hidden and by whom.
+  hiddenAt      DateTime?
+  hiddenBy      String?
+  hiddenReason  String?
   createdAt     DateTime    @default(now())
 
   @@index([doctorId, createdAt(sort: Desc)])
@@ -419,3 +425,28 @@ model ProcessedStripeEvent {
 
   @@index([createdAt])
 }
+
+/// In-app notification inbox. Mirrors what we send by email/SMS so users have
+/// a durable record they can read inside the app even if the email/SMS lands
+/// in spam or the carrier blocks it.
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  // Category drives the icon + group in the UI. Keep short, stable values.
+  category  String    // appointment | escrow | prescription | system | review
+  title     String
+  body      String    @db.Text
+  // Optional deep-link the user can tap to act on the notification.
+  href      String?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([userId, readAt])
+}
+
+/// Soft-delete column for Review moderation. The original row is retained
+/// so an admin can audit "what was hidden", but it's filtered out of all
+/// public + doctor-facing queries.
+/// (See Review.hiddenAt added below.)
+

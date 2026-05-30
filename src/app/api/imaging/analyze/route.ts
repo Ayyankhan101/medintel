@@ -11,7 +11,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
-import { rateLimit } from '@/lib/rate-limit'
+import { rateLimitDb } from '@/lib/rate-limit'
 import { analyzeImage } from '@/lib/imaging'
 
 export const dynamic = 'force-dynamic'
@@ -23,7 +23,8 @@ export async function POST(req: NextRequest) {
   const session = await auth()
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const rl = rateLimit(req, { key: 'imaging', max: 10, windowMs: 60_000 })
+  // DB-backed — vision-LLM calls are the most expensive AI op on the platform.
+  const rl = await rateLimitDb('imaging', session.user.id!, { max: 10, windowMs: 60_000 })
   if (!rl.ok) return NextResponse.json({ error: 'Too many imaging requests' }, { status: 429 })
 
   const form = await req.formData().catch(() => null)

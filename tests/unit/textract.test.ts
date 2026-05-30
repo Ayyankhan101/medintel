@@ -1,14 +1,15 @@
 import { describe, it, expect } from 'vitest'
+import type { Block } from '@aws-sdk/client-textract'
 import { extractTextFromBlocks, isTextractConfident } from '@/lib/textract'
 
 describe('extractTextFromBlocks', () => {
   it('concatenates LINE blocks into readable text', () => {
-    const blocks = [
+    const blocks: Block[] = [
       { BlockType: 'LINE', Text: 'Patient: Ali Khan', Confidence: 99 },
       { BlockType: 'LINE', Text: 'Rx: Aspirin 75mg',  Confidence: 95 },
       { BlockType: 'WORD', Text: 'ignored',            Confidence: 99 },
     ]
-    const result = extractTextFromBlocks(blocks as any)
+    const result = extractTextFromBlocks(blocks)
     expect(result).toContain('Patient: Ali Khan')
     expect(result).toContain('Rx: Aspirin 75mg')
     expect(result).not.toContain('ignored')
@@ -19,11 +20,11 @@ describe('extractTextFromBlocks', () => {
   })
 
   it('excludes blocks below confidence threshold', () => {
-    const blocks = [
+    const blocks: Block[] = [
       { BlockType: 'LINE', Text: 'Clear text',  Confidence: 95 },
       { BlockType: 'LINE', Text: 'Blurry text', Confidence: 50 },
     ]
-    const result = extractTextFromBlocks(blocks as any)
+    const result = extractTextFromBlocks(blocks)
     expect(result).toContain('Clear text')
     expect(result).not.toContain('Blurry text')
   })

@@ -114,6 +114,8 @@ export default function ProfilePage() {
 
       <DataExport />
 
+      {me.patient && <ResearchConsent />}
+
       <DangerZone />
 
       {me.doctor && (
@@ -179,6 +181,58 @@ function DataExport() {
       >
         <Download size={14} /> Export my data
       </a>
+    </section>
+  )
+}
+
+function ResearchConsent() {
+  const [enabled, setEnabled] = useState<boolean | null>(null)
+  const [busy,    setBusy]    = useState(false)
+  const [err,     setErr]     = useState<string | null>(null)
+
+  useEffect(() => {
+    fetch('/api/patient/consent')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => setEnabled(d?.researchConsent ?? false))
+      .catch(() => setEnabled(false))
+  }, [])
+
+  async function toggle() {
+    if (enabled === null) return
+    setBusy(true); setErr(null)
+    const next = !enabled
+    const res = await fetch('/api/patient/consent', {
+      method:  'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ researchConsent: next }),
+    })
+    setBusy(false)
+    if (!res.ok) { setErr('Could not save'); return }
+    setEnabled(next)
+  }
+
+  return (
+    <section style={{
+      background: 'var(--bg-elev)', border: '1px solid var(--border)',
+      borderRadius: 22, padding: 20, boxShadow: 'var(--shadow-card)',
+      display: 'flex', flexDirection: 'column', gap: 10,
+    }}>
+      <h2 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: 'var(--ink)' }}>Research participation</h2>
+      <p style={{ margin: 0, fontSize: 12, color: 'var(--ink-3)', lineHeight: 1.55 }}>
+        Help improve healthcare in Pakistan. When on, your <strong>anonymized</strong> triage and outcome
+        data may be included in aggregated research insights. No names, emails, phones, or addresses are shared.
+        You can opt out anytime.
+      </p>
+      <label style={{ display: 'inline-flex', alignItems: 'center', gap: 10, fontSize: 13, color: 'var(--ink)' }}>
+        <input
+          type="checkbox"
+          disabled={enabled === null || busy}
+          checked={enabled ?? false}
+          onChange={toggle}
+        />
+        <span>{enabled ? 'Sharing anonymized data — thank you' : 'Not sharing — opt in if you like'}</span>
+      </label>
+      {err && <p style={{ margin: 0, fontSize: 12, color: 'var(--red-600)' }}>{err}</p>}
     </section>
   )
 }

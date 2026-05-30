@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { put } from '@vercel/blob'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { rateLimit } from '@/lib/rate-limit'
+import { rateLimitDb } from '@/lib/rate-limit'
 
 const MAX_BYTES   = 10 * 1024 * 1024  // 10 MB per file
 const ALLOWED_MIME = new Set([
@@ -15,11 +15,14 @@ const ALLOWED_RECORD_TYPES = new Set([
 ])
 
 export async function POST(req: NextRequest) {
-  const rl = rateLimit(req, { key: 'records-upload', max: 20, windowMs: 60_000 })
-  if (!rl.ok) return NextResponse.json({ error: 'Too many uploads — slow down' }, { status: 429 })
-
   const session = await auth()
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  // DB-backed limiter so the cap applies globally across Fluid Compute
+  // instances — uploads cost storage + bandwidth, attacker can't multiply by
+  // region.
+  const rl = await rateLimitDb('records-upload', session.user.id!, { max: 20, windowMs: 60_000 })
+  if (!rl.ok) return NextResponse.json({ error: 'Too many uploads — slow down' }, { status: 429 })
 
   const patient = await prisma.patient.findUnique({ where: { userId: session.user.id } })
   if (!patient) return NextResponse.json({ error: 'Patient profile not found' }, { status: 404 })
@@ -44,16 +47,15 @@ export async function POST(req: NextRequest) {
   if (!ALLOWED_RECORD_TYPES.has(type))         return NextResponse.json({ error: 'Invalid record type' }, { status: 400 })
   if (title.length < 2)                        return NextResponse.json({ error: 'Title required' }, { status: 400 })
 
-  // Per-patient namespacing AND a random suffix so the URL acts as a
-  // capability token — even if the patientId is known, the blob URL cannot be
-  // guessed without the suffix Vercel adds. Don't store the URL anywhere the
-  // patient hasn't already chosen to share it.
+  // Private blob — never reachable by unauthenticated GET. The pathname is
+  // stored in MedicalRecord.fileUrl and only served via the authenticated
+  // /api/records/[id]/download route, which re-checks ownership on every read.
   const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 80)
   const blobKey  = `records/${patient.id}/${Date.now()}-${safeName}`
 
-  let blob: { url: string }
+  let blob: { pathname: string }
   try {
-    blob = await put(blobKey, file, { access: 'public', addRandomSuffix: true })
+    blob = await put(blobKey, file, { access: 'private', addRandomSuffix: true })
   } catch (e) {
     console.error('[records/upload] blob put failed', e)
     return NextResponse.json({ error: 'Upload failed' }, { status: 502 })
@@ -65,7 +67,9 @@ export async function POST(req: NextRequest) {
       type,
       title,
       content,
-      fileUrl:    blob.url,
+      // Store the pathname (not a URL) — private blobs aren't addressable by
+      // URL. The download route resolves it back via @vercel/blob `get()`.
+      fileUrl:    blob.pathname,
       recordedAt: new Date(),
     },
   })

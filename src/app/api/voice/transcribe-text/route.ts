@@ -4,18 +4,18 @@ import { SeverityLevel } from '@prisma/client'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { runTextIntakePipeline } from '@/lib/openai'
-import { rateLimit } from '@/lib/rate-limit'
+import { rateLimitDb } from '@/lib/rate-limit'
 
 const schema = z.object({
   text: z.string().min(3),
 })
 
 export async function POST(req: NextRequest) {
-  const rl = rateLimit(req, { key: 'voice', max: 10, windowMs: 60_000 })
-  if (!rl.ok) return NextResponse.json({ error: 'Rate limited — slow down' }, { status: 429 })
-
   const session = await auth()
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const rl = await rateLimitDb('voice-text', session.user.id!, { max: 10, windowMs: 60_000 })
+  if (!rl.ok) return NextResponse.json({ error: 'Rate limited — slow down' }, { status: 429 })
 
   const body = await req.json()
   const parsed = schema.safeParse(body)

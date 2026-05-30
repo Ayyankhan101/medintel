@@ -15,7 +15,12 @@ export async function transcribeAudio(audioBuffer: Buffer, filename: string, lan
     language,
     response_format: 'text',
   })
-  return transcription as unknown as string
+  // response_format: 'text' returns a raw string. Guard so we never persist
+  // `[object Object]` if the SDK ever swaps to a wrapped payload.
+  if (typeof transcription === 'string') return transcription
+  const text = (transcription as { text?: unknown } | null)?.text
+  if (typeof text === 'string') return text
+  throw new Error('Whisper transcription returned non-string payload')
 }
 
 export async function runFullIntakePipeline(

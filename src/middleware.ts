@@ -24,6 +24,8 @@ const PUBLIC_PREFIXES = [
   // PSP webhooks are signature-verified inside the handler.
   '/api/payments/safepay/webhook',
   '/api/payments/jazzcash/webhook',
+  // Twilio Video recording lifecycle callback — signature-verified inside.
+  '/api/consultation/recording-callback',
 ]
 
 export default auth(req => {

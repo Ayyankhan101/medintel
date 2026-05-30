@@ -3,12 +3,27 @@ import { z } from 'zod'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { audit } from '@/lib/audit'
+import { requireSameOrigin } from '@/lib/csrf'
 
 const schema = z.object({
   researchConsent: z.boolean(),
 })
 
+export async function GET() {
+  const session = await auth()
+  if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const patient = await prisma.patient.findUnique({
+    where: { userId: session.user.id! },
+    select: { researchConsent: true },
+  })
+  if (!patient) return NextResponse.json({ error: 'Patient profile not found' }, { status: 404 })
+  return NextResponse.json(patient)
+}
+
 export async function PATCH(req: NextRequest) {
+  const csrf = requireSameOrigin(req)
+  if (csrf) return csrf
+
   const session = await auth()
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 

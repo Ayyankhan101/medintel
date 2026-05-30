@@ -21,6 +21,8 @@ import bcrypt from 'bcryptjs'
 import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { rateLimit } from '@/lib/rate-limit'
+import { passwordIssue } from '@/lib/password'
+import { botIdGuard } from '@/lib/botid'
 import { sendVerifyEmail, sendWelcomeClinic } from '@/lib/email'
 import { randomToken, EMAIL_VERIFY_TTL_MS } from '@/lib/tokens'
 import { PLAN_QUOTA, makeSlug } from '@/lib/clinic'
@@ -31,13 +33,16 @@ export const dynamic = 'force-dynamic'
 const schema = z.object({
   email:      z.string().email(),
   phone:      z.string().min(10).max(20),
-  password:   z.string().min(8).max(128),
+  password:   z.string().min(10).max(128),
   fullName:   z.string().min(2).max(80),
   clinicName: z.string().min(2).max(80),
   plan:       z.enum(['STARTER', 'STANDARD', 'ENTERPRISE']).default('STARTER'),
 })
 
 export async function POST(req: NextRequest) {
+  const bot = botIdGuard(req)
+  if (!bot.allowed) return NextResponse.json({ error: bot.reason ?? 'Blocked' }, { status: 403 })
+
   const rl = rateLimit(req, { key: 'clinic-register', max: 3, windowMs: 15 * 60_000 })
   if (!rl.ok) return NextResponse.json({ error: 'Too many signup attempts. Try again later.' }, { status: 429 })
 
@@ -47,6 +52,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
   }
   const { email, phone, password, fullName, clinicName, plan } = parsed.data
+
+  const weak = passwordIssue(password, { email, phone })
+  if (weak) return NextResponse.json({ error: weak }, { status: 400 })
 
   const existing = await prisma.user.findFirst({
     where: { OR: [{ email }, { phone }] },

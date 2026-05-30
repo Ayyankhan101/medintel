@@ -4,6 +4,7 @@ import { Analytics } from '@vercel/analytics/next'
 import { ThemeProvider } from '@/components/ThemeProvider'
 import { I18nProvider } from '@/lib/i18n/client'
 import { ServiceWorkerRegistration } from '@/components/ServiceWorkerRegistration'
+import { InstallPrompt } from '@/components/layout/InstallPrompt'
 import './globals.css'
 
 const sans = Inter({
@@ -51,6 +52,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ThemeProvider><I18nProvider>{children}</I18nProvider></ThemeProvider>
         <Analytics />
         <ServiceWorkerRegistration />
+        <InstallPrompt />
       </body>
     </html>
   )

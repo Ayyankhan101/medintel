@@ -4,12 +4,16 @@ import { prisma } from '@/lib/prisma'
 import { rateLimitDb, clientIp } from '@/lib/rate-limit'
 import { sendPasswordReset } from '@/lib/email'
 import { randomToken, PASSWORD_RESET_TTL_MS } from '@/lib/tokens'
+import { botIdGuard } from '@/lib/botid'
 
 export const dynamic = 'force-dynamic'
 
 const schema = z.object({ email: z.string().email() })
 
 export async function POST(req: NextRequest) {
+  const bot = botIdGuard(req)
+  if (!bot.allowed) return NextResponse.json({ error: bot.reason ?? 'Blocked' }, { status: 403 })
+
   const ipRl = await rateLimitDb('pw-reset:ip', clientIp(req), { max: 5, windowMs: 15 * 60_000 })
   if (!ipRl.ok) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
 

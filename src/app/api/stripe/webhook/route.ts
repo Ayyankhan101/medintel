@@ -34,6 +34,8 @@ export async function POST(req: NextRequest) {
 
   // Idempotency: Stripe retries on non-2xx and can redeliver successful events
   // too. Insert on the unique `eventId` PK — P2002 means already processed.
+  // Anything else (DB down, network blip) must NOT silently fall through —
+  // the rest of the handler would then run un-deduped on Stripe's retry.
   try {
     await prisma.processedStripeEvent.create({ data: { eventId: event.id, type: event.type } })
   } catch (e) {
@@ -41,7 +43,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ received: true, duplicate: true })
     }
     console.error('[stripe-webhook] dedupe insert failed', e)
-    // Fall through — better to risk re-processing than to drop the event.
+    return NextResponse.json({ error: 'Dedupe insert failed' }, { status: 500 })
   }
 
   try {
@@ -51,6 +53,25 @@ export async function POST(req: NextRequest) {
         const appointmentId = pi.metadata.appointmentId
         if (appointmentId) {
           await prisma.appointment.update({ where: { id: appointmentId }, data: { status: 'CANCELLED' } })
+        }
+        break
+      }
+
+      case 'payment_intent.succeeded':
+      case 'payment_intent.amount_capturable_updated': {
+        // Capture confirmation. The escrow row was already inserted at
+        // checkout time with status HELD; the patient finishing the
+        // PaymentElement flow lands here. Stamp an audit so admins can
+        // reconcile, and make sure the row reflects HELD if some earlier
+        // failure left it ambiguous.
+        const pi = event.data.object as Stripe.PaymentIntent
+        const appointmentId = pi.metadata.appointmentId
+        if (!appointmentId) break
+        const escrow = await prisma.escrow.findUnique({ where: { appointmentId } })
+        if (escrow && escrow.status === 'HELD') {
+          void audit('escrow.captured', 'Appointment', appointmentId, {
+            provider: 'stripe', amount: Number(escrow.amount), pi: pi.id,
+          })
         }
         break
       }

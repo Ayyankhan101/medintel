@@ -39,7 +39,9 @@ jobs:
 
       - name: Lint
         run: npm run lint
-        continue-on-error: true   # lint is advisory until the React 19 set-state-in-effect warnings are refactored
+
+      - name: Unit tests
+        run: npm test
 
   triage-fallback:
     name: Triage fallback eval (offline)

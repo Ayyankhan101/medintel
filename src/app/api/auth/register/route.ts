@@ -6,12 +6,14 @@ import { verifyPatientCNIC, generateMedIntelCode } from '@/lib/kyc'
 import { rateLimitDb, clientIp } from '@/lib/rate-limit'
 import { sendWelcomePatient, sendWelcomeDoctor, sendVerifyEmail } from '@/lib/email'
 import { randomToken, EMAIL_VERIFY_TTL_MS } from '@/lib/tokens'
+import { passwordIssue } from '@/lib/password'
+import { botIdGuard } from '@/lib/botid'
 
 const patientSchema = z.object({
   role:        z.literal('PATIENT').default('PATIENT'),
   email:       z.string().email(),
   phone:       z.string().regex(/^\+?92[0-9]{10}$|^0[0-9]{10}$/, 'Enter a valid Pakistani mobile number (e.g. 03001234567 or +923001234567)'),
-  password:    z.string().min(8),
+  password:    z.string().min(10).max(128),
   fullName:    z.string().min(2),
   cnicNumber:  z.string().length(13),
   dateOfBirth: z.string(),
@@ -21,7 +23,7 @@ const doctorSchema = z.object({
   role:            z.literal('DOCTOR'),
   email:           z.string().email(),
   phone:           z.string().regex(/^\+?92[0-9]{10}$|^0[0-9]{10}$/, 'Enter a valid Pakistani mobile number (e.g. 03001234567 or +923001234567)'),
-  password:        z.string().min(8),
+  password:        z.string().min(10).max(128),
   fullName:        z.string().min(2),
   licenseNumber:   z.string().min(3),
   specialization:  z.string().min(2),
@@ -34,6 +36,9 @@ const doctorSchema = z.object({
 const schema = z.discriminatedUnion('role', [patientSchema, doctorSchema])
 
 export async function POST(req: NextRequest) {
+  const bot = botIdGuard(req)
+  if (!bot.allowed) return NextResponse.json({ error: bot.reason ?? 'Blocked' }, { status: 403 })
+
   const rl = await rateLimitDb('register', clientIp(req), { max: 5, windowMs: 10 * 60_000 })
   if (!rl.ok) return NextResponse.json({ error: 'Too many registration attempts, try again later' }, { status: 429 })
 
@@ -42,6 +47,9 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
   }
+
+  const weak = passwordIssue(parsed.data.password, { email: parsed.data.email, phone: parsed.data.phone })
+  if (weak) return NextResponse.json({ error: weak }, { status: 400 })
 
   // ── Doctor signup ─────────────────────────────────────────────────────────
   if (parsed.data.role === 'DOCTOR') {

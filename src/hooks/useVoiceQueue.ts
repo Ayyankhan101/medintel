@@ -60,7 +60,10 @@ type UploadFn = (blob: Blob, filename: string, language: string) => Promise<void
 
 export function useVoiceQueue(onUploaded: UploadFn) {
   const onUploadedRef = useRef(onUploaded)
-  onUploadedRef.current = onUploaded
+  // React 19 forbids mutating refs during render. Sync via effect so callers
+  // can pass a fresh closure on each render without us touching `.current`
+  // until commit.
+  useEffect(() => { onUploadedRef.current = onUploaded }, [onUploaded])
 
   const [queueLength, setQueueLength] = useState(0)
   const [draining,    setDraining]    = useState(false)

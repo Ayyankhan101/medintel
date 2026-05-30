@@ -3,12 +3,13 @@ import { z } from 'zod'
 import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
 import { rateLimitDb, clientIp } from '@/lib/rate-limit'
+import { passwordIssue } from '@/lib/password'
 
 export const dynamic = 'force-dynamic'
 
 const schema = z.object({
   token:    z.string().min(10),
-  password: z.string().min(8),
+  password: z.string().min(10).max(128),
 })
 
 export async function POST(req: NextRequest) {
@@ -23,6 +24,9 @@ export async function POST(req: NextRequest) {
   if (!user || !user.passwordResetExpires || user.passwordResetExpires < new Date()) {
     return NextResponse.json({ error: 'Invalid or expired token' }, { status: 400 })
   }
+
+  const weak = passwordIssue(parsed.data.password, { email: user.email, phone: user.phone })
+  if (weak) return NextResponse.json({ error: weak }, { status: 400 })
 
   const passwordHash = await bcrypt.hash(parsed.data.password, 12)
   await prisma.user.update({

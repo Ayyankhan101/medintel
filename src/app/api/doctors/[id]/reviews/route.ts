@@ -19,7 +19,8 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string 
   const cursor = url.searchParams.get('cursor') || undefined
 
   const reviews = await prisma.review.findMany({
-    where:   { doctorId: id },
+    // Filter out admin-hidden reviews so they never reach public/doctor pages.
+    where:   { doctorId: id, hiddenAt: null },
     orderBy: { createdAt: 'desc' },
     take:    limit + 1,
     ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),

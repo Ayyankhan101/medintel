@@ -30,6 +30,6 @@ export const stripeProvider: PaymentProvider = {
   },
 
   async verifyWebhook(_rawBody: string, _headers: Headers): Promise<NormalizedEvent> {
-    throw new Error('Stripe webhooks are handled by /api/payments/stripe/webhook — not routed here')
+    throw new Error('Stripe webhooks are handled by /api/stripe/webhook — not routed here')
   },
 }
