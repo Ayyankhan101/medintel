@@ -26,6 +26,8 @@ const PUBLIC_PREFIXES = [
   '/api/payments/jazzcash/webhook',
   // Twilio Video recording lifecycle callback — signature-verified inside.
   '/api/consultation/recording-callback',
+  // TEMP: one-shot seed endpoint — remove once production DB is populated.
+  '/api/seed',
 ]
 
 export default auth(req => {
