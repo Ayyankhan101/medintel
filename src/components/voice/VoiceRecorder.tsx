@@ -205,7 +205,7 @@ export function VoiceRecorder({ onRecordingComplete }: Props) {
             <p className="text-slate-700 dark:text-slate-200 font-medium text-base">
               Tap the mic and describe your symptoms
             </p>
-            <p className="text-sm text-slate-400">Urdu یا English — we understand both</p>
+            <p className="text-sm text-slate-500">Urdu یا English — we understand both</p>
           </div>
           <button onClick={startRecording}
             className="relative w-40 h-40 rounded-full group focus:outline-none focus:ring-4 focus:ring-red-200"
@@ -229,7 +229,7 @@ export function VoiceRecorder({ onRecordingComplete }: Props) {
             ))}
           </div>
           <div className="px-4 py-2.5 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-700/50 max-w-sm">
-            <p className="text-xs text-slate-400 leading-relaxed text-center">{LANG_TIPS[language]}</p>
+            <p className="text-xs text-slate-600 leading-relaxed text-center">{LANG_TIPS[language]}</p>
           </div>
         </div>
       )}
@@ -240,7 +240,7 @@ export function VoiceRecorder({ onRecordingComplete }: Props) {
           <div className="text-center space-y-1">
             <p className="text-slate-700 dark:text-slate-200 font-medium">Listening — tap to stop</p>
             {currentLang && (
-              <p className="text-xs text-slate-400">{currentLang.label} ({currentLang.english})</p>
+              <p className="text-xs text-slate-500">{currentLang.label} ({currentLang.english})</p>
             )}
           </div>
           <button onClick={stopRecording}
@@ -285,7 +285,7 @@ export function VoiceRecorder({ onRecordingComplete }: Props) {
               <Check className="w-7 h-7 text-emerald-600" />
             </div>
             <p className="text-slate-700 dark:text-slate-200 font-medium">Recording complete</p>
-            <p className="text-xs text-slate-400">Duration: {fmt(seconds)}</p>
+            <p className="text-xs text-slate-500">Duration: {fmt(seconds)}</p>
           </div>
           <button onClick={handlePlayback}
             className="flex items-center gap-3 px-6 py-3 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors border border-slate-200 dark:border-slate-700"
@@ -310,7 +310,7 @@ export function VoiceRecorder({ onRecordingComplete }: Props) {
               <Mic className="w-4 h-4" /> Send for analysis
             </button>
           </div>
-          <p className="text-xs text-slate-400 text-center max-w-xs">Your audio won&apos;t be stored — only the transcript is saved.</p>
+          <p className="text-xs text-slate-500 text-center max-w-xs">Your audio won&apos;t be stored — only the transcript is saved.</p>
         </div>
       )}
 
@@ -336,7 +336,7 @@ export function VoiceRecorder({ onRecordingComplete }: Props) {
                     ? 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 shadow-sm'
                     : isDone
                       ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300'
-                      : 'text-slate-300 dark:text-slate-600'
+                      : 'text-slate-400 dark:text-slate-500'
                 }`}>
                   <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
                     isDone ? 'bg-emerald-500 text-white' : isCurrent ? 'bg-blue-600 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-400'
@@ -350,7 +350,7 @@ export function VoiceRecorder({ onRecordingComplete }: Props) {
               )
             })}
           </div>
-          <p className="text-xs text-slate-400 text-center max-w-xs">This usually takes 10–15 seconds</p>
+          <p className="text-xs text-slate-500 text-center max-w-xs">This usually takes 10–15 seconds</p>
         </div>
       )}
 
@@ -362,7 +362,7 @@ export function VoiceRecorder({ onRecordingComplete }: Props) {
             <p>{errorMsg}</p>
           </div>
           <button onClick={() => { setState('idle'); setErrorMsg(null) }}
-            className="text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors underline underline-offset-2">
+            className="text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors underline underline-offset-2">
             Try again
           </button>
         </div>

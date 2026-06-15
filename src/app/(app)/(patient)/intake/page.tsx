@@ -295,7 +295,7 @@ function IntakeInner() {
 
         <div className="flex items-center justify-between pt-2">
           <button onClick={handleClearData} disabled={deleting}
-            className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors disabled:opacity-50">
+            className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors disabled:opacity-50">
             {deleting ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
             Clear this session
           </button>

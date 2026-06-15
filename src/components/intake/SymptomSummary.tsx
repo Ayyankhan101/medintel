@@ -68,9 +68,9 @@ export function SymptomSummary({
               <Badge variant="outline" className="text-xs">{department}</Badge>
             </div>
             <p className="text-3xl font-bold text-slate-900 dark:text-white tabular-nums">
-              {severityScore}<span className="text-lg font-normal text-slate-400">/10</span>
+              {severityScore}<span className="text-lg font-normal text-slate-500">/10</span>
             </p>
-            <p className="text-sm text-slate-500 dark:text-slate-400">
+            <p className="text-sm text-slate-600 dark:text-slate-400">
               {cfg.label} severity — {department} specialist recommended
             </p>
           </div>
@@ -102,7 +102,7 @@ export function SymptomSummary({
                 </li>
               ))}
               {summaryBullets.length < summary.split('\n').filter(l => l.trim()).length && (
-                <li className="text-slate-500 dark:text-slate-400 text-sm italic mt-2">
+                <li className="text-slate-600 dark:text-slate-400 text-sm italic mt-2">
                   {summary.split('\n').filter(l => l.trim() && !l.startsWith('-') && !l.startsWith('*')).join(' ')}
                 </li>
               )}
@@ -172,7 +172,7 @@ export function SymptomSummary({
         <button onClick={() => setShowTranscript(v => !v)}
           className="w-full text-left">
           <CardHeader>
-            <CardTitle className="text-sm flex items-center justify-between text-slate-500 dark:text-slate-400">
+            <CardTitle className="text-sm flex items-center justify-between text-slate-600 dark:text-slate-400">
               <span className="flex items-center gap-2">
                 <Clock className="w-3.5 h-3.5" />
                 Your original words
@@ -209,7 +209,7 @@ export function SymptomSummary({
                 </span>
                 <div>
                   <p className="text-sm font-medium text-slate-800 dark:text-slate-100">{step.title}</p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{step.desc}</p>
+                  <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">{step.desc}</p>
                 </div>
               </div>
             ))}
@@ -218,7 +218,7 @@ export function SymptomSummary({
       </Card>
 
       {/* ── Disclaimer ── */}
-      <div className="flex items-start gap-2 text-xs text-slate-400 dark:text-slate-500 px-1">
+      <div className="flex items-start gap-2 text-xs text-slate-500 dark:text-slate-400 px-1">
         <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
         <p>
           AI suggestion — not a medical diagnosis. A licensed clinician will review your case and make all clinical decisions.
