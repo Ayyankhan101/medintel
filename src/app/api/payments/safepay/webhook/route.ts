@@ -93,7 +93,9 @@ export async function POST(req: NextRequest) {
       // escrow exists and status === 'REFUNDED': duplicate delivery, already idempotent — no-op.
     }
   } catch (e) {
-    await prisma.processedStripeEvent.delete({ where: { eventId } }).catch(() => {})
+    await prisma.processedStripeEvent.delete({ where: { eventId } }).catch(e2 => {
+      console.error('[safepay-webhook] failed to roll back dedupe row', e2)
+    })
     console.error('[safepay-webhook] handler error', e)
     return NextResponse.json({ error: 'Handler error' }, { status: 500 })
   }

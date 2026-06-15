@@ -217,7 +217,9 @@ export async function POST(req: NextRequest) {
   } catch (e) {
     console.error('[stripe-webhook] handler error', { type: event.type, e })
     // Roll back the dedupe row so Stripe's retry actually re-runs the handler.
-    await prisma.processedStripeEvent.delete({ where: { eventId: event.id } }).catch(() => {})
+    await prisma.processedStripeEvent.delete({ where: { eventId: event.id } }).catch(e2 => {
+      console.error('[stripe-webhook] failed to roll back dedupe row', e2)
+    })
     // Returning 500 makes Stripe retry — desirable for transient DB errors.
     return NextResponse.json({ error: 'Handler error' }, { status: 500 })
   }

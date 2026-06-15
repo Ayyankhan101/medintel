@@ -49,6 +49,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         className="min-h-full font-sans"
         style={{ background: 'var(--bg)', color: 'var(--ink)', backgroundImage: 'var(--gradient-stage)' }}
       >
+        <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:px-4 focus:py-2 focus:rounded-lg focus:bg-blue-600 focus:text-white focus:text-sm focus:font-medium focus:outline-none">
+          Skip to main content
+        </a>
         <ThemeProvider><I18nProvider>{children}</I18nProvider></ThemeProvider>
         <Analytics />
         <ServiceWorkerRegistration />

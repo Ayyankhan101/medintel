@@ -4,17 +4,21 @@
  * One-shot, idempotent. Required before the video session can mint a Twilio
  * token. Audit-logged because consent is a legal artifact.
  */
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { audit } from '@/lib/audit'
+import { rateLimit } from '@/lib/rate-limit'
 
 export const dynamic = 'force-dynamic'
 
-export async function POST(_req: Request, ctx: { params: Promise<{ id: string }> }) {
+export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   const session = await auth()
   if (!session?.user || session.user.role !== 'PATIENT')
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
+  const rl = rateLimit(req, { key: 'consent', max: 10, windowMs: 60_000 })
+  if (!rl.ok) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
 
   const { id } = await ctx.params
   const appt = await prisma.appointment.findUnique({

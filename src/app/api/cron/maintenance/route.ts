@@ -23,6 +23,8 @@ export const dynamic = 'force-dynamic'
 export const maxDuration = 120
 
 const TRANSCRIPT_RETENTION_DAYS = 365
+const APPOINTMENT_TRANSCRIPT_RETENTION_DAYS = 90
+const ORPHAN_TRIAGE_HOURS = 72
 
 function safeEq(a: string, b: string): boolean {
   const ba = Buffer.from(a); const bb = Buffer.from(b)
@@ -133,6 +135,35 @@ async function sendQuotaAlerts() {
   return sent
 }
 
+// Null raw transcript on triage records older than 72h that never resulted in
+// an appointment — voice/text input shouldn't persist indefinitely.
+// Null transcript/aiSummary on completed appointments after retention period.
+// Raw AI input doesn't need to live forever; structured medical records stay.
+async function pruneAppointmentTranscripts() {
+  const cutoff = new Date(Date.now() - APPOINTMENT_TRANSCRIPT_RETENTION_DAYS * 24 * 60 * 60_000)
+  const r = await prisma.appointment.updateMany({
+    where: {
+      completedAt: { not: null, lt: cutoff },
+      OR: [
+        { transcript: { not: null } },
+        { aiSummary: { not: null } },
+        { voiceFileUrl: { not: null } },
+      ],
+    },
+    data: { transcript: null, aiSummary: null, voiceFileUrl: null },
+  })
+  return r.count
+}
+
+async function pruneOrphanTriages() {
+  const cutoff = new Date(Date.now() - ORPHAN_TRIAGE_HOURS * 60 * 60_000)
+  const r = await prisma.triage.updateMany({
+    where: { createdAt: { lt: cutoff }, transcript: { not: '' } },
+    data:  { transcript: '' },
+  })
+  return r.count
+}
+
 // Drop raw transcript text once the doctor has approved the SOAP note and
 // retention period has elapsed. Structured SOAP fields are kept.
 async function pruneOldTranscripts() {
@@ -154,7 +185,9 @@ export async function GET(req: NextRequest) {
     ['passwordTokens',  prunePasswordResetTokens],
     ['subscriptions',   reconcileSubscriptionDrift],
     ['quotaAlerts',     sendQuotaAlerts],
-    ['transcripts',     pruneOldTranscripts],
+    ['orphanTriages',           pruneOrphanTriages],
+    ['apptTranscripts',         pruneAppointmentTranscripts],
+    ['transcripts',             pruneOldTranscripts],
   ] as const) {
     try { results[name] = await fn() }
     catch (e: unknown) {

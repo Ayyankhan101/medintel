@@ -69,35 +69,24 @@ export async function POST(req: NextRequest) {
     !!appointment.doctor.stripeAccountId
 
   if (canAutoRelease) {
-    let captured = false
     try {
       await providerFor(appointment.escrow!.provider as ProviderId).capture({
         providerRef:     appointment.escrow!.providerRef ?? appointment.escrow!.stripePaymentIntentId!,
         amount:          Number(appointment.escrow!.amount),
         doctorAccountId: appointment.doctor.stripeAccountId!,
       })
-      captured = true
-    } catch (e) {
-      console.error('[prescriptions] auto-release capture failed', e)
-      void audit('escrow.capture_failed', 'Appointment', appointment.id, {
-        escrowId: appointment.escrow!.id, error: String(e),
+      await prisma.escrow.update({
+        where: { id: appointment.escrow!.id },
+        data:  { status: 'RELEASED', releasedAt: new Date() },
       })
-    }
-    if (captured) {
-      await Promise.all([
-        prisma.escrow.update({
-          where: { id: appointment.escrow!.id },
-          data:  { status: 'RELEASED', releasedAt: new Date() },
-        }),
-        prisma.appointment.update({
-          where: { id: appointment.id },
-          data:  { status: 'COMPLETED', completedAt: new Date() },
-        }),
-      ]).catch(e => {
-        console.error('[prescriptions] DB update failed after capture', e)
-        void audit('escrow.release_db_failed', 'Appointment', appointment.id, {
-          escrowId: appointment.escrow!.id, error: String(e),
-        })
+      await prisma.appointment.update({
+        where: { id: appointment.id },
+        data:  { status: 'COMPLETED', completedAt: new Date() },
+      })
+    } catch (e) {
+      console.error('[prescriptions] auto-release failed', e)
+      void audit('escrow.release_failed', 'Appointment', appointment.id, {
+        escrowId: appointment.escrow!.id, error: String(e),
       })
     }
   } else if (appointment.escrow?.status === 'HELD') {

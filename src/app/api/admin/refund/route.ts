@@ -17,6 +17,7 @@ import { prisma } from '@/lib/prisma'
 import { providerFor, type ProviderId } from '@/lib/payments'
 import { audit } from '@/lib/audit'
 import { captureError } from '@/lib/observability'
+import { rateLimitDb } from '@/lib/rate-limit'
 
 export const dynamic = 'force-dynamic'
 
@@ -30,6 +31,9 @@ export async function POST(req: NextRequest) {
   const session = await auth()
   if (!session?.user || session.user.role !== 'ADMIN')
     return NextResponse.json({ error: 'Admin only' }, { status: 403 })
+
+  const rl = await rateLimitDb('admin-refund', session.user.id!, { max: 5, windowMs: 60_000 })
+  if (!rl.ok) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
 
   const body   = await req.json().catch(() => ({}))
   const parsed = schema.safeParse(body)

@@ -4,6 +4,7 @@ import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { sendBookingConfirmation, sendDoctorNewBooking } from '@/lib/email'
 import { isAvailable, parseAvailability } from '@/lib/availability'
+import { rateLimitDb } from '@/lib/rate-limit'
 
 class SlotTakenError extends Error {}
 
@@ -16,6 +17,9 @@ const createSchema = z.object({
 export async function POST(req: NextRequest) {
   const session = await auth()
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const rl = await rateLimitDb('appointments-create', session.user.id!, { max: 10, windowMs: 60_000 })
+  if (!rl.ok) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
 
   const body = await req.json()
   const parsed = createSchema.safeParse(body)

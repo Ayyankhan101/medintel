@@ -72,7 +72,7 @@ export default function ImagingPage() {
         borderRadius: 22, padding: 20, boxShadow: 'var(--shadow-card)',
         display: 'flex', flexDirection: 'column', gap: 14,
       }}>
-        <label style={{
+        <label htmlFor="imaging-upload" style={{
           display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
           cursor: 'pointer', borderRadius: 16,
           border: '2px dashed var(--border-strong)',
@@ -80,8 +80,6 @@ export default function ImagingPage() {
           background: 'var(--bg-soft)',
           transition: 'background-color 200ms ease',
         }}
-          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(37,99,235,.05)' }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'var(--bg-soft)' }}
         >
           <Upload size={26} style={{ color: 'var(--ink-4)', marginBottom: 8 }} />
           <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: 'var(--ink-2)' }}>

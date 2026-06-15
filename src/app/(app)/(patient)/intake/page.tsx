@@ -117,7 +117,7 @@ function IntakeInner() {
     fetch(`/api/doctors?department=${encodeURIComponent(result.department)}`)
       .then(r => r.json())
       .then(d => { if (Array.isArray(d)) setDoctors(d.slice(0, 3)) })
-      .catch(() => {})
+      .catch(e => console.error('[intake] doctor fetch failed', e))
       .finally(() => setDocsLoading(false))
   }, [result?.department])
 
@@ -167,7 +167,9 @@ function IntakeInner() {
     setDeleting(true)
     try {
       await fetch(`/api/triage/${result.triageId}/cleanup`, { method: 'POST' })
-    } catch {}
+    } catch (e) {
+      console.error('[intake] cleanup failed', e)
+    }
     setDeleting(false)
     setResult(null); setMode('choose'); setDoctors([])
   }
@@ -328,7 +330,7 @@ function IntakeInner() {
       </header>
 
       {!isOnline && (
-        <div style={{
+        <div role="alert" style={{
           display: 'flex', alignItems: 'flex-start', gap: 10,
           background: 'rgba(245,158,11,.10)', border: '1px solid rgba(245,158,11,.35)',
           borderRadius: 14, padding: '14px 16px',
@@ -436,7 +438,7 @@ function IntakeInner() {
       )}
 
       {error && (
-        <div style={{
+        <div role="alert" style={{
           display: 'flex', alignItems: 'flex-start', gap: 10,
           background: 'rgba(239,68,68,.08)', border: '1px solid rgba(239,68,68,.25)',
           borderRadius: 12, padding: '12px 14px',

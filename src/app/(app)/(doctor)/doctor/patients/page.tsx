@@ -144,7 +144,10 @@ export default function DoctorPatientsPage() {
           return (
             <div
               key={a.id}
+              role="button"
+              tabIndex={0}
               onClick={() => router.push(`/consultation/${a.id}`)}
+              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); router.push(`/consultation/${a.id}`) } }}
               style={{
                 background: 'var(--bg-elev)', border: '1px solid var(--border)',
                 borderRadius: 18, padding: 16, boxShadow: 'var(--shadow-card)',

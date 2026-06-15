@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { createEscrowPaymentIntent } from '@/lib/stripe'
+import { rateLimitDb } from '@/lib/rate-limit'
 
 const schema = z.object({ appointmentId: z.string().min(1) })
 
@@ -12,6 +13,9 @@ export async function POST(req: NextRequest) {
 
   const session = await auth()
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const rl = await rateLimitDb('escrow-create', session.user.id!, { max: 10, windowMs: 60_000 })
+  if (!rl.ok) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
 
   const body   = await req.json()
   const parsed = schema.safeParse(body)
@@ -33,16 +37,31 @@ export async function POST(req: NextRequest) {
   if (appointment.escrow)
     return NextResponse.json({ error: 'Payment already exists for this appointment' }, { status: 409 })
 
-  const fee           = Number(appointment.doctor.consultationFee)
-  const paymentIntent = await createEscrowPaymentIntent(fee, appointment.doctor.stripeAccountId, appointment.id)
+  const fee = Number(appointment.doctor.consultationFee)
 
-  await prisma.escrow.create({
-    data: {
-      appointmentId:         appointment.id,
-      amount:                fee,
-      stripePaymentIntentId: paymentIntent.id,
-    },
-  })
+  let paymentIntent
+  try {
+    paymentIntent = await createEscrowPaymentIntent(fee, appointment.doctor.stripeAccountId, appointment.id)
+  } catch (e) {
+    console.error('[escrow] create PaymentIntent failed', e)
+    return NextResponse.json({ error: 'Payment service unavailable — try again' }, { status: 502 })
+  }
+
+  try {
+    await prisma.escrow.create({
+      data: {
+        appointmentId:         appointment.id,
+        amount:                fee,
+        stripePaymentIntentId: paymentIntent.id,
+      },
+    })
+  } catch (e) {
+    console.error('[escrow] DB create failed after PI creation — orphan PI', paymentIntent.id, e)
+    void audit('escrow.orphan_pi', 'Appointment', appointment.id, {
+      paymentIntentId: paymentIntent.id, error: String(e),
+    })
+    return NextResponse.json({ error: 'Failed to create payment record' }, { status: 500 })
+  }
 
   return NextResponse.json({
     clientSecret:    paymentIntent.client_secret,

@@ -108,7 +108,9 @@ export async function POST(req: NextRequest) {
       }
     }
   } catch (e) {
-    await prisma.processedStripeEvent.delete({ where: { eventId } }).catch(() => {})
+    await prisma.processedStripeEvent.delete({ where: { eventId } }).catch(e2 => {
+      console.error('[jazzcash-webhook] failed to roll back dedupe row', e2)
+    })
     console.error('[jazzcash-webhook] handler error', e)
     return NextResponse.json({ error: 'Handler error' }, { status: 500 })
   }

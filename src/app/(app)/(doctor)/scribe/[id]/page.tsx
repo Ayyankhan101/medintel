@@ -155,13 +155,14 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
         borderRadius: 22, padding: 20, boxShadow: 'var(--shadow-card)',
         display: 'flex', flexDirection: 'column', gap: 14,
       }}>
-        <label style={{
+        <label htmlFor="transcript-area" style={{
           display: 'inline-flex', alignItems: 'center', gap: 6,
           fontSize: 13, fontWeight: 700, color: 'var(--ink)',
         }}>
           <Mic size={14} style={{ color: 'var(--ink-3)' }} /> Transcript
         </label>
         <textarea
+          id="transcript-area"
           rows={8}
           value={transcript}
           onChange={e => setTranscript(e.target.value)}
