@@ -61,3 +61,6 @@ env.txt
 # API inventory (shareable doc, not for repo)
 APIS.txt
 .claude/
+
+# Graphify knowledge graph output
+graphify-out/

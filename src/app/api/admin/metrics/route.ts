@@ -15,40 +15,54 @@ import { prisma } from '@/lib/prisma'
 export const dynamic = 'force-dynamic'
 
 export async function GET(req: NextRequest) {
-  const session = await auth()
-  if (!session?.user || session.user.role !== 'ADMIN')
-    return NextResponse.json({ error: 'Admin only' }, { status: 403 })
+  try {
+    const session = await auth()
+    if (!session?.user || session.user.role !== 'ADMIN')
+      return NextResponse.json({ error: 'Admin only' }, { status: 403 })
 
-  const days  = Math.max(1, Math.min(parseInt(req.nextUrl.searchParams.get('days') ?? '30', 10) || 30, 365))
-  const since = new Date(Date.now() - days * 24 * 60 * 60_000)
-  const STALE_MS = 3 * 60_000
+    const days  = Math.max(1, Math.min(parseInt(req.nextUrl.searchParams.get('days') ?? '30', 10) || 30, 365))
+    const since = new Date(Date.now() - days * 24 * 60 * 60_000)
+    const STALE_MS = 3 * 60_000
 
-  const [
-    totalUsers, newUsers, totalPatients, totalDoctors, verifiedDoctors,
-    onlineDoctors, totalAppts, apptsByStatus, escrowsAgg, refundedEscrows,
-    avgSeverity, criticalTriages, totalTriages, recentTriages,
-    avgFee, totalReviews, avgRating,
-  ] = await Promise.all([
-    prisma.user.count(),
-    prisma.user.count({ where: { createdAt: { gte: since } } }),
-    prisma.patient.count(),
-    prisma.doctor.count(),
-    prisma.doctor.count({ where: { kydStatus: 'VERIFIED' } }),
-    prisma.doctor.count({ where: { isOnline: true, lastSeenAt: { gt: new Date(Date.now() - STALE_MS) } } }),
-    prisma.appointment.count(),
-    prisma.appointment.groupBy({ by: ['status'], _count: true, where: { createdAt: { gte: since } } }),
-    prisma.escrow.aggregate({ _sum: { amount: true }, _count: true, where: { heldAt: { gte: since } } }),
-    prisma.escrow.count({ where: { status: 'REFUNDED', heldAt: { gte: since } } }),
-    prisma.triage.aggregate({ _avg: { severityScore: true } }),
-    prisma.triage.count({ where: { severityLevel: 'CRITICAL', createdAt: { gte: since } } }),
-    prisma.triage.count(),
-    prisma.triage.count({ where: { createdAt: { gte: since } } }),
-    prisma.doctor.aggregate({ _avg: { consultationFee: true } }),
-    prisma.review.count(),
-    prisma.review.aggregate({ _avg: { rating: true } }),
-  ])
+    // Batch simple counts in $transaction to stay within Neon's small pool;
+    // groupBy/aggregate kept parallel (type inference is cleaner).
+    const [totalUsers, newUsers, totalPatients, totalDoctors, verifiedDoctors,
+           onlineDoctors, totalAppts, refundedEscrows,
+           criticalTriages, totalTriages, recentTriages, totalReviews] =
+      await prisma.$transaction([
+        prisma.user.count(),
+        prisma.user.count({ where: { createdAt: { gte: since } } }),
+        prisma.patient.count(),
+        prisma.doctor.count(),
+        prisma.doctor.count({ where: { kydStatus: 'VERIFIED' } }),
+        prisma.doctor.count({
+          where: { isOnline: true, lastSeenAt: { gt: new Date(Date.now() - STALE_MS) } },
+        }),
+        prisma.appointment.count(),
+        prisma.escrow.count({ where: { status: 'REFUNDED', heldAt: { gte: since } } }),
+        prisma.triage.count({ where: { severityLevel: 'CRITICAL', createdAt: { gte: since } } }),
+        prisma.triage.count(),
+        prisma.triage.count({ where: { createdAt: { gte: since } } }),
+        prisma.review.count(),
+      ])
 
-  const apptStatus = Object.fromEntries(apptsByStatus.map(r => [r.status, r._count]))
+    const [apptsByStatus, escrowsAgg, avgSeverity, avgFee, avgRating] =
+      await Promise.all([
+        prisma.appointment.groupBy({
+          by: ['status'], _count: true,
+          where: { createdAt: { gte: since } },
+          orderBy: { _count: { status: 'asc' } },
+        }),
+        prisma.escrow.aggregate({
+          _sum: { amount: true }, _count: true,
+          where: { heldAt: { gte: since } },
+        }),
+        prisma.triage.aggregate({ _avg: { severityScore: true } }),
+        prisma.doctor.aggregate({ _avg: { consultationFee: true } }),
+        prisma.review.aggregate({ _avg: { rating: true } }),
+      ])
+
+    const apptStatus = Object.fromEntries(apptsByStatus.map(r => [r.status, r._count]))
   const completed  = apptStatus.COMPLETED ?? 0
   const cancelled  = apptStatus.CANCELLED ?? 0
   const refunded   = apptStatus.REFUNDED  ?? 0
@@ -99,6 +113,10 @@ export async function GET(req: NextRequest) {
       avgRating: round(Number(avgRating._avg.rating ?? 0), 2),
     },
   })
+  } catch (error) {
+    console.error('admin/metrics error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
 }
 
 function round(n: number, decimals: number): number {

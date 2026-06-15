@@ -15,63 +15,58 @@ import { prisma } from '@/lib/prisma'
 export const dynamic = 'force-dynamic'
 
 export async function GET(req: NextRequest) {
-  const session = await auth()
-  if (!session?.user || session.user.role !== 'ADMIN')
-    return NextResponse.json({ error: 'Admin only' }, { status: 403 })
+  try {
+    const session = await auth()
+    if (!session?.user || session.user.role !== 'ADMIN')
+      return NextResponse.json({ error: 'Admin only' }, { status: 403 })
 
-  const days  = Math.max(7, Math.min(parseInt(req.nextUrl.searchParams.get('days') ?? '90', 10) || 90, 730))
-  const since = new Date(Date.now() - days * 24 * 60 * 60_000)
+    const days  = Math.max(7, Math.min(parseInt(req.nextUrl.searchParams.get('days') ?? '90', 10) || 90, 730))
+    const since = new Date(Date.now() - days * 24 * 60 * 60_000)
 
-  const [
-    consentCount,
-    totalPatients,
-    triagesByDept,
-    triagesBySeverity,
-    recoveryByDept,
-    monthlyVolume,
-    latestInsight,
-  ] = await Promise.all([
-    prisma.patient.count({ where: { researchConsent: true } }),
-    prisma.patient.count(),
+    const [consentCount, totalPatients] = await prisma.$transaction([
+      prisma.patient.count({ where: { researchConsent: true } }),
+      prisma.patient.count(),
+    ])
 
-    prisma.triage.groupBy({
-      by:    ['department'],
-      where: { createdAt: { gte: since }, patient: { researchConsent: true } },
-      _count: true,
-      orderBy: { _count: { department: 'desc' } },
-      take:  12,
-    }),
+    const [triagesByDept, triagesBySeverity, recoveryByDept, monthlyVolume, latestInsight] =
+      await Promise.all([
+        prisma.triage.groupBy({
+          by: ['department'],
+          where: { createdAt: { gte: since }, patient: { researchConsent: true } },
+          _count: true,
+          orderBy: { _count: { department: 'desc' } },
+          take: 12,
+        }),
 
-    prisma.triage.groupBy({
-      by:    ['severityLevel'],
-      where: { createdAt: { gte: since }, patient: { researchConsent: true } },
-      _count: true,
-    }),
+        prisma.triage.groupBy({
+          by: ['severityLevel'],
+          where: { createdAt: { gte: since }, patient: { researchConsent: true } },
+          _count: true,
+          orderBy: { _count: { severityLevel: 'asc' } },
+        }),
 
-    // Recovery outcomes grouped by department (via appointment)
-    prisma.appointment.groupBy({
-      by:    ['department', 'recoveryStatus'],
-      where: {
-        status:         'COMPLETED',
-        recoveryStatus: { not: null },
-        department:     { not: null },
-        createdAt:      { gte: since },
-        patient:        { researchConsent: true },
-      },
-      _count: true,
-      orderBy: { _count: { department: 'desc' } },
-      take:  30,
-    }),
+        prisma.appointment.groupBy({
+          by: ['department', 'recoveryStatus'],
+          where: {
+            status: 'COMPLETED',
+            recoveryStatus: { not: null },
+            department: { not: null },
+            createdAt: { gte: since },
+            patient: { researchConsent: true },
+          },
+          _count: true,
+          orderBy: { _count: { department: 'desc' } },
+          take: 30,
+        }),
 
-    // Monthly triage volume — raw records, group client-side
-    prisma.triage.findMany({
-      where:   { createdAt: { gte: since }, patient: { researchConsent: true } },
-      select:  { createdAt: true, severityScore: true },
-      orderBy: { createdAt: 'asc' },
-    }),
+        prisma.triage.findMany({
+          where: { createdAt: { gte: since }, patient: { researchConsent: true } },
+          select: { createdAt: true, severityScore: true },
+          orderBy: { createdAt: 'asc' },
+        }),
 
-    prisma.researchInsight.findFirst({ orderBy: { generatedAt: 'desc' } }),
-  ])
+        prisma.researchInsight.findFirst({ orderBy: { generatedAt: 'desc' } }),
+      ])
 
   // Build month-buckets for volume chart
   const monthMap: Record<string, { total: number; sumSeverity: number }> = {}
@@ -127,4 +122,8 @@ export async function GET(req: NextRequest) {
       topDiseases: latestInsight.topDiseases,
     } : null,
   })
+  } catch (error) {
+    console.error('admin/research error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
 }
