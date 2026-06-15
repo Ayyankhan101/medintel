@@ -6,7 +6,7 @@ import { SymptomSummary } from '@/components/intake/SymptomSummary'
 import { UploadDocs } from '@/components/intake/UploadDocs'
 import { NearbyHospitals } from '@/components/resources/NearbyHospitals'
 import { DoctorCard } from '@/components/triage/DoctorCard'
-import { Mic, Keyboard, ChevronLeft, Loader2, ArrowRight, AlertCircle, Stethoscope, MapPin, WifiOff, Clock } from 'lucide-react'
+import { Mic, Keyboard, ChevronLeft, Loader2, ArrowRight, AlertCircle, Stethoscope, MapPin, WifiOff, Clock, Check, Trash2 } from 'lucide-react'
 import type { TriageResult } from '@/types'
 import { Btn } from '@/components/design/Btn'
 import { useOnlineStatus } from '@/hooks/useOnlineStatus'
@@ -27,6 +27,12 @@ interface DoctorMatch {
 interface IntakeResult extends TriageResult { triageId: string; transcript: string; summary: string }
 type IntakeMode = 'choose' | 'voice' | 'text'
 
+const STEPS = [
+  { num: 1, label: 'Describe' },
+  { num: 2, label: 'Review' },
+  { num: 3, label: 'Doctor' },
+] as const
+
 export default function IntakePage() {
   return (
     <Suspense fallback={
@@ -36,6 +42,43 @@ export default function IntakePage() {
     }>
       <IntakeInner />
     </Suspense>
+  )
+}
+
+function StepIndicator({ current }: { current: number }) {
+  return (
+    <div className="flex items-center justify-center gap-0" style={{ animation: 'mi-fade-up 320ms var(--ease-out-quart) both' }}>
+      {STEPS.map((step, i) => {
+        const isActive = current === step.num
+        const isComplete = current > step.num
+        const isLast = i === STEPS.length - 1
+        return (
+          <div key={step.num} className="flex items-center">
+            <div className="flex items-center gap-2">
+              <span className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
+                isActive
+                  ? 'bg-blue-600 text-white shadow-md shadow-blue-200 dark:shadow-blue-900/40 scale-110'
+                  : isComplete
+                    ? 'bg-emerald-500 text-white'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500'
+              }`}>
+                {isComplete ? <Check className="w-4 h-4" /> : step.num}
+              </span>
+              <span className={`text-xs font-medium hidden sm:inline transition-colors ${
+                isActive ? 'text-slate-800 dark:text-slate-100' : isComplete ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500'
+              }`}>
+                {step.label}
+              </span>
+            </div>
+            {!isLast && (
+              <span className={`w-8 h-px mx-2 transition-colors ${
+                isComplete ? 'bg-emerald-400' : 'bg-slate-200 dark:bg-slate-700'
+              }`} />
+            )}
+          </div>
+        )
+      })}
+    </div>
   )
 }
 
@@ -52,6 +95,8 @@ function IntakeInner() {
   const [queued,    setQueued]    = useState(false)
 
   const isOnline = useOnlineStatus()
+
+  const [deleting, setDeleting] = useState(false)
 
   async function uploadVoice(blob: Blob, filename: string, language: string) {
     const form = new FormData()
@@ -90,7 +135,6 @@ function IntakeInner() {
     try {
       await uploadVoice(blob, filename, language)
     } catch (e) {
-      // Network failure → queue locally, upload when back online
       if (!isOnline || e instanceof TypeError) {
         await addToQueue(blob, filename, language)
         setQueued(true)
@@ -118,6 +162,18 @@ function IntakeInner() {
     finally { setLoading(false) }
   }
 
+  async function handleClearData() {
+    if (!result?.triageId) return
+    setDeleting(true)
+    try {
+      await fetch(`/api/triage/${result.triageId}/cleanup`, { method: 'POST' })
+    } catch {}
+    setDeleting(false)
+    setResult(null); setMode('choose'); setDoctors([])
+  }
+
+  const step = result ? 3 : (mode !== 'choose' ? 2 : 1)
+
   if (result) {
     const qs = new URLSearchParams({
       triageId: result.triageId,
@@ -140,8 +196,9 @@ function IntakeInner() {
         maxWidth: 760, margin: '0 auto',
         padding: '28px clamp(16px, 4vw, 32px) 64px',
         display: 'flex', flexDirection: 'column', gap: 22,
-        animation: 'mi-fade-up 320ms var(--ease-out-quart) both',
       }}>
+        <StepIndicator current={3} />
+
         <SymptomSummary {...result} />
 
         <UploadDocs
@@ -149,14 +206,27 @@ function IntakeInner() {
           onRefined={updated => setResult({ ...result, ...updated })}
         />
 
-        {/* ── Available doctors ── */}
         <section style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <SectionHeader
-            Icon={Stethoscope}
-            kicker="Step 1"
-            title={`Best ${result.department} doctors`}
-            sub="KYD-verified specialists available today, ranked by rating."
-          />
+          <header style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+            <span style={{
+              width: 36, height: 36, borderRadius: 12,
+              background: 'rgba(37,99,235,.10)', color: 'var(--blue-700)',
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flex: 'none',
+            }}>
+              <Stethoscope size={18} strokeWidth={2} />
+            </span>
+            <div>
+              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--blue-700)', letterSpacing: '.08em', textTransform: 'uppercase' }}>
+                Step 1
+              </span>
+              <h2 style={{ margin: '2px 0 0', fontSize: 18, fontWeight: 700, color: 'var(--ink)', letterSpacing: '-.01em' }}>
+                Best {result.department} doctors
+              </h2>
+              <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--ink-3)' }}>
+                KYD-verified specialists available today, ranked by rating.
+              </p>
+            </div>
+          </header>
           {docsLoading && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {[0,1,2].map(i => (
@@ -172,11 +242,12 @@ function IntakeInner() {
           )}
           {!docsLoading && doctors.length === 0 && (
             <div style={{
-              textAlign: 'center', padding: '20px 16px',
+              textAlign: 'center', padding: '24px 16px',
               borderRadius: 14, border: '1px dashed var(--border)',
               color: 'var(--ink-3)', fontSize: 13,
             }}>
-              No verified {result.department} specialists found yet.
+              <p style={{ fontWeight: 600, marginBottom: 4 }}>No verified {result.department} specialists found yet.</p>
+              <p style={{ color: 'var(--ink-4)' }}>Try browsing all doctors or visit a nearby clinic instead.</p>
             </div>
           )}
           {!docsLoading && doctors.length > 0 && (
@@ -193,25 +264,45 @@ function IntakeInner() {
           )}
         </section>
 
-        {/* ── Nearby hospitals (only after doctor matching completes) ── */}
         {!docsLoading && (
           <section style={{
             display: 'flex', flexDirection: 'column', gap: 12,
             animation: 'mi-fade-up 320ms var(--ease-out-quart) both',
           }}>
-            <SectionHeader
-              Icon={MapPin}
-              kicker="Step 2"
-              title="Nearest hospital or clinic"
-              sub="In-person care near you, in case you'd rather walk in."
-            />
+            <header style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+              <span style={{
+                width: 36, height: 36, borderRadius: 12,
+                background: 'rgba(37,99,235,.10)', color: 'var(--blue-700)',
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flex: 'none',
+              }}>
+                <MapPin size={18} strokeWidth={2} />
+              </span>
+              <div>
+                <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--blue-700)', letterSpacing: '.08em', textTransform: 'uppercase' }}>
+                  Step 2
+                </span>
+                <h2 style={{ margin: '2px 0 0', fontSize: 18, fontWeight: 700, color: 'var(--ink)', letterSpacing: '-.01em' }}>
+                  Nearest hospital or clinic
+                </h2>
+                <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--ink-3)' }}>
+                  In-person care near you, in case you&apos;d rather walk in.
+                </p>
+              </div>
+            </header>
             <NearbyHospitals />
           </section>
         )}
 
-        <Btn kind="secondary" full onClick={() => { setResult(null); setMode('choose'); setDoctors([]) }}>
-          Start over
-        </Btn>
+        <div className="flex items-center justify-between pt-2">
+          <button onClick={handleClearData} disabled={deleting}
+            className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors disabled:opacity-50">
+            {deleting ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
+            Clear this session
+          </button>
+          <Btn kind="secondary" onClick={() => { setResult(null); setMode('choose'); setDoctors([]) }}>
+            Start over
+          </Btn>
+        </div>
       </div>
     )
   }
@@ -222,16 +313,20 @@ function IntakeInner() {
       padding: '32px clamp(16px, 4vw, 32px) 64px',
       display: 'flex', flexDirection: 'column', gap: 22,
     }}>
-      <header style={{ textAlign: 'center' }}>
+      <StepIndicator current={step} />
+
+      <header style={{ textAlign: 'center', marginTop: 4 }}>
         <h1 style={{ margin: 0, fontSize: 30, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--ink)' }}>
-          How are you feeling?
+          {mode === 'choose' ? 'How are you feeling?' : 'Describe your symptoms'}
         </h1>
         <p style={{ margin: '8px 0 0', fontSize: 15, color: 'var(--ink-3)', lineHeight: 1.5 }}>
-          Describe your symptoms — we&apos;ll find the right doctor for you.
+          {mode === 'choose'
+            ? 'Describe your symptoms — we\'ll find the right doctor for you.'
+            : 'Speak or type naturally — our AI understands Urdu, Pashto, Punjabi, Sindhi, and English'
+          }
         </p>
       </header>
 
-      {/* ── Offline banner ── */}
       {!isOnline && (
         <div style={{
           display: 'flex', alignItems: 'flex-start', gap: 10,
@@ -249,7 +344,6 @@ function IntakeInner() {
         </div>
       )}
 
-      {/* ── Upload queued notice ── */}
       {(queued || queueLength > 0) && (
         <div style={{
           display: 'flex', alignItems: 'center', gap: 10,
@@ -271,43 +365,18 @@ function IntakeInner() {
       {mode === 'choose' && (
         <div style={{
           display: 'grid',
-          // When offline, put text first (it always works); otherwise voice first
           gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
           gap: 14,
         }}>
           {!isOnline ? (
             <>
-              <ModeCard
-                Icon={Keyboard}
-                accent="blue"
-                title="Type"
-                sub="Works offline"
-                onClick={() => setMode('text')}
-              />
-              <ModeCard
-                Icon={Mic}
-                accent="red"
-                title="Speak"
-                sub="Urdu یا English"
-                onClick={() => setMode('voice')}
-              />
+              <ModeCard Icon={Keyboard} accent="blue" title="Type" sub="Works offline" onClick={() => setMode('text')} />
+              <ModeCard Icon={Mic} accent="red" title="Speak" sub="Urdu یا English" onClick={() => setMode('voice')} />
             </>
           ) : (
             <>
-              <ModeCard
-                Icon={Mic}
-                accent="red"
-                title="Speak"
-                sub="Urdu یا English"
-                onClick={() => setMode('voice')}
-              />
-              <ModeCard
-                Icon={Keyboard}
-                accent="blue"
-                title="Type"
-                sub="Write symptoms"
-                onClick={() => setMode('text')}
-              />
+              <ModeCard Icon={Mic} accent="red" title="Speak" sub="Urdu یا English" onClick={() => setMode('voice')} />
+              <ModeCard Icon={Keyboard} accent="blue" title="Type" sub="Write symptoms" onClick={() => setMode('text')} />
             </>
           )}
         </div>
@@ -380,7 +449,6 @@ function IntakeInner() {
   )
 }
 
-/* ── mode card ── */
 function ModeCard({ Icon, accent, title, sub, onClick }: {
   Icon: React.ComponentType<{ size?: number; strokeWidth?: number }>
   accent: 'red' | 'blue'
@@ -422,34 +490,6 @@ function ModeCard({ Icon, accent, title, sub, onClick }: {
         <div style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 2 }}>{sub}</div>
       </div>
     </button>
-  )
-}
-
-function SectionHeader({ Icon, kicker, title, sub }: {
-  Icon: React.ComponentType<{ size?: number; strokeWidth?: number }>
-  kicker: string
-  title: string
-  sub?: string
-}) {
-  return (
-    <header style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-      <span style={{
-        width: 36, height: 36, borderRadius: 12,
-        background: 'rgba(37,99,235,.10)', color: 'var(--blue-700)',
-        display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flex: 'none',
-      }}>
-        <Icon size={18} strokeWidth={2} />
-      </span>
-      <div>
-        <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--blue-700)', letterSpacing: '.08em', textTransform: 'uppercase' }}>
-          {kicker}
-        </span>
-        <h2 style={{ margin: '2px 0 0', fontSize: 18, fontWeight: 700, color: 'var(--ink)', letterSpacing: '-.01em' }}>
-          {title}
-        </h2>
-        {sub && <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--ink-3)' }}>{sub}</p>}
-      </div>
-    </header>
   )
 }
 

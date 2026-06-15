@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
         if (clash) throw new SlotTakenError()
       }
 
-      return tx.appointment.create({
+      const apt = await tx.appointment.create({
         data: {
           patient:     { connect: { id: patient.id } },
           scheduledAt: startAt,
@@ -89,6 +89,18 @@ export async function POST(req: NextRequest) {
           doctor:  { include: { user: true } },
         },
       })
+
+      // Data privacy: triage transcript has been copied to the appointment;
+      // clear it from the triage record so AI input isn't retained longer than
+      // needed.
+      if (triageId) {
+        await tx.triage.update({
+          where: { id: triageId },
+          data:  { transcript: '' },
+        })
+      }
+
+      return apt
     }, { isolationLevel: 'Serializable' })
 
     if (appointment.doctor && appointment.patient.user.email) {

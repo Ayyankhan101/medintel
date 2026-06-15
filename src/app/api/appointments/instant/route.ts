@@ -88,7 +88,7 @@ export async function POST(req: NextRequest) {
       })
       if (clash) throw new DoctorUnavailable()
 
-      return tx.appointment.create({
+      const apt = await tx.appointment.create({
         data: {
           patient: { connect: { id: patient.id } },
           doctor:  { connect: { id: doctor.id } },
@@ -106,6 +106,15 @@ export async function POST(req: NextRequest) {
           doctor:  { include: { user: true } },
         },
       })
+
+      if (parsed.data.triageId) {
+        await tx.triage.update({
+          where: { id: parsed.data.triageId },
+          data:  { transcript: '' },
+        })
+      }
+
+      return apt
     }, { isolationLevel: 'Serializable' })
 
     if (appointment.doctor && appointment.patient.user.email) {
