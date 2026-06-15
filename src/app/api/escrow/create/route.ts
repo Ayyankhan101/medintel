@@ -4,6 +4,7 @@ import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { createEscrowPaymentIntent } from '@/lib/stripe'
 import { rateLimitDb } from '@/lib/rate-limit'
+import { audit } from '@/lib/audit'
 
 const schema = z.object({ appointmentId: z.string().min(1) })
 
