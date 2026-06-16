@@ -56,10 +56,10 @@ export default function AdminDashboardPage() {
       animation: 'mi-fade-up 320ms var(--ease-out-quart) both',
     }}>
       <header>
-        <span style={{ fontSize: 11, fontWeight: 700, color: '#a16207', letterSpacing: '.08em', textTransform: 'uppercase' }}>
+        <span style={{ fontSize: 'var(--text-xxs)', fontWeight: 700, color: '#a16207', letterSpacing: '.08em', textTransform: 'uppercase' }}>
           Admin
         </span>
-        <h1 style={{ margin: '4px 0 0', fontSize: 28, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--ink)' }}>
+        <h1 style={{ margin: '4px 0 0', fontSize: 'var(--text-heading)', fontWeight: 700, letterSpacing: '-.02em', color: 'var(--ink)' }}>
           Overview
         </h1>
       </header>
@@ -92,7 +92,7 @@ export default function AdminDashboardPage() {
             <p style={{ margin: 0, fontWeight: 700, color: 'var(--ink)' }}>
               {stats.doctors.pending} doctors waiting for verification
             </p>
-            <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--ink-3)' }}>
+            <p style={{ margin: '2px 0 0', fontSize: 'var(--text-sm)', color: 'var(--ink-3)' }}>
               Review credentials and approve or reject.
             </p>
           </div>
@@ -127,9 +127,9 @@ function Stat({ Icon, tone, label, value }: { Icon: IconCmp; tone: keyof typeof 
         }}>
           <Icon size={16} strokeWidth={2} />
         </span>
-        <span style={{ fontSize: 13, color: 'var(--ink-3)' }}>{label}</span>
+        <span style={{ fontSize: 'var(--text-xs)', color: 'var(--ink-3)' }}>{label}</span>
       </div>
-      <p className="mono" style={{ margin: 0, fontSize: 26, fontWeight: 700, color: 'var(--ink)', lineHeight: 1, letterSpacing: '-.01em' }}>
+      <p className="mono" style={{ margin: 0, fontSize: 'var(--text-hero)', fontWeight: 700, color: 'var(--ink)', lineHeight: 1, letterSpacing: '-.01em' }}>
         {value.toLocaleString('en-PK')}
       </p>
     </GlassCard>
@@ -139,8 +139,8 @@ function Stat({ Icon, tone, label, value }: { Icon: IconCmp; tone: keyof typeof 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <GlassCard as="section" padding={18}>
-      <h2 style={{ margin: 0, fontSize: 13, fontWeight: 700, color: 'var(--ink)', marginBottom: 12 }}>{title}</h2>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+      <h2 style={{ margin: 0, fontSize: 'var(--text-xxs)', fontWeight: 700, color: 'var(--ink)', marginBottom: 12 }}>{title}</h2>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: 12 }}>
         {children}
       </div>
     </GlassCard>
@@ -150,8 +150,8 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 function Breakdown({ label, value, color }: { label: string; value: number; color: string }) {
   return (
     <div>
-      <p style={{ margin: 0, fontSize: 12, color: 'var(--ink-3)' }}>{label}</p>
-      <p className="mono" style={{ margin: '4px 0 0', fontSize: 20, fontWeight: 700, color }}>{value}</p>
+      <p style={{ margin: 0, fontSize: 'var(--text-xs)', color: 'var(--ink-3)' }}>{label}</p>
+      <p className="mono" style={{ margin: '4px 0 0', fontSize: 'var(--text-display)', fontWeight: 700, color }}>{value}</p>
     </div>
   )
 }

@@ -89,10 +89,10 @@ function AdminDoctorsInner() {
     }}>
       <header style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
         <div>
-          <span style={{ fontSize: 11, fontWeight: 700, color: '#a16207', letterSpacing: '.08em', textTransform: 'uppercase' }}>
+          <span style={{ fontSize: 'var(--text-xxs)', fontWeight: 700, color: '#a16207', letterSpacing: '.08em', textTransform: 'uppercase' }}>
             Admin
           </span>
-          <h1 style={{ margin: '4px 0 0', fontSize: 28, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--ink)' }}>
+          <h1 style={{ margin: '4px 0 0', fontSize: 'var(--text-heading)', fontWeight: 700, letterSpacing: '-.02em', color: 'var(--ink)' }}>
             Doctor verification
           </h1>
         </div>
@@ -124,7 +124,7 @@ function AdminDoctorsInner() {
       {error && (
         <div style={{
           background: 'rgba(239,68,68,.08)', border: '1px solid rgba(239,68,68,.25)',
-          borderRadius: 12, padding: '10px 12px', fontSize: 14, color: 'var(--red-600)',
+          borderRadius: 12, padding: '10px 12px', fontSize: 'var(--text-base)', color: 'var(--red-600)',
         }}>{error}</div>
       )}
       {loading && (
@@ -145,7 +145,7 @@ function AdminDoctorsInner() {
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
               <div style={{ flex: 1, minWidth: 280 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                  <p style={{ margin: 0, fontWeight: 700, color: 'var(--ink)', fontSize: 15 }}>Dr. {d.user.name ?? '—'}</p>
+                  <p style={{ margin: 0, fontWeight: 700, color: 'var(--ink)', fontSize: 'var(--text-base)' }}>Dr. {d.user.name ?? '—'}</p>
                   {d.trustBadge && (
                     <span title="Trust badge" style={{ color: 'var(--amber-500)' }}>
                       <ShieldCheck size={16} strokeWidth={2.5} />
@@ -153,7 +153,7 @@ function AdminDoctorsInner() {
                   )}
                   <KYDBadge status={d.kydStatus} />
                 </div>
-                <p style={{ margin: '4px 0 12px', fontSize: 12, color: 'var(--ink-3)' }}>
+                <p style={{ margin: '4px 0 12px', fontSize: 'var(--text-xs)', color: 'var(--ink-3)' }}>
                   {d.user.email}{d.user.phone ? ` · ${d.user.phone}` : ''}
                 </p>
                 <div style={{
@@ -169,7 +169,7 @@ function AdminDoctorsInner() {
                   <Field label="Stripe"         value={d.stripeAccountId ? 'connected' : 'not connected'} />
                   <Field label="Joined"         value={new Date(d.user.createdAt).toLocaleDateString('en-PK')} />
                 </div>
-                {d.bio && <p style={{ margin: '12px 0 0', fontSize: 13, color: 'var(--ink-3)', fontStyle: 'italic' }}>{d.bio}</p>}
+                {d.bio && <p style={{ margin: '12px 0 0', fontSize: 'var(--text-sm)', color: 'var(--ink-3)', fontStyle: 'italic' }}>{d.bio}</p>}
               </div>
               {d.kydStatus === 'PENDING' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flex: 'none' }}>
@@ -201,10 +201,10 @@ function Field({ label, value, mono }: { label: string; value: string; mono?: bo
   return (
     <div>
       <p style={{
-        margin: 0, fontSize: 11, fontWeight: 700, color: 'var(--ink-4)',
+        margin: 0, fontSize: 'var(--text-xxs)', fontWeight: 700, color: 'var(--ink-4)',
         letterSpacing: '.06em', textTransform: 'uppercase',
       }}>{label}</p>
-      <p className={mono ? 'mono' : ''} style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--ink-2)' }}>{value}</p>
+      <p className={mono ? 'mono' : ''} style={{ margin: '2px 0 0', fontSize: 'var(--text-sm)', color: 'var(--ink-2)' }}>{value}</p>
     </div>
   )
 }

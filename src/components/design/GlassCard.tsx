@@ -39,8 +39,8 @@ export function GlassCard({
       style={{
         '--glass-bg': TONE_BG[tone],
         borderColor: TONE_BORDER[tone],
-        padding,
-        borderRadius: 18,
+        padding: padding,
+        borderRadius: 'var(--radius-card, 18px)',
         ...style,
       } as React.CSSProperties}
     >

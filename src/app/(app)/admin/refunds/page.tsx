@@ -80,13 +80,13 @@ export default function AdminRefundsPage() {
       animation: 'mi-fade-up 320ms var(--ease-out-quart) both',
     }}>
       <header>
-        <span style={{ fontSize: 11, fontWeight: 700, color: '#a16207', letterSpacing: '.08em', textTransform: 'uppercase' }}>
+        <span style={{ fontSize: 'var(--text-xxs)', fontWeight: 700, color: '#a16207', letterSpacing: '.08em', textTransform: 'uppercase' }}>
           Admin
         </span>
-        <h1 style={{ margin: '4px 0 0', fontSize: 28, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--ink)' }}>
+        <h1 style={{ margin: '4px 0 0', fontSize: 'var(--text-heading)', fontWeight: 700, letterSpacing: '-.02em', color: 'var(--ink)' }}>
           Refunds &amp; disputes
         </h1>
-        <p style={{ margin: '4px 0 0', fontSize: 14, color: 'var(--ink-3)' }}>
+        <p style={{ margin: '4px 0 0', fontSize: 'var(--text-base)', color: 'var(--ink-3)' }}>
           Look up an appointment, issue a full or partial refund.
         </p>
       </header>
@@ -101,7 +101,7 @@ export default function AdminRefundsPage() {
             flex: 1, padding: '10px 14px',
             borderRadius: 12, border: '1px solid var(--border)',
             background: 'var(--bg-elev)', color: 'var(--ink)',
-            fontSize: 14, fontFamily: 'var(--font-mono)', outline: 'none',
+                    fontSize: 'var(--text-base)', fontFamily: 'var(--font-mono)', outline: 'none',
           }}
           onFocus={e => { e.target.style.boxShadow = '0 0 0 4px rgba(37,99,235,.14)'; e.target.style.borderColor = 'var(--blue-600)' }}
           onBlur={e => { e.target.style.boxShadow = ''; e.target.style.borderColor = 'var(--border)' }}
@@ -115,7 +115,7 @@ export default function AdminRefundsPage() {
       {error && (
         <div style={{
           display: 'flex', alignItems: 'center', gap: 8,
-          fontSize: 14, color: 'var(--red-600)',
+          fontSize: 'var(--text-base)', color: 'var(--red-600)',
         }}>
           <AlertCircle size={14} /> {error}
         </div>
@@ -123,7 +123,7 @@ export default function AdminRefundsPage() {
       {success && (
         <div style={{
           display: 'flex', alignItems: 'center', gap: 8,
-          fontSize: 14, color: '#047857',
+          fontSize: 'var(--text-base)', color: '#047857',
         }}>
           <CheckCircle2 size={14} /> {success}
         </div>
@@ -133,7 +133,7 @@ export default function AdminRefundsPage() {
         <GlassCard as="section" padding={22} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
             <AppointmentStatusPill status={snap.status as 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'REFUNDED'} />
-            <span style={{ fontSize: 13, color: 'var(--ink-3)' }}>
+            <span style={{ fontSize: 'var(--text-sm)', color: 'var(--ink-3)' }}>
               {new Date(snap.scheduledAt).toLocaleString('en-PK')}
             </span>
           </div>
@@ -148,7 +148,7 @@ export default function AdminRefundsPage() {
           </div>
 
           <div style={{ borderTop: '1px solid var(--border)', paddingTop: 14 }}>
-            <h3 style={{ margin: 0, fontSize: 13, fontWeight: 700, color: 'var(--ink)', marginBottom: 10 }}>Escrow</h3>
+            <h3 style={{ margin: 0, fontSize: 'var(--text-sm)', fontWeight: 700, color: 'var(--ink)', marginBottom: 10 }}>Escrow</h3>
             {escrow ? (
               <>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
@@ -163,7 +163,7 @@ export default function AdminRefundsPage() {
                 </div>
               </>
             ) : (
-              <p style={{ margin: 0, fontSize: 14, color: 'var(--ink-3)' }}>No escrow attached to this appointment.</p>
+              <p style={{ margin: 0, fontSize: 'var(--text-base)', color: 'var(--ink-3)' }}>No escrow attached to this appointment.</p>
             )}
           </div>
 
@@ -173,7 +173,7 @@ export default function AdminRefundsPage() {
                     borderTop: '1px solid var(--border)', paddingTop: 14,
                     display: 'flex', flexDirection: 'column', gap: 12,
                   }}>
-              <h3 style={{ margin: 0, fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>Issue refund</h3>
+              <h3 style={{ margin: 0, fontSize: 'var(--text-sm)', fontWeight: 700, color: 'var(--ink)' }}>Issue refund</h3>
               <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-3)', letterSpacing: '.04em', textTransform: 'uppercase' }}>
                   Amount (PKR) — blank for full
@@ -183,10 +183,10 @@ export default function AdminRefundsPage() {
                   onChange={e => setAmount(e.target.value)}
                   placeholder={`${remaining}`}
                   style={{
-                    width: 200, padding: '10px 12px',
+                    width: 200, maxWidth: '100%', padding: '10px 12px',
                     borderRadius: 10, border: '1px solid var(--border)',
                     background: 'var(--bg-elev)', color: 'var(--ink)',
-                    fontSize: 14, fontFamily: 'var(--font-mono)', outline: 'none',
+            fontSize: 'var(--text-base)', fontFamily: 'var(--font-mono)', outline: 'none',
                   }}
                 />
               </label>
@@ -202,7 +202,7 @@ export default function AdminRefundsPage() {
                     width: '100%', padding: '10px 12px',
                     borderRadius: 10, border: '1px solid var(--border)',
                     background: 'var(--bg-elev)', color: 'var(--ink)',
-                    fontSize: 14, lineHeight: 1.5, resize: 'vertical',
+                    fontSize: 'var(--text-base)', lineHeight: 1.5, resize: 'vertical',
                     outline: 'none', fontFamily: 'var(--font-ui)',
                   }}
                 />
@@ -225,11 +225,11 @@ function Row({ k, v, mono }: { k: string; v: string; mono?: boolean }) {
   return (
     <div style={{ display: 'flex', gap: 8, alignItems: 'baseline' }}>
       <span style={{
-        minWidth: 110, fontSize: 11, fontWeight: 700,
+        minWidth: 110, fontSize: 'var(--text-xs)', fontWeight: 700,
         color: 'var(--ink-4)', letterSpacing: '.06em', textTransform: 'uppercase',
       }}>{k}</span>
       <span className={mono ? 'mono' : ''} style={{
-        fontSize: mono ? 13 : 14,
+        fontSize: mono ? 'var(--text-sm)' : 'var(--text-base)',
         color: 'var(--ink)', wordBreak: 'break-all',
       }}>{v}</span>
     </div>

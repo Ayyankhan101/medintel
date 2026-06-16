@@ -39,10 +39,10 @@ export default function AuditPage() {
     }}>
       <header style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
         <div>
-          <span style={{ fontSize: 11, fontWeight: 700, color: '#a16207', letterSpacing: '.08em', textTransform: 'uppercase' }}>
+          <span style={{ fontSize: 'var(--text-xxs)', fontWeight: 700, color: '#a16207', letterSpacing: '.08em', textTransform: 'uppercase' }}>
             Admin
           </span>
-          <h1 style={{ margin: '4px 0 0', fontSize: 28, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--ink)' }}>
+          <h1 style={{ margin: '4px 0 0', fontSize: 'var(--text-heading)', fontWeight: 700, letterSpacing: '-.02em', color: 'var(--ink)' }}>
             Audit log
           </h1>
         </div>
@@ -61,20 +61,20 @@ export default function AuditPage() {
       </header>
 
       {loading && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--ink-3)', fontSize: 14 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--ink-3)', fontSize: 'var(--text-base)' }}>
           <Loader2 size={16} className="animate-spin" /> Loading…
         </div>
       )}
 
       <GlassCard padding={0} style={{ overflow: 'hidden' }}>
         <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-base)' }}>
             <thead style={{ background: 'var(--bg-soft)' }}>
               <tr>
                 {['When', 'Action', 'Entity', 'Actor', 'Detail'].map(h => (
                   <th key={h} style={{
                     padding: '10px 14px', textAlign: 'left',
-                    fontSize: 10, fontWeight: 700, color: 'var(--ink-3)',
+                    fontSize: 'var(--text-xxs)', fontWeight: 700, color: 'var(--ink-3)',
                     letterSpacing: '.08em', textTransform: 'uppercase',
                   }}>{h}</th>
                 ))}
@@ -83,26 +83,26 @@ export default function AuditPage() {
             <tbody>
               {logs.map(l => (
                 <tr key={l.id} style={{ borderTop: '1px solid var(--border)' }}>
-                  <td style={{ padding: '10px 14px', fontSize: 12, color: 'var(--ink-3)', whiteSpace: 'nowrap' }}>
+                  <td style={{ padding: '10px 14px', fontSize: 'var(--text-xs)', color: 'var(--ink-3)', whiteSpace: 'nowrap' }}>
                     {new Date(l.createdAt).toLocaleString('en-PK', { dateStyle: 'short', timeStyle: 'short' })}
                   </td>
-                  <td className="mono" style={{ padding: '10px 14px', fontSize: 12, color: 'var(--ink-2)' }}>
+                  <td className="mono" style={{ padding: '10px 14px', fontSize: 'var(--text-xs)', color: 'var(--ink-2)' }}>
                     {l.action}
                   </td>
-                  <td style={{ padding: '10px 14px', fontSize: 12, color: 'var(--ink-3)' }}>
+                  <td style={{ padding: '10px 14px', fontSize: 'var(--text-xs)', color: 'var(--ink-3)' }}>
                     <span style={{ color: 'var(--ink-2)' }}>{l.entityType}</span>
                     <span className="mono" style={{ marginLeft: 4, color: 'var(--ink-4)' }}>{l.entityId.slice(0, 8)}…</span>
                   </td>
-                  <td style={{ padding: '10px 14px', fontSize: 12, color: 'var(--ink-3)' }}>
+                  <td style={{ padding: '10px 14px', fontSize: 'var(--text-xs)', color: 'var(--ink-3)' }}>
                     <span className="mono">{l.actorId?.slice(0, 8) ?? 'system'}</span>
                     {l.actorRole && (
-                      <span style={{ marginLeft: 4, fontSize: 10, color: 'var(--ink-4)', letterSpacing: '.08em', textTransform: 'uppercase' }}>
+                      <span style={{ marginLeft: 4, fontSize: 'var(--text-xxs)', color: 'var(--ink-4)', letterSpacing: '.08em', textTransform: 'uppercase' }}>
                         {l.actorRole}
                       </span>
                     )}
                   </td>
                   <td className="mono" style={{
-                    padding: '10px 14px', fontSize: 12, color: 'var(--ink-3)',
+                    padding: '10px 14px', fontSize: 'var(--text-xs)', color: 'var(--ink-3)',
                     maxWidth: 380, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                   }}>
                     {l.metadata ? JSON.stringify(l.metadata) : '—'}
@@ -113,7 +113,7 @@ export default function AuditPage() {
           </table>
         </div>
         {!loading && logs.length === 0 && (
-          <div style={{ textAlign: 'center', padding: '40px 0', fontSize: 14, color: 'var(--ink-3)' }}>No entries.</div>
+          <div style={{ textAlign: 'center', padding: '40px 0', fontSize: 'var(--text-base)', color: 'var(--ink-3)' }}>No entries.</div>
         )}
       </GlassCard>
     </div>

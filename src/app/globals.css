@@ -281,6 +281,16 @@
   --gap:       20px;
   --h-tap:     52px;
 
+  /* fluid font scale */
+  --text-heading: 28px;
+  --text-hero:    26px;
+  --text-display: 20px;
+  --text-lg:      16px;
+  --text-base:    14px;
+  --text-sm:      13px;
+  --text-xs:      12px;
+  --text-xxs:     11px;
+
   /* light theme surfaces */
   --mi-bg:        var(--slate-50);
   --mi-bg-elev:   #ffffff;
@@ -356,6 +366,23 @@
   --glass-hover-shadow: 0 1px 0 rgba(255,255,255,.04) inset, 0 12px 32px -10px rgba(0,0,0,.7), 0 1px 4px -2px rgba(0,0,0,.5);
 }
 
+/* ── Responsive overrides (mobile-first) ────────────────────────── */
+@media (max-width: 640px) {
+  :root {
+    --text-heading: clamp(22px, 4vw, 28px);
+    --text-hero:    clamp(20px, 4vw, 26px);
+    --text-display: clamp(16px, 3vw, 20px);
+    --text-base:    clamp(13px, 1.6vw, 14px);
+    --text-sm:      clamp(12px, 1.4vw, 13px);
+    --text-xs:      clamp(11px, 1.2vw, 12px);
+    --text-xxs:     clamp(10px, 1vw, 11px);
+    --pad-card:     16px;
+    --pad-stage:    24px;
+    --gap:          12px;
+    --h-tap:        44px;
+  }
+}
+
 .glass {
   position: relative;
   background: var(--glass-reflect), var(--glass-bg);
@@ -382,8 +409,11 @@
 
 .glass-card {
   position: relative;
-  border-radius: 18px;
+  border-radius: var(--radius-card, 18px);
   overflow: hidden;
+}
+@media (max-width: 640px) {
+  .glass-card { --radius-card: 12px; }
 }
 
 /* keyframes */
