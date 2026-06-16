@@ -1,11 +1,10 @@
 import type { TriageResult } from '@/types'
-import { runTriageAgent } from './triage/agent'
+import { runTriageAgent, type PatientContext } from './triage/agent'
 import { WHISPER_MODEL, getLlmClient } from './llm-client'
 
+const CONFIDENCE_FLOOR = 0.7
+
 export async function transcribeAudio(audioBuffer: Buffer, filename: string, language = 'ur'): Promise<string> {
-  // Copy exactly this Buffer's bytes into a fresh ArrayBuffer. Using `audioBuffer.buffer`
-  // directly would leak pooled bytes for small audio clips (Buffer.concat returns a slice
-  // of an internal 8 KB pool for sizes ≤ ~4 KB).
   const ab = new ArrayBuffer(audioBuffer.byteLength)
   new Uint8Array(ab).set(audioBuffer)
   const file = new File([ab], filename, { type: 'audio/webm' })
@@ -15,21 +14,47 @@ export async function transcribeAudio(audioBuffer: Buffer, filename: string, lan
     language,
     response_format: 'text',
   })
-  // response_format: 'text' returns a raw string. Guard so we never persist
-  // `[object Object]` if the SDK ever swaps to a wrapped payload.
   if (typeof transcription === 'string') return transcription
   const text = (transcription as { text?: unknown } | null)?.text
   if (typeof text === 'string') return text
   throw new Error('Whisper transcription returned non-string payload')
 }
 
+export async function transcribeAudioWithConfidence(audioBuffer: Buffer, filename: string, language = 'ur'): Promise<{ text: string; confidence: number }> {
+  const ab = new ArrayBuffer(audioBuffer.byteLength)
+  new Uint8Array(ab).set(audioBuffer)
+  const file = new File([ab], filename, { type: 'audio/webm' })
+  const transcription = await getLlmClient().audio.transcriptions.create({
+    file,
+    model: WHISPER_MODEL,
+    language,
+    response_format: 'json',
+  })
+  const data = transcription as { text?: string; segments?: { confidence?: number }[] }
+  const text = typeof data?.text === 'string' ? data.text : ''
+  if (!text) throw new Error('Whisper transcription returned empty text')
+
+  const segments = data.segments ?? []
+  const avgConfidence = segments.length > 0
+    ? segments.reduce((sum, s) => sum + (s.confidence ?? 0.5), 0) / segments.length
+    : 0.5
+
+  return { text, confidence: avgConfidence }
+}
+
 export async function runFullIntakePipeline(
   audioBuffer: Buffer,
   filename: string,
   language = 'ur',
-): Promise<TriageResult & { transcript: string; summary: string }> {
-  const transcript = await transcribeAudio(audioBuffer, filename, language)
-  const { output } = await runTriageAgent(transcript)
+  context?: PatientContext,
+): Promise<TriageResult & { transcript: string; summary: string; confidence: number }> {
+  const { text: transcript, confidence } = await transcribeAudioWithConfidence(audioBuffer, filename, language)
+
+  if (confidence < CONFIDENCE_FLOOR) {
+    console.warn(`[openai] transcription confidence ${confidence.toFixed(2)} below floor ${CONFIDENCE_FLOOR} — proceeding with caveat`)
+  }
+
+  const { output, rawOutput } = await runTriageAgent(transcript, context)
   return {
     transcript,
     summary:       output.medicalTermSummary,
@@ -37,13 +62,16 @@ export async function runFullIntakePipeline(
     severityScore: output.severityScore,
     severityLevel: output.severityLevel,
     isEmergency:   output.severityScore >= 8,
+    confidence,
+    rawOutput:     rawOutput as unknown as Record<string, unknown>,
   }
 }
 
 export async function runTextIntakePipeline(
   text: string,
-): Promise<TriageResult & { transcript: string; summary: string }> {
-  const { output } = await runTriageAgent(text)
+  context?: PatientContext,
+): Promise<TriageResult & { transcript: string; summary: string; confidence: number }> {
+  const { output, rawOutput } = await runTriageAgent(text, context)
   return {
     transcript:    text,
     summary:       output.medicalTermSummary,
@@ -51,5 +79,7 @@ export async function runTextIntakePipeline(
     severityScore: output.severityScore,
     severityLevel: output.severityLevel,
     isEmergency:   output.severityScore >= 8,
+    confidence:    output.confidence,
+    rawOutput:     rawOutput as unknown as Record<string, unknown>,
   }
 }

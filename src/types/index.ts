@@ -37,6 +37,11 @@ export interface TriageResult {
   severityLevel: 'ROUTINE' | 'URGENT' | 'CRITICAL'
   summary: string
   isEmergency: boolean
+  rawOutput?: Record<string, unknown>
+  confidence?: number
+  keyFindings?: { metric: string; value: string; interpretation: string; isAbnormal: boolean }[]
+  suggestedInterventions?: string[]
+  followups?: { questions: { en: string; ur: string; slot: string }[] }
 }
 
 export interface NearbyResource {

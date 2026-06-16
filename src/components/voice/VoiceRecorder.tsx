@@ -2,7 +2,10 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { Mic, Square, Loader2, AlertCircle, Play, RotateCcw, Check } from 'lucide-react'
 
-interface Props { onRecordingComplete: (blob: Blob, filename: string, language: string) => void }
+interface Props {
+  onRecordingComplete: (blob: Blob, filename: string, language: string) => void
+  onProgressChange?: (step: 'transcribing' | 'analyzing' | 'matching' | 'followup') => void
+}
 
 const LANGUAGES = [
   { code: 'ur', label: 'اردو',  english: 'Urdu' },
@@ -43,7 +46,7 @@ function extFromMime(mime: string | undefined): string {
   return 'webm'
 }
 
-export function VoiceRecorder({ onRecordingComplete }: Props) {
+export function VoiceRecorder({ onRecordingComplete, onProgressChange }: Props) {
   const [state,       setState]    = useState<State>('idle')
   const [seconds,     setSeconds]  = useState(0)
   const [level,       setLevel]    = useState(0)
@@ -174,9 +177,10 @@ export function VoiceRecorder({ onRecordingComplete }: Props) {
     if (!recordedBlob) return
     setState('processing')
     setProcStep('transcribing')
-    const t1 = setTimeout(() => setProcStep('analyzing'), 1500)
-    const t2 = setTimeout(() => setProcStep('matching'), 3500)
-    procTimersRef.current = [t1, t2]
+    onProgressChange?.('transcribing')
+    // Progress advances as the parent receives the API response and calls setProcStep
+    procTimersRef.current.forEach(clearTimeout)
+    procTimersRef.current = []
     setTimeout(() => {
       onRecordingComplete(recordedBlob, `recording-${Date.now()}.${recordedExt}`, language)
     }, 50)

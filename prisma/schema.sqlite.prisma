@@ -111,6 +111,8 @@ model Patient {
   address          String?
   emergencyContact String?
   researchConsent  Boolean   @default(false)
+  preferredLanguage String?  @default("ur")
+  genderPreference  String?
 
   medicalRecords MedicalRecord[]
   appointments   Appointment[]
@@ -129,6 +131,7 @@ model Triage {
   severityLevel String
   department    String
   voiceFileUrl  String?
+  rawOutput     String?
   createdAt     DateTime @default(now())
 
   @@index([patientId, createdAt])
@@ -155,6 +158,7 @@ model Doctor {
   trustBadge      Boolean   @default(false)
   rating          Decimal?
   reviewCount     Int       @default(0)
+  languages       String    @default("[]")
   // JSON string: { days: [1..7], startHour, endHour, timezone }
   availability    String?
 

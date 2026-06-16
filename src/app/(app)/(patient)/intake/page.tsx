@@ -6,7 +6,7 @@ import { SymptomSummary } from '@/components/intake/SymptomSummary'
 import { UploadDocs } from '@/components/intake/UploadDocs'
 import { NearbyHospitals } from '@/components/resources/NearbyHospitals'
 import { DoctorCard } from '@/components/triage/DoctorCard'
-import { Mic, Keyboard, ChevronLeft, Loader2, ArrowRight, AlertCircle, Stethoscope, MapPin, WifiOff, Clock, Check, Trash2 } from 'lucide-react'
+import { Mic, Keyboard, ChevronLeft, Loader2, ArrowRight, AlertCircle, Stethoscope, MapPin, WifiOff, Clock, Check, Trash2, MessageCircle } from 'lucide-react'
 import type { TriageResult } from '@/types'
 import { Btn } from '@/components/design/Btn'
 import { useOnlineStatus } from '@/hooks/useOnlineStatus'
@@ -21,17 +21,30 @@ interface DoctorMatch {
   reviewCount: number
   trustBadge: boolean
   bio: string | null
+  languages?: string[]
+  tier?: string
+  score?: number
   user: { email: string }
 }
 
-interface IntakeResult extends TriageResult { triageId: string; transcript: string; summary: string }
+interface IntakeResult extends TriageResult { triageId: string; transcript: string; summary: string; confidence?: number }
+
+interface FollowupQuestion {
+  en: string
+  ur: string
+  slot: string
+}
+
 type IntakeMode = 'choose' | 'voice' | 'text'
+type ProcessingStep = 'transcribing' | 'analyzing' | 'matching' | 'followup'
 
 const STEPS = [
   { num: 1, label: 'Describe' },
   { num: 2, label: 'Review' },
   { num: 3, label: 'Doctor' },
 ] as const
+
+const MAX_FOLLOWUP_ROUNDS = 2
 
 export default function IntakePage() {
   return (
@@ -97,11 +110,20 @@ function IntakeInner() {
   const isOnline = useOnlineStatus()
 
   const [deleting, setDeleting] = useState(false)
+  const [procStep, setProcStep] = useState<ProcessingStep>('transcribing')
+  const [language, setLanguage] = useState('ur')
 
-  async function uploadVoice(blob: Blob, filename: string, language: string) {
+  // Follow-up state
+  const [followupQs, setFollowupQs] = useState<FollowupQuestion[]>([])
+  const [followupAnswers, setFollowupAnswers] = useState<string[]>([])
+  const [followupRound, setFollowupRound] = useState(0)
+  const [showFollowup, setShowFollowup] = useState(false)
+  const [followupLoading, setFollowupLoading] = useState(false)
+
+  async function uploadVoice(blob: Blob, filename: string, lang: string) {
     const form = new FormData()
     form.append('audio', blob, filename)
-    form.append('language', language)
+    form.append('language', lang)
     const res  = await fetch('/api/voice/transcribe', { method: 'POST', body: form })
     const raw  = await res.text()
     const data = raw ? JSON.parse(raw) : {}
@@ -114,12 +136,15 @@ function IntakeInner() {
   useEffect(() => {
     if (!result?.department) { setDoctors([]); return }
     setDocsLoading(true)
-    fetch(`/api/doctors?department=${encodeURIComponent(result.department)}`)
+    const p = new URLSearchParams({ department: result.department, severity: String(result.severityScore) })
+    if (language) p.set('language', language)
+    fetch(`/api/doctors?${p.toString()}`)
       .then(r => r.json())
       .then(d => { if (Array.isArray(d)) setDoctors(d.slice(0, 3)) })
       .catch(e => console.error('[intake] doctor fetch failed', e))
       .finally(() => setDocsLoading(false))
-  }, [result?.department])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [result?.department, result?.severityScore])
 
   useEffect(() => {
     const prefill = params.get('prefill')
@@ -130,13 +155,15 @@ function IntakeInner() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  async function handleVoiceComplete(blob: Blob, filename: string, language: string) {
+  async function handleVoiceComplete(blob: Blob, filename: string, lang: string) {
+    setLanguage(lang)
     setLoading(true); setError(null); setQueued(false)
+    setProcStep('transcribing')
     try {
-      await uploadVoice(blob, filename, language)
+      await uploadVoice(blob, filename, lang)
     } catch (e) {
       if (!isOnline || e instanceof TypeError) {
-        await addToQueue(blob, filename, language)
+        await addToQueue(blob, filename, lang)
         setQueued(true)
         setError(null)
       } else {
@@ -148,6 +175,7 @@ function IntakeInner() {
   async function handleTextSubmit() {
     if (!textInput.trim()) return
     setLoading(true); setError(null)
+    setProcStep('analyzing')
     try {
       const res  = await fetch('/api/voice/transcribe-text', {
         method:  'POST',
@@ -158,8 +186,57 @@ function IntakeInner() {
       const data = raw ? JSON.parse(raw) : {}
       if (!res.ok) throw new Error(data.error ?? `Server error ${res.status}`)
       setResult(data)
+
+      // Check if follow-up is needed
+      if (data.confidence != null && data.confidence < 0.7) {
+        await triggerFollowup(textInput, data)
+      }
     } catch (e) { setError(e instanceof Error ? e.message : 'Analysis failed') }
     finally { setLoading(false) }
+  }
+
+  async function triggerFollowup(originalText: string, triageData: IntakeResult) {
+    setFollowupLoading(true)
+    try {
+      const res = await fetch('/api/triage/followup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transcript: originalText, triage: { ...triageData, confidence: triageData.confidence ?? 0.5 } }),
+      })
+      const data = await res.json()
+      if (data.followups?.questions?.length > 0) {
+        setFollowupQs(data.followups.questions)
+        setFollowupAnswers(new Array(data.followups.questions.length).fill(''))
+        setShowFollowup(true)
+        setFollowupRound(1)
+        setProcStep('followup')
+      }
+    } catch (e) {
+      console.error('[intake] followup fetch failed', e)
+    } finally {
+      setFollowupLoading(false)
+    }
+  }
+
+  async function handleFollowupSubmit() {
+    const combinedAnswers = followupQs.map((q, i) => `${q.en}: ${followupAnswers[i] ?? ''}`).join('\n')
+    setFollowupLoading(true)
+    setShowFollowup(false)
+    try {
+      const res = await fetch('/api/voice/transcribe-text', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: `${result?.transcript ?? ''}\n\nFollow-up answers:\n${combinedAnswers}` }),
+      })
+      const raw = await res.text()
+      const data = raw ? JSON.parse(raw) : {}
+      if (!res.ok) throw new Error(data.error ?? 'Re-analysis failed')
+      setResult(data)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Follow-up analysis failed')
+    } finally {
+      setFollowupLoading(false)
+    }
   }
 
   async function handleClearData() {
@@ -172,6 +249,7 @@ function IntakeInner() {
     }
     setDeleting(false)
     setResult(null); setMode('choose'); setDoctors([])
+    setFollowupQs([]); setFollowupAnswers([]); setShowFollowup(false); setFollowupRound(0)
   }
 
   const step = result ? 3 : (mode !== 'choose' ? 2 : 1)
@@ -193,6 +271,10 @@ function IntakeInner() {
       })
       router.push(`/book?${p.toString()}`)
     }
+
+    // Follow-up UI — shown as an overlay before doctor cards
+    const showFollowupSection = showFollowup && followupQs.length > 0 && followupRound <= MAX_FOLLOWUP_ROUNDS
+
     return (
       <div style={{
         maxWidth: 760, margin: '0 auto',
@@ -201,110 +283,172 @@ function IntakeInner() {
       }}>
         <StepIndicator current={3} />
 
-        <SymptomSummary {...result} />
-
-        <UploadDocs
-          triageId={result.triageId}
-          onRefined={updated => setResult({ ...result, ...updated })}
-        />
-
-        <section style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <header style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-            <span style={{
-              width: 36, height: 36, borderRadius: 12,
-              background: 'rgba(37,99,235,.10)', color: 'var(--blue-700)',
-              display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flex: 'none',
-            }}>
-              <Stethoscope size={18} strokeWidth={2} />
-            </span>
-            <div>
-              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--blue-700)', letterSpacing: '.08em', textTransform: 'uppercase' }}>
-                Step 1
-              </span>
-              <h2 style={{ margin: '2px 0 0', fontSize: 18, fontWeight: 700, color: 'var(--ink)', letterSpacing: '-.01em' }}>
-                Best {result.department} doctors
-              </h2>
-              <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--ink-3)' }}>
-                KYD-verified specialists available today, ranked by rating.
-              </p>
-            </div>
-          </header>
-          {docsLoading && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {[0,1,2].map(i => (
-                <div key={i} style={{
-                  height: 124, borderRadius: 22,
-                  background: 'linear-gradient(90deg, var(--bg-soft) 0%, var(--bg-elev) 50%, var(--bg-soft) 100%)',
-                  backgroundSize: '200% 100%',
-                  animation: 'mi-shimmer 1.4s linear infinite',
-                  border: '1px solid var(--border)',
-                }} />
-              ))}
-            </div>
-          )}
-          {!docsLoading && doctors.length === 0 && (
-            <div style={{
-              textAlign: 'center', padding: '24px 16px',
-              borderRadius: 14, border: '1px dashed var(--border)',
-              color: 'var(--ink-3)', fontSize: 13,
-            }}>
-              <p style={{ fontWeight: 600, marginBottom: 4 }}>No verified {result.department} specialists found yet.</p>
-              <p style={{ color: 'var(--ink-4)' }}>Try browsing all doctors or visit a nearby clinic instead.</p>
-            </div>
-          )}
-          {!docsLoading && doctors.length > 0 && (
-            <>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {doctors.map(d => <DoctorCard key={d.id} doctor={d} onBook={bookDoctor} />)}
-              </div>
-              <Btn kind="secondary" full
-                   onClick={() => router.push(`/doctors?${qs.toString()}`)}
-                   trailing={<ArrowRight size={16} strokeWidth={2} />}>
-                See all {result.department} doctors
-              </Btn>
-            </>
-          )}
-        </section>
-
-        {!docsLoading && (
-          <section style={{
-            display: 'flex', flexDirection: 'column', gap: 12,
-            animation: 'mi-fade-up 320ms var(--ease-out-quart) both',
+        {showFollowupSection ? (
+          <div style={{
+            background: 'var(--bg-elev)', border: '1px solid var(--border)',
+            borderRadius: 22, padding: 24, boxShadow: 'var(--shadow-card)',
           }}>
-            <header style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
               <span style={{
                 width: 36, height: 36, borderRadius: 12,
                 background: 'rgba(37,99,235,.10)', color: 'var(--blue-700)',
-                display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flex: 'none',
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
               }}>
-                <MapPin size={18} strokeWidth={2} />
+                <MessageCircle size={18} strokeWidth={2} />
               </span>
               <div>
-                <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--blue-700)', letterSpacing: '.08em', textTransform: 'uppercase' }}>
-                  Step 2
-                </span>
-                <h2 style={{ margin: '2px 0 0', fontSize: 18, fontWeight: 700, color: 'var(--ink)', letterSpacing: '-.01em' }}>
-                  Nearest hospital or clinic
-                </h2>
+                <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: 'var(--ink)' }}>
+                  A few more details
+                </h3>
                 <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--ink-3)' }}>
-                  In-person care near you, in case you&apos;d rather walk in.
+                  Round {followupRound}/{MAX_FOLLOWUP_ROUNDS} — help us refine the assessment
                 </p>
               </div>
-            </header>
-            <NearbyHospitals />
-          </section>
-        )}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {followupQs.map((q, i) => (
+                <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <label style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink-2)' }}>
+                    {q.en}
+                  </label>
+                  <label style={{ fontSize: 12, color: 'var(--ink-4)', fontStyle: 'italic' }}>
+                    {q.ur}
+                  </label>
+                  <textarea
+                    value={followupAnswers[i] ?? ''}
+                    onChange={e => {
+                      const next = [...followupAnswers]
+                      next[i] = e.target.value
+                      setFollowupAnswers(next)
+                    }}
+                    placeholder="Your answer…"
+                    style={{
+                      width: '100%', minHeight: 60, padding: '10px 12px',
+                      borderRadius: 12, border: '1px solid var(--border)',
+                      background: 'var(--bg-soft)', color: 'var(--ink)',
+                      fontSize: 13, lineHeight: 1.5, resize: 'none',
+                      outline: 'none', fontFamily: 'var(--font-ui)',
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+            <div style={{ marginTop: 18 }}>
+              <Btn kind="primary" full
+                   disabled={followupLoading}
+                   onClick={handleFollowupSubmit}
+                   leading={followupLoading ? <Loader2 size={16} className="animate-spin" /> : null}>
+                {followupLoading ? 'Re-analyzing…' : 'Submit answers'}
+              </Btn>
+            </div>
+          </div>
+        ) : (
+          <>
+            <SymptomSummary {...result} />
+            <UploadDocs
+              triageId={result.triageId}
+              onRefined={updated => setResult({ ...result, ...updated })}
+            />
 
-        <div className="flex items-center justify-between pt-2">
-          <button onClick={handleClearData} disabled={deleting}
-            className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors disabled:opacity-50">
-            {deleting ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
-            Clear this session
-          </button>
-          <Btn kind="secondary" onClick={() => { setResult(null); setMode('choose'); setDoctors([]) }}>
-            Start over
-          </Btn>
-        </div>
+            <section style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <header style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                <span style={{
+                  width: 36, height: 36, borderRadius: 12,
+                  background: 'rgba(37,99,235,.10)', color: 'var(--blue-700)',
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flex: 'none',
+                }}>
+                  <Stethoscope size={18} strokeWidth={2} />
+                </span>
+                <div>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--blue-700)', letterSpacing: '.08em', textTransform: 'uppercase' }}>
+                    Step 1
+                  </span>
+                  <h2 style={{ margin: '2px 0 0', fontSize: 18, fontWeight: 700, color: 'var(--ink)', letterSpacing: '-.01em' }}>
+                    Best {result.department} doctors
+                  </h2>
+                  <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--ink-3)' }}>
+                    KYD-verified specialists ranked by match score.
+                  </p>
+                </div>
+              </header>
+              {docsLoading && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {[0,1,2].map(i => (
+                    <div key={i} style={{
+                      height: 124, borderRadius: 22,
+                      background: 'linear-gradient(90deg, var(--bg-soft) 0%, var(--bg-elev) 50%, var(--bg-soft) 100%)',
+                      backgroundSize: '200% 100%',
+                      animation: 'mi-shimmer 1.4s linear infinite',
+                      border: '1px solid var(--border)',
+                    }} />
+                  ))}
+                </div>
+              )}
+              {!docsLoading && doctors.length === 0 && (
+                <div style={{
+                  textAlign: 'center', padding: '24px 16px',
+                  borderRadius: 14, border: '1px dashed var(--border)',
+                  color: 'var(--ink-3)', fontSize: 13,
+                }}>
+                  <p style={{ fontWeight: 600, marginBottom: 4 }}>No verified {result.department} specialists found yet.</p>
+                  <p style={{ color: 'var(--ink-4)' }}>Try browsing all doctors or visit a nearby clinic instead.</p>
+                </div>
+              )}
+              {!docsLoading && doctors.length > 0 && (
+                <>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    {doctors.map(d => <DoctorCard key={d.id} doctor={d} onBook={bookDoctor} />)}
+                  </div>
+                  <Btn kind="secondary" full
+                       onClick={() => router.push(`/doctors?${qs.toString()}`)}
+                       trailing={<ArrowRight size={16} strokeWidth={2} />}>
+                    See all {result.department} doctors
+                  </Btn>
+                </>
+              )}
+            </section>
+
+            {!docsLoading && (
+              <section style={{
+                display: 'flex', flexDirection: 'column', gap: 12,
+                animation: 'mi-fade-up 320ms var(--ease-out-quart) both',
+              }}>
+                <header style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                  <span style={{
+                    width: 36, height: 36, borderRadius: 12,
+                    background: 'rgba(37,99,235,.10)', color: 'var(--blue-700)',
+                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flex: 'none',
+                  }}>
+                    <MapPin size={18} strokeWidth={2} />
+                  </span>
+                  <div>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--blue-700)', letterSpacing: '.08em', textTransform: 'uppercase' }}>
+                      Step 2
+                    </span>
+                    <h2 style={{ margin: '2px 0 0', fontSize: 18, fontWeight: 700, color: 'var(--ink)', letterSpacing: '-.01em' }}>
+                      Nearest hospital or clinic
+                    </h2>
+                    <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--ink-3)' }}>
+                      In-person care near you, in case you&apos;d rather walk in.
+                    </p>
+                  </div>
+                </header>
+                <NearbyHospitals />
+              </section>
+            )}
+
+            <div className="flex items-center justify-between pt-2">
+              <button onClick={handleClearData} disabled={deleting}
+                className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors disabled:opacity-50">
+                {deleting ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
+                Clear this session
+              </button>
+              <Btn kind="secondary" onClick={() => { setResult(null); setMode('choose'); setDoctors([]) }}>
+                Start over
+              </Btn>
+            </div>
+          </>
+        )}
       </div>
     )
   }
@@ -396,7 +540,7 @@ function IntakeInner() {
             </button>
             <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink-2)' }}>Voice recording</span>
           </div>
-          <VoiceRecorder onRecordingComplete={handleVoiceComplete} />
+          <VoiceRecorder onRecordingComplete={handleVoiceComplete} onProgressChange={setProcStep} />
         </div>
       )}
 
@@ -445,6 +589,40 @@ function IntakeInner() {
           fontSize: 13, color: 'var(--red-600)',
         }}>
           <AlertCircle size={14} style={{ flex: 'none', marginTop: 2 }} /> {error}
+        </div>
+      )}
+
+      {/* Real processing progress banner */}
+      {loading && (
+        <div style={{
+          background: 'var(--bg-elev)', border: '1px solid var(--border)',
+          borderRadius: 16, padding: '14px 18px', boxShadow: 'var(--shadow-card)',
+          display: 'flex', flexDirection: 'column', gap: 10,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <Loader2 size={16} className="animate-spin" style={{ color: 'var(--blue-600)' }} />
+            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink-2)' }}>
+              {procStep === 'transcribing' && 'Transcribing your audio…'}
+              {procStep === 'analyzing' && 'Analyzing your symptoms…'}
+              {procStep === 'matching' && 'Finding the best doctors…'}
+              {procStep === 'followup' && 'Preparing follow-up questions…'}
+            </span>
+          </div>
+          <div style={{ display: 'flex', gap: 6 }}>
+            {['transcribing', 'analyzing', 'matching'].map(s => {
+              const idx = ['transcribing', 'analyzing', 'matching'].indexOf(s)
+              const curIdx = ['transcribing', 'analyzing', 'matching', 'followup'].indexOf(procStep)
+              const done = idx < curIdx
+              const active = s === procStep
+              return (
+                <div key={s} style={{
+                  flex: 1, height: 4, borderRadius: 2,
+                  background: done ? 'var(--blue-600)' : active ? 'var(--blue-400)' : 'var(--bg-soft)',
+                  transition: 'background 300ms ease',
+                }} />
+              )
+            })}
+          </div>
         </div>
       )}
     </div>

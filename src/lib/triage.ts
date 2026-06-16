@@ -39,15 +39,16 @@ const MILD_KEYWORDS = [
 ]
 
 /**
- * Bucketed severity: 9 (critical) / 6 (urgent) / 2 (mild) / 4 (default).
- * Stable, predictable — preferred for fallback paths and UI banners.
+ * Bucketed severity: 9 (critical) / 6 (urgent) / 2 (mild) / 6 (default).
+ * Conservative default — when uncertain, score higher so the patient gets
+ * faster attention rather than being triaged away.
  */
 export function scoreFromKeywords(text: string): number {
   const lower = text.toLowerCase()
   if (CRITICAL_KEYWORDS.some(w => lower.includes(w))) return 9
   if (URGENT_KEYWORDS.some(w => lower.includes(w)))   return 6
   if (MILD_KEYWORDS.some(w => lower.includes(w)))     return 2
-  return 4
+  return 6
 }
 
 /**
@@ -69,7 +70,7 @@ export function computeScore(text: string): number {
 
   if (MILD_KEYWORDS.some(kw => lower.includes(kw))) return 2
 
-  return 4
+  return 6
 }
 
 export function computeSeverityLevel(score: number): SeverityLevel {

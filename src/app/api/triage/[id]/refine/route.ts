@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { SeverityLevel } from '@prisma/client'
+import { z } from 'zod'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { mapDepartment, scoreFromKeywords } from '@/lib/triage'
@@ -7,12 +8,28 @@ import { getLlmClient, VISION_MODEL } from '@/lib/llm-client'
 import { rateLimit } from '@/lib/rate-limit'
 import { normalizeSpecialty, SPECIALTY_NAMES } from '@/lib/triage/specialties'
 
-const MAX_BYTES = 8 * 1024 * 1024  // 8 MB per image
+const MAX_BYTES = 8 * 1024 * 1024
 const MAX_FILES = 3
 
 const getClient = getLlmClient
 const parseDepartmentFromSummary = mapDepartment
 const parseSeverityFromText = scoreFromKeywords
+
+const RefineOutputSchema = z.object({
+  documentTypes: z.array(z.string()).default([]),
+  keyFindings: z.array(z.object({
+    metric: z.string(),
+    value: z.string(),
+    interpretation: z.string(),
+    isAbnormal: z.boolean(),
+  })).default([]),
+  suggestedInterventions: z.array(z.string()).default([]),
+  extractedFindings: z.string().default(''),
+  updatedSummary: z.string().default(''),
+  urgencyFlags: z.array(z.string()).default([]),
+  severityScore: z.number().int().min(1).max(10).optional(),
+  department: z.string().optional(),
+})
 
 function buildPrompt(originalTranscript: string, originalSummary: string): string {
   return `You are a clinical triage assistant analysing patient-uploaded medical documents (lab reports, imaging, prescriptions, doctor notes, symptom photos).
@@ -84,7 +101,6 @@ export async function POST(
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
-  // Parse multipart form with up to MAX_FILES image uploads.
   const images: { mime: string; b64: string }[] = []
   try {
     const form = await req.formData()
@@ -106,7 +122,6 @@ export async function POST(
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
   }
 
-  // Call Groq vision with the prior context + every uploaded image inline.
   let raw = ''
   try {
     const completion = await getClient().chat.completions.create({
@@ -130,19 +145,37 @@ export async function POST(
     return NextResponse.json({ error: 'Document analysis failed' }, { status: 502 })
   }
 
-  let structured: Record<string, unknown> = {}
+  // Zod-validated parsing instead of raw JSON.parse
+  let structured: z.infer<typeof RefineOutputSchema>
   try {
-    // Some models wrap JSON in markdown fences — strip if present.
     const cleaned = raw.replace(/^```(?:json)?\s*|\s*```$/g, '').trim()
-    structured = JSON.parse(cleaned)
+    const parsed = JSON.parse(cleaned)
+    const validated = RefineOutputSchema.safeParse(parsed)
+    if (!validated.success) {
+      console.warn('[triage/refine] Zod validation failed, using partial data:', validated.error.flatten())
+      structured = RefineOutputSchema.parse({
+        updatedSummary: typeof parsed.updatedSummary === 'string' ? parsed.updatedSummary : raw.slice(0, 500),
+        extractedFindings: typeof parsed.extractedFindings === 'string' ? parsed.extractedFindings : '',
+        keyFindings: Array.isArray(parsed.keyFindings) ? parsed.keyFindings : [],
+        suggestedInterventions: Array.isArray(parsed.suggestedInterventions) ? parsed.suggestedInterventions : [],
+        documentTypes: Array.isArray(parsed.documentTypes) ? parsed.documentTypes : [],
+        urgencyFlags: Array.isArray(parsed.urgencyFlags) ? parsed.urgencyFlags : [],
+        severityScore: typeof parsed.severityScore === 'number' ? parsed.severityScore : undefined,
+        department: typeof parsed.department === 'string' ? parsed.department : undefined,
+      })
+    } else {
+      structured = validated.data
+    }
   } catch {
-    structured = { updatedSummary: raw }
+    structured = RefineOutputSchema.parse({
+      updatedSummary: raw.slice(0, 500),
+    })
   }
 
   const aiScore = typeof structured.severityScore === 'number' ? structured.severityScore : NaN
   const severityScore = Number.isFinite(aiScore) && aiScore >= 1 && aiScore <= 10
     ? Math.round(aiScore)
-    : parseSeverityFromText(`${triage.transcript} ${(structured.updatedSummary as string) ?? ''}`)
+    : parseSeverityFromText(`${triage.transcript} ${structured.updatedSummary ?? ''}`)
 
   const severityLevel: SeverityLevel = severityScore <= 4 ? 'ROUTINE'
                                      : severityScore <= 7 ? 'URGENT'
@@ -150,10 +183,10 @@ export async function POST(
 
   const aiDeptRaw = typeof structured.department === 'string' ? structured.department.trim() : ''
   const department = normalizeSpecialty(aiDeptRaw)
-                  ?? parseDepartmentFromSummary(triage.transcript + ' ' + ((structured.updatedSummary as string) ?? ''))
+                  ?? parseDepartmentFromSummary(triage.transcript + ' ' + (structured.updatedSummary ?? ''))
 
-  const updatedSummary = (structured.updatedSummary as string) ?? triage.summary
-  const findings = (structured.extractedFindings as string) ?? ''
+  const updatedSummary = structured.updatedSummary || triage.summary
+  const findings = structured.extractedFindings || ''
 
   const updated = await prisma.triage.update({
     where: { id: triage.id },
@@ -173,9 +206,9 @@ export async function POST(
     severityScore:          updated.severityScore,
     severityLevel:          updated.severityLevel,
     extractedFindings:      findings,
-    keyFindings:            Array.isArray(structured.keyFindings)            ? structured.keyFindings            : [],
-    suggestedInterventions: Array.isArray(structured.suggestedInterventions) ? structured.suggestedInterventions : [],
-    documentTypes:          Array.isArray(structured.documentTypes)          ? structured.documentTypes          : [],
+    keyFindings:            structured.keyFindings ?? [],
+    suggestedInterventions: structured.suggestedInterventions ?? [],
+    documentTypes:          structured.documentTypes ?? [],
     isEmergency:            severityScore >= 8,
   })
 }

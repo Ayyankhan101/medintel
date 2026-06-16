@@ -21,7 +21,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   await prisma.triage.update({
     where: { id },
-    data: { transcript: '' },
+    data: {
+      transcript: '',
+      summary:    '[redacted]',
+      department: 'General Medicine',
+      severityScore: 1,
+      severityLevel: 'ROUTINE',
+    },
   })
 
   return NextResponse.json({ ok: true })

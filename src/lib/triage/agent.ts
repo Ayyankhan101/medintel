@@ -3,6 +3,7 @@
  *
  * Design:
  *  - System prompt defines persona, safety rules, and output contract.
+ *  - Accepts optional patientContext (age, gender, pregnant) injected into prompt.
  *  - User prompt carries patient input only.
  *  - JSON-mode response (Groq supports response_format: { type: 'json_object' }).
  *  - Output validated against a Zod schema before use.
@@ -10,6 +11,7 @@
  *  - On total failure: fall through to deterministic keyword + heuristic fallback.
  *  - All output normalized (severity clamped 1-10, specialty whitelisted).
  *  - Severity > 8 raises an `isEmergency` flag the UI uses to show 1122 banner.
+ *  - Returns raw TriageOutput as `rawOutput` for persistence.
  */
 
 import { z } from 'zod'
@@ -23,6 +25,15 @@ import { scoreFromKeywords } from '../triage'
 import { getLlmClient, CHAT_MODEL } from '../llm-client'
 
 const client = getLlmClient
+
+// ── patient context ──────────────────────────────────────────────────────────
+
+export interface PatientContext {
+  age?: number
+  gender?: string
+  pregnant?: boolean
+  preferredLanguage?: string
+}
 
 // ── output schema ─────────────────────────────────────────────────────────────
 
@@ -42,8 +53,16 @@ export type TriageOutput = z.infer<typeof TriageOutput>
 
 // ── prompts ───────────────────────────────────────────────────────────────────
 
-function systemPrompt(): string {
-  return `You are MedIntel Triage — a clinical-grade AI triage assistant for an online consultation platform serving Pakistan.
+function systemPrompt(context?: PatientContext): string {
+  const ctxBlock = context
+    ? `\n\n# Patient context\n${[
+      context.age ? `- Age: ${context.age}` : '',
+      context.gender ? `- Gender: ${context.gender}` : '',
+      context.pregnant ? '- Patient is pregnant — consider pregnancy-related conditions' : '',
+      context.preferredLanguage ? `- Preferred language: ${context.preferredLanguage}` : '',
+    ].filter(Boolean).join('\n')}`
+    : ''
+  return `You are MedIntel Triage — a clinical-grade AI triage assistant for an online consultation platform serving Pakistan.${ctxBlock}
 
 Your sole job: take a patient's free-form complaint (Urdu, Pashto, Punjabi, Sindhi, or English) and produce a STRUCTURED JSON triage report.
 
@@ -140,7 +159,7 @@ function tryParse(raw: string): { ok: true; data: TriageOutput } | { ok: false; 
 
 // ── deterministic fallback ────────────────────────────────────────────────────
 
-function deterministicFallback(input: string): TriageOutput {
+function deterministicFallback(input: string, context?: PatientContext): TriageOutput {
   // Shared keyword tables live in ../triage so we don't drift between
   // the fallback and the user-facing analyze endpoint.
   const score = scoreFromKeywords(input)
@@ -190,12 +209,13 @@ async function callWithBackoff<T>(fn: () => Promise<T>, attempts = 3): Promise<T
 
 export interface TriageAgentResult {
   output:     TriageOutput
+  rawOutput:  TriageOutput
   /** 'llm' if AI ran successfully, 'fallback' if we used keyword heuristic. */
   source:     'llm' | 'llm-retry' | 'fallback'
   isEmergency: boolean
 }
 
-export async function runTriageAgent(input: string): Promise<TriageAgentResult> {
+export async function runTriageAgent(input: string, context?: PatientContext): Promise<TriageAgentResult> {
   if (!input?.trim() || input.trim().length < 3) {
     throw new Error('Patient input is too short')
   }
@@ -210,20 +230,20 @@ export async function runTriageAgent(input: string): Promise<TriageAgentResult> 
         max_tokens:  800,
         response_format: { type: 'json_object' },
         messages: [
-          { role: 'system', content: systemPrompt() },
+          { role: 'system', content: systemPrompt(context) },
           { role: 'user',   content: userPrompt(input) },
         ],
       }).then(c => c.choices[0]?.message?.content ?? ''),
     )
   } catch (e) {
     console.error('[triage-agent] LLM call failed:', e)
-    const fb = deterministicFallback(input)
-    return { output: fb, source: 'fallback', isEmergency: fb.severityScore >= 8 }
+    const fb = deterministicFallback(input, context)
+    return { output: fb, rawOutput: fb, source: 'fallback', isEmergency: fb.severityScore >= 8 }
   }
 
   const first = tryParse(raw1)
   if (first.ok) {
-    return { output: first.data, source: 'llm', isEmergency: first.data.severityScore >= 8 }
+    return { output: first.data, rawOutput: first.data, source: 'llm', isEmergency: first.data.severityScore >= 8 }
   }
 
   // ── Retry once with fix-up prompt ────────────────────────────────────────────
@@ -236,7 +256,7 @@ export async function runTriageAgent(input: string): Promise<TriageAgentResult> 
       max_tokens:  800,
       response_format: { type: 'json_object' },
       messages: [
-        { role: 'system', content: systemPrompt() },
+        { role: 'system', content: systemPrompt(context) },
         { role: 'user',   content: userPrompt(input) },
         { role: 'assistant', content: raw1 },
         { role: 'user',   content: fixupPrompt(raw1, first.reason) },
@@ -245,16 +265,16 @@ export async function runTriageAgent(input: string): Promise<TriageAgentResult> 
     raw2 = completion.choices[0]?.message?.content ?? ''
   } catch (e) {
     console.error('[triage-agent] retry call failed:', e)
-    const fb = deterministicFallback(input)
-    return { output: fb, source: 'fallback', isEmergency: fb.severityScore >= 8 }
+    const fb = deterministicFallback(input, context)
+    return { output: fb, rawOutput: fb, source: 'fallback', isEmergency: fb.severityScore >= 8 }
   }
 
   const second = tryParse(raw2)
   if (second.ok) {
-    return { output: second.data, source: 'llm-retry', isEmergency: second.data.severityScore >= 8 }
+    return { output: second.data, rawOutput: second.data, source: 'llm-retry', isEmergency: second.data.severityScore >= 8 }
   }
 
   console.error('[triage-agent] retry also failed:', second.reason)
-  const fb = deterministicFallback(input)
-  return { output: fb, source: 'fallback', isEmergency: fb.severityScore >= 8 }
+  const fb = deterministicFallback(input, context)
+  return { output: fb, rawOutput: fb, source: 'fallback', isEmergency: fb.severityScore >= 8 }
 }

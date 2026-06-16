@@ -183,6 +183,8 @@ model Patient {
   address          String?
   emergencyContact String?
   researchConsent  Boolean   @default(false)
+  preferredLanguage String?  @default("ur")
+  genderPreference  String?
 
   medicalRecords MedicalRecord[]
   appointments   Appointment[]
@@ -200,6 +202,7 @@ model Triage {
   severityLevel SeverityLevel
   department    String
   voiceFileUrl  String?
+  rawOutput     Json?
   createdAt     DateTime      @default(now())
 
   @@index([patientId, createdAt(sort: Desc)])
@@ -224,6 +227,7 @@ model Doctor {
   trustBadge      Boolean            @default(false)
   rating          Decimal?           @db.Decimal(3, 2)
   reviewCount     Int                @default(0)
+  languages       String[]           @default([])
 
   // Availability — { days: [1..7 mon-sun], startHour: 0-23, endHour: 1-24, timezone: 'Asia/Karachi' }
   // null = always available (the default for newly-onboarded doctors).

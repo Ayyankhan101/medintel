@@ -2,7 +2,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Star, ShieldCheck, Clock, ArrowRight } from 'lucide-react'
+import { Star, ShieldCheck, Clock, ArrowRight, BadgeCheck, Sparkles } from 'lucide-react'
 import { Btn } from '@/components/design/Btn'
 import { PKR } from '@/components/design/helpers'
 
@@ -15,6 +15,9 @@ interface Doctor {
   reviewCount: number
   trustBadge: boolean
   bio: string | null
+  languages?: string[]
+  tier?: string
+  score?: number
   user: { email: string }
 }
 
@@ -44,6 +47,7 @@ function Avatar({ name }: { name: string }) {
 
 export function DoctorCard({ doctor, onBook }: Props) {
   const rating = doctor.rating != null ? Number(doctor.rating).toFixed(1) : null
+  const matchPct = doctor.score != null ? Math.round(doctor.score * 100 / 1.5) : null
   return (
     <div
       style={{
@@ -66,6 +70,17 @@ export function DoctorCard({ doctor, onBook }: Props) {
                 <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: 'var(--ink)', letterSpacing: '-.005em' }}>
                   {doctor.specialization}
                 </h3>
+                {doctor.tier === 'SENIOR' && (
+                  <span style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 3,
+                    padding: '2px 7px', borderRadius: 999,
+                    background: 'rgba(245,158,11,.10)', color: '#d97706',
+                    border: '1px solid rgba(245,158,11,.22)',
+                    fontSize: 9, fontWeight: 700, letterSpacing: '.04em', textTransform: 'uppercase',
+                  }}>
+                    <BadgeCheck size={9} strokeWidth={2.5} /> Senior
+                  </span>
+                )}
                 {doctor.trustBadge && (
                   <span style={{
                     display: 'inline-flex', alignItems: 'center', gap: 4,
@@ -74,7 +89,7 @@ export function DoctorCard({ doctor, onBook }: Props) {
                     border: '1px solid rgba(13,148,136,.22)',
                     fontSize: 10, fontWeight: 700, letterSpacing: '.04em',
                   }}>
-                    <ShieldCheck size={10} strokeWidth={2.5} /> KYD VERIFIED
+                    <ShieldCheck size={10} strokeWidth={2.5} /> KYD
                   </span>
                 )}
               </div>
@@ -97,6 +112,15 @@ export function DoctorCard({ doctor, onBook }: Props) {
                   <Clock size={12} />
                   {doctor.yearsExperience} yrs
                 </span>
+                {matchPct && (
+                  <span style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 3,
+                    color: '#2563eb', fontWeight: 600,
+                  }}>
+                    <Sparkles size={11} />
+                    {matchPct}% match
+                  </span>
+                )}
               </div>
             </div>
 
