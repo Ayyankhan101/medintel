@@ -9,6 +9,7 @@ import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { audit } from '@/lib/audit'
 import { auth } from '@/lib/auth'
+import { rateLimitDb } from '@/lib/rate-limit'
 
 const schema = z.object({
   providerRef:   z.string().min(1),
@@ -26,6 +27,9 @@ export async function POST(req: NextRequest) {
   // demos, but we don't want a stranger able to flip arbitrary escrow rows.
   const session = await auth()
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const rl = await rateLimitDb('mock-payment', session.user.id!, { max: 5, windowMs: 60_000 })
+  if (!rl.ok) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
 
   const body   = await req.json().catch(() => ({}))
   const parsed = schema.safeParse(body)

@@ -6,6 +6,7 @@ import { isPatientRefundEligible } from '@/lib/stripe'
 import { providerFor, type ProviderId } from '@/lib/payments'
 import { audit } from '@/lib/audit'
 import { rateLimitDb } from '@/lib/rate-limit'
+import { captureError } from '@/lib/observability'
 
 const schema = z.object({ appointmentId: z.string().min(1) })
 
@@ -47,6 +48,7 @@ export async function POST(req: NextRequest) {
     })
   } catch (e) {
     console.error('[escrow/refund] PSP refund error', e)
+    captureError(e, { context: 'escrow/refund PSP' })
     return NextResponse.json({ error: 'Refund failed — try again or contact support' }, { status: 502 })
   }
 
@@ -63,6 +65,7 @@ export async function POST(req: NextRequest) {
     }),
   ]).catch(e => {
     console.error('[escrow/refund] DB update failed after PSP refund', e)
+    captureError(e, { context: 'escrow/refund DB after PSP' })
     void audit('escrow.refund_db_failed', 'Appointment', appointment.id, {
       escrowId: appointment.escrow!.id, error: String(e),
     })

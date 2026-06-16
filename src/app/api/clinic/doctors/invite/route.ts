@@ -17,6 +17,7 @@ import { rateLimit } from '@/lib/rate-limit'
 import { sendClinicInvite } from '@/lib/email'
 import { randomToken } from '@/lib/tokens'
 import { audit } from '@/lib/audit'
+import { captureError } from '@/lib/observability'
 
 export const dynamic = 'force-dynamic'
 
@@ -84,6 +85,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Already invited' }, { status: 409 })
     }
     console.error('[clinic.invite] failed', e)
+    captureError(e, { context: 'clinic.invite' })
     return NextResponse.json({ error: 'Invite failed' }, { status: 500 })
   }
 }

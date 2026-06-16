@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { createEscrowPaymentIntent } from '@/lib/stripe'
 import { rateLimitDb } from '@/lib/rate-limit'
 import { audit } from '@/lib/audit'
+import { captureError } from '@/lib/observability'
 
 const schema = z.object({ appointmentId: z.string().min(1) })
 
@@ -45,6 +46,7 @@ export async function POST(req: NextRequest) {
     paymentIntent = await createEscrowPaymentIntent(fee, appointment.doctor.stripeAccountId, appointment.id)
   } catch (e) {
     console.error('[escrow] create PaymentIntent failed', e)
+    captureError(e, { context: 'escrow create PaymentIntent' })
     return NextResponse.json({ error: 'Payment service unavailable — try again' }, { status: 502 })
   }
 
@@ -58,6 +60,7 @@ export async function POST(req: NextRequest) {
     })
   } catch (e) {
     console.error('[escrow] DB create failed after PI creation — orphan PI', paymentIntent.id, e)
+    captureError(e, { context: 'escrow DB create after PI', paymentIntentId: paymentIntent.id })
     void audit('escrow.orphan_pi', 'Appointment', appointment.id, {
       paymentIntentId: paymentIntent.id, error: String(e),
     })

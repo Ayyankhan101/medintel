@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { rateLimit } from '@/lib/rate-limit'
 
 function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const R = 6371
@@ -14,6 +15,9 @@ function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): nu
 }
 
 export async function GET(req: NextRequest) {
+  const rl = rateLimit(req, { key: 'resources', max: 30, windowMs: 60_000 })
+  if (!rl.ok) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+
   const { searchParams } = new URL(req.url)
   const lat    = parseFloat(searchParams.get('lat') ?? '')
   const lng    = parseFloat(searchParams.get('lng') ?? '')

@@ -6,6 +6,7 @@ import { providerFor, type ProviderId } from '@/lib/payments'
 import { audit } from '@/lib/audit'
 import { rateLimitDb } from '@/lib/rate-limit'
 import { sendPrescriptionReady, sendEscrowReleased, sendReviewNudge } from '@/lib/email'
+import { captureError } from '@/lib/observability'
 
 const schema = z.object({
   appointmentId:    z.string().min(1),
@@ -85,6 +86,7 @@ export async function POST(req: NextRequest) {
       })
     } catch (e) {
       console.error('[prescriptions] auto-release failed', e)
+      captureError(e, { context: 'prescriptions auto-release' })
       void audit('escrow.release_failed', 'Appointment', appointment.id, {
         escrowId: appointment.escrow!.id, error: String(e),
       })

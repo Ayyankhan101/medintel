@@ -6,6 +6,7 @@ import { prisma } from '@/lib/prisma'
 import { mapDepartment, scoreFromKeywords } from '@/lib/triage'
 import { getLlmClient, VISION_MODEL } from '@/lib/llm-client'
 import { rateLimit } from '@/lib/rate-limit'
+import { captureError, captureWarn } from '@/lib/observability'
 import { normalizeSpecialty, SPECIALTY_NAMES } from '@/lib/triage/specialties'
 
 const MAX_BYTES = 8 * 1024 * 1024
@@ -118,7 +119,7 @@ export async function POST(
       images.push({ mime, b64: buf.toString('base64') })
     }
   } catch (e) {
-    console.error('[triage/refine] form parse error:', e)
+    captureError(e, { context: 'triage/refine form parse' })
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
   }
 
@@ -141,7 +142,7 @@ export async function POST(
     })
     raw = completion.choices[0]?.message?.content ?? ''
   } catch (e) {
-    console.error('[triage/refine] AI error:', e)
+    captureError(e, { context: 'triage/refine AI error' })
     return NextResponse.json({ error: 'Document analysis failed' }, { status: 502 })
   }
 
@@ -152,7 +153,7 @@ export async function POST(
     const parsed = JSON.parse(cleaned)
     const validated = RefineOutputSchema.safeParse(parsed)
     if (!validated.success) {
-      console.warn('[triage/refine] Zod validation failed, using partial data:', validated.error.flatten())
+      captureWarn('Zod validation failed, using partial data', { issues: validated.error.flatten() })
       structured = RefineOutputSchema.parse({
         updatedSummary: typeof parsed.updatedSummary === 'string' ? parsed.updatedSummary : raw.slice(0, 500),
         extractedFindings: typeof parsed.extractedFindings === 'string' ? parsed.extractedFindings : '',

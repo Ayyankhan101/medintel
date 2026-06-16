@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { rateLimit } from '@/lib/rate-limit'
 
 export const dynamic = 'force-dynamic'
 
@@ -18,6 +19,9 @@ export async function GET(req: NextRequest) {
   const session = await auth()
   if (!session?.user || session.user.role !== 'ADMIN')
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
+  const rl = rateLimit(req, { key: 'admin-audit', max: 20, windowMs: 60_000 })
+  if (!rl.ok) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
 
   const parsed = querySchema.safeParse({
     limit:  req.nextUrl.searchParams.get('limit') ?? undefined,

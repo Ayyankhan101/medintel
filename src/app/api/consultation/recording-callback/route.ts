@@ -23,6 +23,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import twilio from 'twilio'
 import { prisma } from '@/lib/prisma'
 import { audit } from '@/lib/audit'
+import { captureError } from '@/lib/observability'
 
 export const dynamic = 'force-dynamic'
 
@@ -77,6 +78,7 @@ export async function POST(req: NextRequest) {
       }
     } catch (e) {
       console.error('[recording-callback] lookup failed', e)
+      captureError(e, { context: 'recording-callback lookup' })
     }
   }
 

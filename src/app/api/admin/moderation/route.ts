@@ -5,19 +5,23 @@
  *  2. doctor_no_show     : doctors with ≥3 SYSTEM cancellations in last 30d
  *  3. recent_disputes    : last 50 cancellations with non-empty reason
  */
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { rateLimit } from '@/lib/rate-limit'
 
 export const dynamic = 'force-dynamic'
 
 const NO_SHOW_THRESHOLD = 3
 const LOOKBACK_DAYS     = 30
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const session = await auth()
   if (!session?.user || session.user.role !== 'ADMIN')
     return NextResponse.json({ error: 'Admin only' }, { status: 403 })
+
+  const rl = rateLimit(req, { key: 'admin-moderation', max: 20, windowMs: 60_000 })
+  if (!rl.ok) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
 
   const since   = new Date(Date.now() - LOOKBACK_DAYS * 24 * 60 * 60_000)
   const twoHrs  = new Date(Date.now() - 2 * 60 * 60_000)

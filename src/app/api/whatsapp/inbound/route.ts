@@ -30,6 +30,7 @@ import { runTriageAgent } from '@/lib/triage/agent'
 import { transcribeAudio } from '@/lib/openai'
 import { prisma } from '@/lib/prisma'
 import { meter, quotaExceeded } from '@/lib/clinic'
+import { captureError } from '@/lib/observability'
 
 export const dynamic = 'force-dynamic'
 
@@ -129,6 +130,7 @@ export async function POST(req: NextRequest) {
       symptomText = await transcribeAudio(buf, 'whatsapp.ogg', 'ur')
     } catch (e) {
       console.error('[wa-inbound] media transcription failed', e)
+      captureError(e, { context: 'wa-inbound transcription' })
       return twiml('Could not understand the voice note. Please type your symptoms.')
     }
   }
@@ -150,6 +152,7 @@ export async function POST(req: NextRequest) {
     }, baseUrl, symptomText))
   } catch (e) {
     console.error('[wa-inbound] triage failed', e)
+    captureError(e, { context: 'wa-inbound triage' })
     return twiml('Sorry — our system is busy. Please try again in a minute or visit https://medintel.app/intake')
   }
 }

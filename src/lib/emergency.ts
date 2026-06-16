@@ -57,13 +57,4 @@ export function isEmergencyScore(score: number): boolean {
   return score >= 8
 }
 
-export function buildNearbyHospitalQuery(lat: number, lng: number, keyword = 'hospital emergency'): string {
-  const params = new URLSearchParams({
-    location:  `${lat},${lng}`,
-    radius:    '10000',
-    keyword,
-    type:      'hospital',
-    key:       process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY ?? '',
-  })
-  return `https://maps.googleapis.com/maps/api/place/nearbysearch/json?${params}`
-}
+

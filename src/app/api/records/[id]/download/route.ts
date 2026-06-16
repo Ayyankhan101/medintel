@@ -13,10 +13,14 @@ import { get } from '@vercel/blob'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { audit } from '@/lib/audit'
+import { rateLimit } from '@/lib/rate-limit'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const rl = rateLimit(req, { key: 'record-download', max: 10, windowMs: 60_000 })
+  if (!rl.ok) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+
   const session = await auth()
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 

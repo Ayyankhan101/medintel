@@ -18,6 +18,7 @@ import { transcribeAudio } from '@/lib/openai'
 import { generateSoapNote } from '@/lib/scribe'
 import { audit } from '@/lib/audit'
 import { meter } from '@/lib/clinic'
+import { captureError } from '@/lib/observability'
 
 export const dynamic = 'force-dynamic'
 
@@ -86,6 +87,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
     }
   } catch (e) {
     console.error('[scribe] input error', e)
+    captureError(e, { context: 'scribe input error' })
     return NextResponse.json({ error: 'Failed to read input' }, { status: 400 })
   }
 

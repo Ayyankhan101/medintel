@@ -19,6 +19,7 @@ import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { audit } from '@/lib/audit'
 import { requireSameOrigin } from '@/lib/csrf'
+import { rateLimitDb } from '@/lib/rate-limit'
 
 export const dynamic = 'force-dynamic'
 
@@ -37,6 +38,9 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
   if (!session?.user || session.user.role !== 'ADMIN') {
     return NextResponse.json({ error: 'Admin only' }, { status: 403 })
   }
+
+  const rl = await rateLimitDb('admin-kyd', session.user.id!, { max: 10, windowMs: 60_000 })
+  if (!rl.ok) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
 
   const { id } = await ctx.params
   const parsed = schema.safeParse(await req.json().catch(() => ({})))

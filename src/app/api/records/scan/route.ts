@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { rateLimit } from '@/lib/rate-limit'
 import { ocrDocumentFromS3 } from '@/lib/textract'
 
 const schema = z.object({
@@ -12,6 +13,9 @@ const schema = z.object({
 })
 
 export async function POST(req: NextRequest) {
+  const rl = rateLimit(req, { key: 'records-scan', max: 5, windowMs: 60_000 })
+  if (!rl.ok) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+
   const session = await auth()
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 

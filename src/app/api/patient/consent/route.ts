@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { rateLimit } from '@/lib/rate-limit'
 import { audit } from '@/lib/audit'
 import { requireSameOrigin } from '@/lib/csrf'
 
@@ -21,6 +22,9 @@ export async function GET() {
 }
 
 export async function PATCH(req: NextRequest) {
+  const rl = rateLimit(req, { key: 'consent-patch', max: 10, windowMs: 60_000 })
+  if (!rl.ok) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+
   const csrf = requireSameOrigin(req)
   if (csrf) return csrf
 

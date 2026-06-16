@@ -11,6 +11,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { captureError } from '@/lib/observability'
 
 export const dynamic = 'force-dynamic'
 
@@ -123,7 +124,7 @@ export async function GET(req: NextRequest) {
     } : null,
   })
   } catch (error) {
-    console.error('admin/research error:', error)
+    captureError(error, { context: 'admin/research' })
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

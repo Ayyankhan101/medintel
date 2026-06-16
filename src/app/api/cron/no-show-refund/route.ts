@@ -21,6 +21,7 @@ import { prisma } from '@/lib/prisma'
 import { providerFor, type ProviderId } from '@/lib/payments'
 import { sendAppointmentCancelled } from '@/lib/email'
 import { audit } from '@/lib/audit'
+import { captureError } from '@/lib/observability'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
@@ -104,6 +105,7 @@ export async function GET(req: NextRequest) {
     } catch (e) {
       failed++
       console.error('[cron.no-show] row failed', a.id, e)
+      captureError(e, { context: 'cron.no-show row', appointmentId: a.id })
       // Best-effort: revert the appointment lock so a future run can retry.
       await prisma.appointment.updateMany({
         where: { id: a.id, status: 'REFUNDED', cancelledBy: 'SYSTEM' },

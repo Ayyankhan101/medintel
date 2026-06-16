@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { rateLimit } from '@/lib/rate-limit'
 import { verifyDoctorTier1, verifyDoctorTier2 } from '@/lib/kyd'
 
 const kydSchema = z.object({
@@ -11,6 +12,9 @@ const kydSchema = z.object({
 })
 
 export async function POST(req: NextRequest) {
+  const rl = rateLimit(req, { key: 'kyd-verify', max: 5, windowMs: 5 * 60_000 })
+  if (!rl.ok) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+
   const session = await auth()
   if (!session?.user || session.user.role !== 'DOCTOR') {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

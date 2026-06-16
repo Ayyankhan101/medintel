@@ -9,6 +9,7 @@ import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getStripe } from '@/lib/stripe'
+import { rateLimitDb } from '@/lib/rate-limit'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,6 +17,9 @@ export async function POST() {
   const session = await auth()
   if (!session?.user || session.user.role !== 'CLINIC_ADMIN')
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
+  const rl = await rateLimitDb('clinic-billing-portal', session.user.id!, { max: 5, windowMs: 60_000 })
+  if (!rl.ok) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
 
   const clinic = await prisma.clinic.findUnique({ where: { ownerUserId: session.user.id } })
   if (!clinic?.stripeCustomerId) {

@@ -12,6 +12,7 @@ import { z } from 'zod'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { audit } from '@/lib/audit'
+import { rateLimit } from '@/lib/rate-limit'
 
 export const dynamic = 'force-dynamic'
 
@@ -22,6 +23,9 @@ export async function POST(req: NextRequest) {
   if (!session?.user) return NextResponse.json({ error: 'Sign in required', step: 'login' }, { status: 401 })
   if (session.user.role !== 'DOCTOR')
     return NextResponse.json({ error: 'Only doctor accounts can accept clinic invites.', step: 'role' }, { status: 403 })
+
+  const rl = rateLimit(req, { key: 'clinic-invite-accept', max: 10, windowMs: 60_000 })
+  if (!rl.ok) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
 
   const body   = await req.json().catch(() => ({}))
   const parsed = schema.safeParse(body)

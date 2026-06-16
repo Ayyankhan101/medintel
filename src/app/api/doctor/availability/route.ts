@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { AvailabilitySchema, parseAvailability } from '@/lib/availability'
+import { rateLimit } from '@/lib/rate-limit'
 
 export const dynamic = 'force-dynamic'
 
@@ -20,6 +21,9 @@ export async function PUT(req: NextRequest) {
   const session = await auth()
   if (!session?.user || session.user.role !== 'DOCTOR')
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
+  const rl = rateLimit(req, { key: 'doctor-availability', max: 10, windowMs: 60_000 })
+  if (!rl.ok) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
 
   const body   = await req.json()
   const parsed = AvailabilitySchema.safeParse(body)

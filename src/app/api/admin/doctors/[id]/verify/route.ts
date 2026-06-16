@@ -4,6 +4,7 @@ import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { sendDoctorVerificationDecision } from '@/lib/email'
 import { audit } from '@/lib/audit'
+import { rateLimitDb } from '@/lib/rate-limit'
 
 const schema = z.discriminatedUnion('decision', [
   z.object({
@@ -21,6 +22,9 @@ export async function POST(
   const session = await auth()
   if (!session?.user || session.user.role !== 'ADMIN')
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
+  const rl = await rateLimitDb('admin-verify', session.user.id!, { max: 10, windowMs: 60_000 })
+  if (!rl.ok) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
 
   const { id } = await params
   const body   = await req.json()

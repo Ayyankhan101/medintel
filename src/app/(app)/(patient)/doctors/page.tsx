@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { AlertTriangle, Info, Loader2 } from 'lucide-react'
 import { DoctorCard } from '@/components/triage/DoctorCard'
 import { SeverityPill } from '@/components/design/badges'
+import type { SeverityLevel } from '@/lib/triage'
 
 interface Doctor {
   id: string
@@ -17,14 +18,12 @@ interface Doctor {
   user: { email: string }
 }
 
-type Sev = 'ROUTINE' | 'URGENT' | 'CRITICAL'
-
 function DoctorListContent() {
   const router          = useRouter()
   const params          = useSearchParams()
   const triageId        = params.get('triageId') ?? ''
   const department      = params.get('dept') ?? 'General Medicine'
-  const severity        = params.get('severity') as Sev | null
+  const severity        = params.get('severity') as SeverityLevel | null
   const severityScore   = Number(params.get('score') ?? 4)
 
   const [doctors, setDoctors] = useState<Doctor[]>([])

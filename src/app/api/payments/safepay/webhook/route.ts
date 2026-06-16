@@ -13,6 +13,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { safepayProvider } from '@/lib/payments/safepay'
 import { audit } from '@/lib/audit'
+import { captureError } from '@/lib/observability'
 
 export const dynamic = 'force-dynamic'
 
@@ -34,7 +35,7 @@ export async function POST(req: NextRequest) {
     }
     // Anything else (db down, network blip) must NOT silently fall through —
     // the rest of the handler would then run un-deduped on the retry.
-    console.error('[safepay-webhook] dedupe insert failed', e)
+    captureError(e, { context: 'safepay-webhook dedupe insert' })
     return NextResponse.json({ error: 'Dedupe insert failed' }, { status: 500 })
   }
 
@@ -94,9 +95,9 @@ export async function POST(req: NextRequest) {
     }
   } catch (e) {
     await prisma.processedStripeEvent.delete({ where: { eventId } }).catch(e2 => {
-      console.error('[safepay-webhook] failed to roll back dedupe row', e2)
+      captureError(e2, { context: 'safepay-webhook rollback dedupe row' })
     })
-    console.error('[safepay-webhook] handler error', e)
+    captureError(e, { context: 'safepay-webhook handler' })
     return NextResponse.json({ error: 'Handler error' }, { status: 500 })
   }
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { rateLimit } from '@/lib/rate-limit'
 
 const createSchema = z.object({
   type:       z.enum(['PRESCRIPTION', 'LAB_REPORT', 'SURGERY', 'ALLERGY', 'CHRONIC_MED']),
@@ -27,6 +28,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const rl = rateLimit(req, { key: 'records-create', max: 20, windowMs: 60_000 })
+  if (!rl.ok) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+
   const session = await auth()
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 

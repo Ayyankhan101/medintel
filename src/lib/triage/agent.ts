@@ -23,6 +23,7 @@ import {
 } from './specialties'
 import { scoreFromKeywords } from '../triage'
 import { getLlmClient, CHAT_MODEL } from '../llm-client'
+import { captureError } from '../observability'
 
 const client = getLlmClient
 
@@ -236,7 +237,7 @@ export async function runTriageAgent(input: string, context?: PatientContext): P
       }).then(c => c.choices[0]?.message?.content ?? ''),
     )
   } catch (e) {
-    console.error('[triage-agent] LLM call failed:', e)
+    captureError(e, { context: 'triage-agent LLM call' })
     const fb = deterministicFallback(input, context)
     return { output: fb, rawOutput: fb, source: 'fallback', isEmergency: fb.severityScore >= 8 }
   }
@@ -264,7 +265,7 @@ export async function runTriageAgent(input: string, context?: PatientContext): P
     })
     raw2 = completion.choices[0]?.message?.content ?? ''
   } catch (e) {
-    console.error('[triage-agent] retry call failed:', e)
+    captureError(e, { context: 'triage-agent retry call' })
     const fb = deterministicFallback(input, context)
     return { output: fb, rawOutput: fb, source: 'fallback', isEmergency: fb.severityScore >= 8 }
   }
@@ -274,7 +275,7 @@ export async function runTriageAgent(input: string, context?: PatientContext): P
     return { output: second.data, rawOutput: second.data, source: 'llm-retry', isEmergency: second.data.severityScore >= 8 }
   }
 
-  console.error('[triage-agent] retry also failed:', second.reason)
+  captureError(new Error(second.reason), { context: 'triage-agent retry schema fail' })
   const fb = deterministicFallback(input, context)
   return { output: fb, rawOutput: fb, source: 'fallback', isEmergency: fb.severityScore >= 8 }
 }

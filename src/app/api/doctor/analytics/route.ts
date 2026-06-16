@@ -10,6 +10,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { rateLimit } from '@/lib/rate-limit'
 
 export const dynamic = 'force-dynamic'
 
@@ -21,6 +22,9 @@ function round(n: number, decimals = 2) {
 export async function GET(req: NextRequest) {
   const session = await auth()
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const rl = rateLimit(req, { key: 'doctor-analytics', max: 20, windowMs: 60_000 })
+  if (!rl.ok) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
 
   const doctor = await prisma.doctor.findUnique({ where: { userId: session.user.id } })
   if (!doctor) return NextResponse.json({ error: 'Doctor profile not found' }, { status: 404 })

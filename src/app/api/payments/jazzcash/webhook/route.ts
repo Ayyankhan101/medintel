@@ -21,6 +21,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { jazzcashProvider } from '@/lib/payments/jazzcash'
 import { audit } from '@/lib/audit'
+import { captureError } from '@/lib/observability'
 
 export const dynamic = 'force-dynamic'
 
@@ -49,7 +50,7 @@ export async function POST(req: NextRequest) {
       // Duplicate delivery — patient refreshed the return page, or JazzCash retried.
       return redirect(event.appointmentId, event.type === 'payment.succeeded')
     }
-    console.error('[jazzcash-webhook] dedupe insert failed', e)
+    captureError(e, { context: 'jazzcash-webhook dedupe insert' })
     return NextResponse.json({ error: 'Dedupe insert failed' }, { status: 500 })
   }
 
@@ -109,9 +110,9 @@ export async function POST(req: NextRequest) {
     }
   } catch (e) {
     await prisma.processedStripeEvent.delete({ where: { eventId } }).catch(e2 => {
-      console.error('[jazzcash-webhook] failed to roll back dedupe row', e2)
+      captureError(e2, { context: 'jazzcash-webhook rollback dedupe row' })
     })
-    console.error('[jazzcash-webhook] handler error', e)
+    captureError(e, { context: 'jazzcash-webhook handler' })
     return NextResponse.json({ error: 'Handler error' }, { status: 500 })
   }
 

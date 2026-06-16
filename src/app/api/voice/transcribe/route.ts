@@ -4,6 +4,7 @@ import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { runFullIntakePipeline } from '@/lib/openai'
 import { rateLimitDb } from '@/lib/rate-limit'
+import { captureError } from '@/lib/observability'
 
 const MAX_BYTES = 25 * 1024 * 1024
 
@@ -69,7 +70,7 @@ export async function POST(req: NextRequest) {
     if (file instanceof File && file.name) filename = file.name
     audioBuffer = Buffer.from(await file.arrayBuffer())
   } catch (e) {
-    console.error('[transcribe] form parse error:', e)
+    captureError(e, { context: 'voice/transcribe form parse' })
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
   }
 
@@ -77,7 +78,7 @@ export async function POST(req: NextRequest) {
   try {
     result = await runFullIntakePipeline(audioBuffer, filename, language, patientContext)
   } catch (e) {
-    console.error('[transcribe] AI pipeline error:', e)
+    captureError(e, { context: 'voice/transcribe AI pipeline' })
     return NextResponse.json({ error: 'Transcription failed' }, { status: 502 })
   }
 

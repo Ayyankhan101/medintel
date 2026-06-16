@@ -19,6 +19,7 @@ import { prisma } from '@/lib/prisma'
 import { sendBookingConfirmation, sendDoctorNewBooking } from '@/lib/email'
 import { rateLimitDb } from '@/lib/rate-limit'
 import { requiresSenior } from '@/lib/triage'
+import { captureError } from '@/lib/observability'
 
 const STALE_AFTER_MS = 3 * 60_000
 
@@ -145,6 +146,7 @@ export async function POST(req: NextRequest) {
     if (e instanceof TierMismatch)
       return NextResponse.json({ error: 'Your case requires a senior specialist. Please select a senior doctor.' }, { status: 422 })
     console.error('[appointments/instant]', e)
+    captureError(e, { context: 'appointments/instant' })
     return NextResponse.json({ error: 'Failed to create appointment' }, { status: 500 })
   }
 }

@@ -13,6 +13,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { rateLimit } from '@/lib/rate-limit'
 import { requiresSenior } from '@/lib/triage'
 
 const STALE_AFTER_MS = 3 * 60_000
@@ -20,6 +21,9 @@ const STALE_AFTER_MS = 3 * 60_000
 export async function GET(req: NextRequest) {
   const session = await auth()
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const rl = rateLimit(req, { key: 'doctors-online', max: 30, windowMs: 60_000 })
+  if (!rl.ok) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
 
   const { searchParams } = req.nextUrl
   const specialty   = searchParams.get('specialty')?.trim() || undefined

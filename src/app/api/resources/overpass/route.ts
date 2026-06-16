@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
+import { captureError } from '@/lib/observability'
+import { rateLimit } from '@/lib/rate-limit'
 
 const schema = z.object({
   lat:    z.coerce.number().min(-90).max(90),
@@ -27,6 +29,9 @@ function haversineKm(aLat: number, aLng: number, bLat: number, bLng: number): nu
 }
 
 export async function GET(req: NextRequest) {
+  const rl = rateLimit(req, { key: 'overpass', max: 30, windowMs: 60_000 })
+  if (!rl.ok) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+
   const { searchParams } = new URL(req.url)
   const parsed = schema.safeParse({
     lat:    searchParams.get('lat'),
@@ -60,12 +65,14 @@ out center tags 30;`
     })
     if (!res.ok) {
       console.error('[overpass] non-OK:', res.status, await res.text().catch(() => ''))
+      captureError(new Error('overpass non-ok'), { context: 'overpass', status: res.status })
       throw new Error(`overpass ${res.status}`)
     }
     const data = await res.json()
     elements = (data.elements ?? []) as OverpassElement[]
   } catch (e) {
     console.error('[overpass] fetch failed:', e)
+    captureError(e, { context: 'overpass fetch' })
     return NextResponse.json({ error: 'Could not load nearby places', places: [] }, { status: 502 })
   }
 

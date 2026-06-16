@@ -23,6 +23,7 @@ import { prisma } from '@/lib/prisma'
 import { rateLimit } from '@/lib/rate-limit'
 import { passwordIssue } from '@/lib/password'
 import { botIdGuard } from '@/lib/botid'
+import { captureError } from '@/lib/observability'
 import { sendVerifyEmail, sendWelcomeClinic } from '@/lib/email'
 import { randomToken, EMAIL_VERIFY_TTL_MS } from '@/lib/tokens'
 import { PLAN_QUOTA, makeSlug } from '@/lib/clinic'
@@ -102,6 +103,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Email, phone, or clinic slug already in use' }, { status: 409 })
     }
     console.error('[clinic.register] failed', e)
+    captureError(e, { context: 'clinic.register' })
     return NextResponse.json({ error: 'Signup failed. Please try again.' }, { status: 500 })
   }
 

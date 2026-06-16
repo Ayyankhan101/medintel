@@ -39,15 +39,40 @@ const MILD_KEYWORDS = [
 ]
 
 /**
+ * Negation-word patterns to suppress false keyword matches.
+ * Covers common English and clinical documentation negations.
+ * NOT included: "can't" — collides with the CRITICAL keyword "can't breathe".
+ */
+const NEGATION_WORDS = /\b(?:no|not|without|never|denies|denying|no signs of|no history of|no sign of|absence of|negative for|don't|doesn't|didn't|isn't|aren't|wasn't|weren't|haven't|hasn't|hadn't|won't|wouldn't|couldn't|shouldn't)\s+(?:\w+\s+){0,2}$/i
+
+/**
+ * Returns true when `keyword` appears in `text` and is NOT preceded by
+ * a negation word within the last 3 tokens.
+ *
+ * Uses word-boundary matching so "chest" doesn't match "chestnut".
+ */
+function keywordActive(text: string, keyword: string): boolean {
+  const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const re = new RegExp(`\\b${escaped}(?:s|es|ing|ed)?\\b`, 'gi')
+  let m: RegExpExecArray | null
+  while ((m = re.exec(text)) !== null) {
+    const before = text.slice(0, m.index)
+    if (!NEGATION_WORDS.test(before)) return true
+  }
+  return false
+}
+
+/**
  * Bucketed severity: 9 (critical) / 6 (urgent) / 2 (mild) / 6 (default).
  * Conservative default — when uncertain, score higher so the patient gets
  * faster attention rather than being triaged away.
+ * Negation-aware: "no chest pain" will NOT trigger URGENT.
  */
 export function scoreFromKeywords(text: string): number {
   const lower = text.toLowerCase()
-  if (CRITICAL_KEYWORDS.some(w => lower.includes(w))) return 9
-  if (URGENT_KEYWORDS.some(w => lower.includes(w)))   return 6
-  if (MILD_KEYWORDS.some(w => lower.includes(w)))     return 2
+  if (CRITICAL_KEYWORDS.some(w => keywordActive(lower, w))) return 9
+  if (URGENT_KEYWORDS.some(w => keywordActive(lower, w)))   return 6
+  if (MILD_KEYWORDS.some(w => keywordActive(lower, w)))     return 2
   return 6
 }
 
@@ -58,17 +83,17 @@ export function scoreFromKeywords(text: string): number {
 export function computeScore(text: string): number {
   const lower = text.toLowerCase()
 
-  if (CRITICAL_KEYWORDS.some(kw => lower.includes(kw))) {
-    const matches = CRITICAL_KEYWORDS.filter(kw => lower.includes(kw)).length
+  if (CRITICAL_KEYWORDS.some(kw => keywordActive(lower, kw))) {
+    const matches = CRITICAL_KEYWORDS.filter(kw => keywordActive(lower, kw)).length
     return Math.min(10, 8 + matches)
   }
 
-  if (URGENT_KEYWORDS.some(kw => lower.includes(kw))) {
-    const matches = URGENT_KEYWORDS.filter(kw => lower.includes(kw)).length
+  if (URGENT_KEYWORDS.some(kw => keywordActive(lower, kw))) {
+    const matches = URGENT_KEYWORDS.filter(kw => keywordActive(lower, kw)).length
     return Math.min(7, 5 + Math.floor(matches / 2))
   }
 
-  if (MILD_KEYWORDS.some(kw => lower.includes(kw))) return 2
+  if (MILD_KEYWORDS.some(kw => keywordActive(lower, kw))) return 2
 
   return 6
 }

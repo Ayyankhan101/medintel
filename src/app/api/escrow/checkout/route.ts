@@ -23,6 +23,7 @@ import { pickProvider } from '@/lib/payments'
 import type { ProviderId } from '@/lib/payments'
 import { rateLimitDb } from '@/lib/rate-limit'
 import type { Escrow } from '@prisma/client'
+import { captureError } from '@/lib/observability'
 
 const schema = z.object({
   appointmentId: z.string().min(1),
@@ -106,6 +107,7 @@ export async function POST(req: NextRequest) {
     // recovers it after STALE_RESERVATION_MS.
     await prisma.escrow.delete({ where: { id: reserved.id } }).catch(() => {})
     console.error('[escrow/checkout] provider.createCheckout failed', e)
+    captureError(e, { context: 'escrow/checkout createCheckout' })
     return NextResponse.json({ error: 'Payment provider unavailable. Try again in a moment.' }, { status: 502 })
   }
 

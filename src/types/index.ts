@@ -2,7 +2,7 @@ export interface MedIntelUser {
   id: string
   email: string
   phone: string
-  role: 'PATIENT' | 'DOCTOR' | 'ADMIN'
+  role: 'PATIENT' | 'DOCTOR' | 'ADMIN' | 'CLINIC_ADMIN'
   medIntelCode: string | null
   kycStatus: 'PENDING' | 'VERIFIED' | 'REJECTED'
 }

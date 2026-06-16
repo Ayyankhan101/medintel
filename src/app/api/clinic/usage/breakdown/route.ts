@@ -4,18 +4,22 @@
  * Window: last 30 days. Returns one row per doctor in the clinic with
  * completed / cancelled / no-show counts and total escrow released (revenue).
  */
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { rateLimit } from '@/lib/rate-limit'
 
 export const dynamic = 'force-dynamic'
 
 const LOOKBACK_DAYS = 30
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const session = await auth()
   if (!session?.user || session.user.role !== 'CLINIC_ADMIN')
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
+  const rl = rateLimit(req, { key: 'clinic-usage', max: 20, windowMs: 60_000 })
+  if (!rl.ok) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
 
   const clinic = await prisma.clinic.findUnique({
     where:  { ownerUserId: session.user.id },

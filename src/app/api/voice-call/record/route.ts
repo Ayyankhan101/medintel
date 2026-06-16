@@ -23,6 +23,7 @@ import { transcribeAudio } from '@/lib/openai'
 import { rateLimit } from '@/lib/rate-limit'
 import { prisma } from '@/lib/prisma'
 import { meter } from '@/lib/clinic'
+import { captureError, captureWarn } from '@/lib/observability'
 
 export const dynamic = 'force-dynamic'
 
@@ -72,6 +73,7 @@ async function sendSms(to: string, body: string): Promise<void> {
   const from  = process.env.TWILIO_SMS_FROM
   if (!sid || !tok || !from) {
     console.warn('[voice-call] SMS creds missing — skipping SMS to', to)
+    captureWarn('[voice-call] SMS creds missing — skipping SMS to', { to })
     return
   }
   const client = twilio(sid, tok)
@@ -79,6 +81,7 @@ async function sendSms(to: string, body: string): Promise<void> {
     await client.messages.create({ to, from, body })
   } catch (e) {
     console.error('[voice-call] SMS send failed', e)
+    captureError(e, { context: 'voice-call SMS send' })
   }
 }
 
@@ -125,6 +128,7 @@ export async function POST(req: NextRequest) {
     return thankYou(summary)
   } catch (e) {
     console.error('[voice-call] pipeline failed', e)
+    captureError(e, { context: 'voice-call pipeline' })
     return thankYou('Sorry, our system is busy. Please try again in a minute.')
   }
 }

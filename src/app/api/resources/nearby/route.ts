@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { rateLimit } from '@/lib/rate-limit'
 
 export interface NearbyPlace {
   placeId:  string
@@ -23,6 +24,9 @@ function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): nu
 }
 
 export async function GET(req: NextRequest) {
+  const rl = rateLimit(req, { key: 'resources-nearby', max: 30, windowMs: 60_000 })
+  if (!rl.ok) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+
   const { searchParams } = new URL(req.url)
   const lat     = parseFloat(searchParams.get('lat') ?? '')
   const lng     = parseFloat(searchParams.get('lng') ?? '')

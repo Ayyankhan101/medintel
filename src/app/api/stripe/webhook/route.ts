@@ -17,6 +17,7 @@ import { getStripe } from '@/lib/stripe'
 import { prisma } from '@/lib/prisma'
 import { PLAN_QUOTA, planFromPriceId, type Plan } from '@/lib/clinic'
 import { audit } from '@/lib/audit'
+import { captureError } from '@/lib/observability'
 
 export const dynamic = 'force-dynamic'
 
@@ -42,7 +43,7 @@ export async function POST(req: NextRequest) {
     if ((e as { code?: string }).code === 'P2002') {
       return NextResponse.json({ received: true, duplicate: true })
     }
-    console.error('[stripe-webhook] dedupe insert failed', e)
+    captureError(e, { context: 'stripe-webhook dedupe insert' })
     return NextResponse.json({ error: 'Dedupe insert failed' }, { status: 500 })
   }
 
@@ -215,10 +216,10 @@ export async function POST(req: NextRequest) {
       }
     }
   } catch (e) {
-    console.error('[stripe-webhook] handler error', { type: event.type, e })
+    captureError(e, { context: 'stripe-webhook handler', type: event.type })
     // Roll back the dedupe row so Stripe's retry actually re-runs the handler.
     await prisma.processedStripeEvent.delete({ where: { eventId: event.id } }).catch(e2 => {
-      console.error('[stripe-webhook] failed to roll back dedupe row', e2)
+      captureError(e2, { context: 'stripe-webhook rollback dedupe row' })
     })
     // Returning 500 makes Stripe retry — desirable for transient DB errors.
     return NextResponse.json({ error: 'Handler error' }, { status: 500 })

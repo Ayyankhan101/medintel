@@ -18,6 +18,7 @@ import { getStripe } from '@/lib/stripe'
 import { PLAN_QUOTA, planFromPriceId } from '@/lib/clinic'
 import { sendClinicQuotaAlert } from '@/lib/email'
 import { audit } from '@/lib/audit'
+import { captureError } from '@/lib/observability'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 120
@@ -99,6 +100,7 @@ async function reconcileSubscriptionDrift() {
       reconciled++
     } catch (e) {
       console.error('[cron.maintenance] sub drift failed for clinic', c.id, e)
+      captureError(e, { context: 'cron.maintenance sub drift', clinicId: c.id })
     }
   }
   return reconciled
@@ -193,6 +195,7 @@ export async function GET(req: NextRequest) {
     catch (e: unknown) {
       results[name] = `error: ${e instanceof Error ? e.message : 'unknown'}`
       console.error(`[cron.maintenance] ${name} failed`, e)
+      captureError(e, { context: `cron.maintenance ${name}` })
     }
   }
 

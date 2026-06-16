@@ -17,6 +17,7 @@ import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { rateLimit } from '@/lib/rate-limit'
 import { audit } from '@/lib/audit'
+import { captureError } from '@/lib/observability'
 
 export const dynamic = 'force-dynamic'
 
@@ -89,6 +90,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'You already reviewed this consultation.' }, { status: 409 })
     }
     console.error('[reviews POST]', e)
+    captureError(e, { context: 'reviews POST' })
     return NextResponse.json({ error: 'Could not save review' }, { status: 500 })
   }
 }

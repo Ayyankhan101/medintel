@@ -6,6 +6,7 @@ import { providerFor, type ProviderId } from '@/lib/payments'
 import { sendReviewNudge } from '@/lib/email'
 import { audit } from '@/lib/audit'
 import { rateLimitDb } from '@/lib/rate-limit'
+import { captureError } from '@/lib/observability'
 
 const schema = z.object({ appointmentId: z.string().min(1) })
 
@@ -50,6 +51,7 @@ export async function POST(req: NextRequest) {
     })
   } catch (e) {
     console.error('[escrow/release] PSP capture error', e)
+    captureError(e, { context: 'escrow/release PSP capture' })
     return NextResponse.json({ error: 'Payment release failed — try again or contact support' }, { status: 502 })
   }
 
@@ -66,6 +68,7 @@ export async function POST(req: NextRequest) {
     }),
   ]).catch(e => {
     console.error('[escrow/release] DB update failed after PSP capture', e)
+    captureError(e, { context: 'escrow/release DB after capture' })
     void audit('escrow.release_db_failed', 'Appointment', appointment.id, {
       escrowId: appointment.escrow!.id, error: String(e),
     })

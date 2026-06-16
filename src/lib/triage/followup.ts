@@ -13,6 +13,7 @@
 import { z } from 'zod'
 import { getLlmClient, CHAT_MODEL } from '../llm-client'
 import type { TriageOutput } from './agent'
+import { captureError, captureWarn } from '../observability'
 
 export const CONFIDENCE_FLOOR = 0.7
 export const MAX_FOLLOWUPS    = 2
@@ -94,12 +95,12 @@ export async function generateFollowups(
     const raw    = completion.choices[0]?.message?.content ?? '{}'
     const parsed = FollowupOutput.safeParse(JSON.parse(raw))
     if (!parsed.success) {
-      console.warn('[triage/followup] schema parse failed, using fallback', parsed.error.flatten())
+      captureWarn('schema parse failed, using fallback', { issues: parsed.error.flatten() })
       return { followups: deterministicFollowups(triage), source: 'fallback' }
     }
     return { followups: parsed.data, source: 'llm' }
   } catch (e) {
-    console.error('[triage/followup] LLM error:', e)
+    captureError(e, { context: 'triage/followup LLM error' })
     return { followups: deterministicFollowups(triage), source: 'fallback' }
   }
 }

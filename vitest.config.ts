@@ -9,6 +9,12 @@ export default defineConfig({
     globals: true,
     setupFiles: ['./tests/setup.ts'],
     exclude: ['node_modules/**', 'e2e/**', 'evals/**', '.next/**', 'dist/**'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'lcov'],
+      include: ['src/**'],
+      exclude: ['src/**/*.test.*', 'src/**/*.d.ts', 'src/types/**'],
+    },
   },
   resolve: {
     alias: { '@': path.resolve(__dirname, './src') },

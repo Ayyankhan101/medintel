@@ -28,7 +28,6 @@ export function EmergencyAlert({ department }: Props) {
   }, [instruction.audio])
 
   useEffect(() => {
-    speak()
     if (!navigator.geolocation) { setLocError('Geolocation unavailable'); return }
     navigator.geolocation.getCurrentPosition(
       ({ coords }) => {

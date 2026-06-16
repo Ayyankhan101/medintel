@@ -9,12 +9,16 @@ import { z } from 'zod'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { requireSameOrigin } from '@/lib/csrf'
+import { rateLimit } from '@/lib/rate-limit'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const session = await auth()
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const rl = rateLimit(req, { key: 'notifications-get', max: 30, windowMs: 60_000 })
+  if (!rl.ok) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
 
   const [items, unread] = await Promise.all([
     prisma.notification.findMany({
@@ -40,6 +44,9 @@ export async function PATCH(req: NextRequest) {
 
   const session = await auth()
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const rl = rateLimit(req, { key: 'notifications-patch', max: 20, windowMs: 60_000 })
+  if (!rl.ok) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
 
   const parsed = patchSchema.safeParse(await req.json().catch(() => ({})))
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })

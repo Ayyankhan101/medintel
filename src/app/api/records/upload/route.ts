@@ -3,6 +3,7 @@ import { put } from '@vercel/blob'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { rateLimitDb } from '@/lib/rate-limit'
+import { captureError } from '@/lib/observability'
 
 const MAX_BYTES   = 10 * 1024 * 1024  // 10 MB per file
 const ALLOWED_MIME = new Set([
@@ -58,6 +59,7 @@ export async function POST(req: NextRequest) {
     blob = await put(blobKey, file, { access: 'private', addRandomSuffix: true })
   } catch (e) {
     console.error('[records/upload] blob put failed', e)
+    captureError(e, { context: 'records/upload blob put' })
     return NextResponse.json({ error: 'Upload failed' }, { status: 502 })
   }
 

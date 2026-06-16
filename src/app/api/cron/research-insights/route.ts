@@ -13,6 +13,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getLlmClient, CHAT_MODEL } from '@/lib/llm-client'
 import { audit } from '@/lib/audit'
+import { captureError } from '@/lib/observability'
 
 export const dynamic   = 'force-dynamic'
 export const maxDuration = 120
@@ -129,6 +130,7 @@ Be factual. Use clinical language. Do not invent specific numbers not present in
     insight = JSON.parse(raw)
   } catch (e) {
     console.error('[cron.research-insights] LLM failed', e)
+    captureError(e, { context: 'cron.research-insights LLM' })
     insight = {
       summary: `Automated analysis of ${triages.length} cases over ${WINDOW_DAYS} days. Average severity: ${avgSeverity.toFixed(1)}/10. Top department: ${topDepts[0]?.[0] ?? 'General Medicine'}.`,
       keyFindings: topDepts.slice(0, 5).map(([d, c]) => `${d}: ${c} cases in window`),

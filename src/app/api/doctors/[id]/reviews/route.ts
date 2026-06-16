@@ -6,6 +6,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { rateLimit } from '@/lib/rate-limit'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 60
@@ -13,6 +14,9 @@ export const revalidate = 60
 const MAX_LIMIT = 25
 
 export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
+  const rl = rateLimit(req, { key: 'doctor-reviews', max: 30, windowMs: 60_000 })
+  if (!rl.ok) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+
   const { id } = await ctx.params
   const url    = req.nextUrl
   const limit  = Math.min(Number(url.searchParams.get('limit') ?? 10) || 10, MAX_LIMIT)

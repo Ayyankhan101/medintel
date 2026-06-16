@@ -5,6 +5,7 @@ import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { runTextIntakePipeline } from '@/lib/openai'
 import { rateLimitDb } from '@/lib/rate-limit'
+import { captureError } from '@/lib/observability'
 
 const schema = z.object({
   text: z.string().min(3),
@@ -61,7 +62,7 @@ export async function POST(req: NextRequest) {
   try {
     result = await runTextIntakePipeline(text, patientContext)
   } catch (e) {
-    console.error('[transcribe-text] AI pipeline error:', e)
+    captureError(e, { context: 'voice/transcribe-text AI pipeline' })
     const { mapDepartment, scoreFromKeywords } = await import('@/lib/triage')
     const severityScore = scoreFromKeywords(text)
     const department    = mapDepartment(text)

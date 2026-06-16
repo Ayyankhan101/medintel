@@ -60,6 +60,8 @@ export function DoctorCard({ doctor, onBook }: Props) {
       }}
       onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = 'var(--shadow-hover)'; e.currentTarget.style.borderColor = 'rgba(37,99,235,.30)' }}
       onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = 'var(--shadow-card)'; e.currentTarget.style.borderColor = 'var(--border)' }}
+      onFocus={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = 'var(--shadow-hover)'; e.currentTarget.style.borderColor = 'rgba(37,99,235,.30)' }}
+      onBlur={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = 'var(--shadow-card)'; e.currentTarget.style.borderColor = 'var(--border)' }}
     >
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
         <Avatar name={doctor.specialization} />

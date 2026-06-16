@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { sendBookingConfirmation, sendDoctorNewBooking } from '@/lib/email'
 import { isAvailable, parseAvailability } from '@/lib/availability'
 import { rateLimitDb } from '@/lib/rate-limit'
+import { captureError } from '@/lib/observability'
 
 class SlotTakenError extends Error {}
 
@@ -138,6 +139,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'That slot is already booked. Pick another time.' }, { status: 409 })
     }
     console.error('[appointments POST]', e)
+    captureError(e, { context: 'appointments POST' })
     return NextResponse.json({ error: 'Failed to create appointment' }, { status: 500 })
   }
 }

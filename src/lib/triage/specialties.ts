@@ -145,7 +145,7 @@ function keywordRegex(k: string): RegExp {
   return re
 }
 
-const NEGATION_WINDOW = /\b(no|not|without|never|denies|denying|no signs of)\s+(?:\w+\s+){0,2}$/i
+const NEGATION_WINDOW = /\b(?:no|not|without|never|denies|denying|no signs of|no history of|no sign of|absence of|negative for|don't|doesn't|didn't|isn't|aren't|wasn't|weren't|haven't|hasn't|hadn't|won't|wouldn't|couldn't|shouldn't)\s+(?:\w+\s+){0,2}$/i
 
 /** Returns the matched keyword length, or 0 if no real match (or if negated). */
 function scoreKeyword(text: string, keyword: string): number {

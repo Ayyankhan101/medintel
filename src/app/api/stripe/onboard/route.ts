@@ -2,11 +2,15 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getStripe } from '@/lib/stripe'
+import { rateLimitDb } from '@/lib/rate-limit'
 
 export async function POST(req: NextRequest) {
   const session = await auth()
   if (!session?.user || session.user.role !== 'DOCTOR')
     return NextResponse.json({ error: 'Doctors only' }, { status: 403 })
+
+  const rl = await rateLimitDb('stripe-onboard', session.user.id!, { max: 5, windowMs: 60_000 })
+  if (!rl.ok) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
 
   const doctor = await prisma.doctor.findFirst({
     where:   { user: { id: session.user.id } },
