@@ -39,7 +39,7 @@ export function VideoCall({ token, roomName, onCallEnd }: Props) {
   return (
     <div className="relative w-full aspect-video bg-gray-900 rounded-xl overflow-hidden">
       <LiveKitRoom
-        serverUrl={process.env.NEXT_PUBLIC_LIVEKIT_HOST ?? ''}
+        serverUrl={process.env.NEXT_PUBLIC_LIVEKIT_URL ?? ''}
         token={token}
         connect={true}
         onConnected={() => setConnected(true)}

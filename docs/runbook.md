@@ -75,7 +75,7 @@ Likely Stripe → app webhook failed.
 
 1. Confirm `recordingConsentAt` is set on the appointment.
 2. Confirm patient escrow `status === 'HELD'` (token route requires it).
-3. Confirm `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET`, `LIVEKIT_HOST` are set.
+3. Confirm `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET`, `LIVEKIT_URL` are set.
 4. Re-mint the token via `POST /api/consultation/token`.
 
 ## 5. Secret rotation

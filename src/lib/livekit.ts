@@ -2,7 +2,7 @@ import { AccessToken, RoomServiceClient } from 'livekit-server-sdk'
 
 const API_KEY   = process.env.LIVEKIT_API_KEY!
 const API_SECRET = process.env.LIVEKIT_API_SECRET!
-const HOST      = process.env.LIVEKIT_HOST!
+const HOST      = process.env.LIVEKIT_URL!
 
 export async function generateVideoToken(identity: string, roomName: string): Promise<string> {
   const at = new AccessToken(API_KEY, API_SECRET, { identity, ttl: '1h' })

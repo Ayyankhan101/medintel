@@ -20,7 +20,7 @@
 - Token generation: Twilio JWT → LiveKit JWT in new `lib/livekit.ts`
 - Room lifecycle: `completeVideoRoom()` uses LiveKit `RoomServiceClient`
 - Adaptive quality: LiveKit's built-in `adaptiveStream` replaces manual network listener
-- Env vars: add `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET`, `LIVEKIT_HOST`
+- Env vars: add `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET`, `LIVEKIT_URL`
 
 ### Out of scope
 
@@ -40,7 +40,7 @@
 | `api/appointments/[id]/route.ts` | Import `completeVideoRoom` + `appointmentRoomName` from `@/lib/livekit` |
 | `api/health/route.ts` | Add `LIVEKIT_API_KEY` check for video health |
 | `package.json` | Swap `twilio-video` → `livekit-client`, `@livekit/components-react`, `@livekit/components-styles`, `livekit-server-sdk` |
-| `.env.example` / `.env.local.example` | Add `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET`, `LIVEKIT_HOST` |
+| `.env.example` / `.env.local.example` | Add `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET`, `LIVEKIT_URL` |
 | `docs/runbook.md` | Update env var docs |
 
 ## Design
@@ -85,7 +85,7 @@ Import `completeVideoRoom` + `appointmentRoomName` from `@/lib/livekit`. Same `f
 ```
 LIVEKIT_API_KEY="API..."     # from LiveKit Cloud project
 LIVEKIT_API_SECRET="..."      # from LiveKit Cloud project
-LIVEKIT_HOST="wss://medintel-xxxx.livekit.cloud"  # from LiveKit Cloud project
+LIVEKIT_URL="wss://medintel-xxxx.livekit.cloud"  # from LiveKit Cloud project
 ```
 
 `TWILIO_ACCOUNT_SID`, `TWILIO_API_KEY_SID`, `TWILIO_API_KEY_SECRET` stay — still needed by Voice/SMS/WhatsApp routes via `lib/twilio.ts`.

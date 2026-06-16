@@ -69,7 +69,7 @@ import { AccessToken, RoomServiceClient } from 'livekit-server-sdk'
 
 const API_KEY   = process.env.LIVEKIT_API_KEY!
 const API_SECRET = process.env.LIVEKIT_API_SECRET!
-const HOST      = process.env.LIVEKIT_HOST!
+const HOST      = process.env.LIVEKIT_URL!
 
 export function generateVideoToken(identity: string, roomName: string): string {
   const at = new AccessToken(API_KEY, API_SECRET, { identity, ttl: '1h' })
@@ -158,7 +158,7 @@ export function VideoCall({ token, roomName, onCallEnd }: Props) {
   return (
     <div className="relative w-full aspect-video bg-gray-900 rounded-xl overflow-hidden">
       <LiveKitRoom
-        serverUrl={process.env.NEXT_PUBLIC_LIVEKIT_HOST ?? ''}
+        serverUrl={process.env.NEXT_PUBLIC_LIVEKIT_URL ?? ''}
         token={token}
         connect={true}
         onConnected={() => setConnected(true)}
@@ -273,8 +273,8 @@ After the existing Twilio Video env vars (lines 41-43), add:
 # LiveKit (video calls)
 LIVEKIT_API_KEY=""
 LIVEKIT_API_SECRET=""
-LIVEKIT_HOST="wss://your-project.livekit.cloud"
-NEXT_PUBLIC_LIVEKIT_HOST="wss://your-project.livekit.cloud"
+LIVEKIT_URL="wss://your-project.livekit.cloud"
+NEXT_PUBLIC_LIVEKIT_URL="wss://your-project.livekit.cloud"
 ```
 
 - [ ] **Step 2: Add LiveKit vars to `.env.local.example`**
@@ -290,7 +290,7 @@ twilio:    configured('TWILIO_ACCOUNT_SID', 'TWILIO_API_KEY_SID', 'TWILIO_API_KE
 to:
 ```typescript
 twilio: configured('TWILIO_ACCOUNT_SID', 'TWILIO_API_KEY_SID', 'TWILIO_API_KEY_SECRET'),
-livekit: configured('LIVEKIT_API_KEY', 'LIVEKIT_HOST'),
+livekit: configured('LIVEKIT_API_KEY', 'LIVEKIT_URL'),
 ```
 
 - [ ] **Step 4: Update runbook**
