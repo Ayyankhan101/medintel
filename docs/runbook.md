@@ -12,7 +12,7 @@ How to keep MedIntel running. Read this before going on-call.
 | OCR / vision     | AWS S3 + Textract                        |
 | Voice STT        | OpenAI Whisper (Groq primary)            |
 | LLM triage       | Groq → OpenAI fallback                   |
-| Video            | Twilio Video                             |
+| Video            | LiveKit Cloud                            |
 | SMS              | Twilio SMS                               |
 | Email            | Resend                                   |
 | Payments         | Stripe Connect + SafePay + JazzCash      |
@@ -71,11 +71,12 @@ Likely Stripe → app webhook failed.
 3. Tail logs for `[transcribe] AI pipeline error`.
 4. If both providers are down, the route returns 502 — patients can still use `/intake` text mode.
 
-### 4.4 Twilio video room won't connect
+### 4.4 LiveKit video room won't connect
 
 1. Confirm `recordingConsentAt` is set on the appointment.
 2. Confirm patient escrow `status === 'HELD'` (token route requires it).
-3. Re-mint the token via `POST /api/consultation/token`.
+3. Confirm `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET`, `LIVEKIT_HOST` are set.
+4. Re-mint the token via `POST /api/consultation/token`.
 
 ## 5. Secret rotation
 
@@ -84,7 +85,8 @@ Order matters — break-glass instructions:
 1. **`NEXTAUTH_SECRET`**: rotate during a low-traffic window. All active sessions are invalidated.
 2. **`STRIPE_WEBHOOK_SECRET`**: update in Vercel → push → update endpoint in Stripe Dashboard. Old secret accepted for the brief window between deploy + dashboard update.
 3. **`CRON_SECRET`**: rotate freely; idempotent.
-4. **`TWILIO_AUTH_TOKEN`**: rotate via Twilio console first, then update Vercel env, then redeploy.
+4. **`LIVEKIT_API_KEY` / `LIVEKIT_API_SECRET`**: rotate via LiveKit Cloud console first, then update Vercel env, then redeploy.
+5. **`TWILIO_AUTH_TOKEN`**: rotate via Twilio console first, then update Vercel env, then redeploy.
 5. **`SAFEPAY_WEBHOOK_SECRET` / `JAZZCASH_INTEGRITY_SALT`**: see `docs/incident-response.md` §4.
 
 Never check secrets into Git. `.env*` is gitignored; verify with `git ls-files | grep .env`.

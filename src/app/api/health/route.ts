@@ -54,6 +54,7 @@ export async function GET(req: NextRequest) {
     safepay:   configured('SAFEPAY_API_KEY', 'SAFEPAY_WEBHOOK_SECRET'),
     jazzcash:  configured('JAZZCASH_MERCHANT_ID', 'JAZZCASH_PASSWORD', 'JAZZCASH_INTEGRITY_SALT'),
     twilio:    configured('TWILIO_ACCOUNT_SID', 'TWILIO_API_KEY_SID', 'TWILIO_API_KEY_SECRET'),
+    livekit:   configured('LIVEKIT_API_KEY', 'LIVEKIT_HOST'),
     twilioSms: configured('TWILIO_AUTH_TOKEN', 'TWILIO_SMS_FROM'),
     s3:        configured('AWS_REGION', 'AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY'),
     blob:      configured('BLOB_READ_WRITE_TOKEN'),
