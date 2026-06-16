@@ -6,6 +6,7 @@ import { Plus, X, Download, FileText, Calendar, Trash2, Loader2, Star } from 'lu
 import { ReviewForm } from '@/components/reviews/ReviewForm'
 import { Btn } from '@/components/design/Btn'
 import { AppointmentStatusPill, SeverityPill } from '@/components/design/badges'
+import { useI18n } from '@/lib/i18n/client'
 
 interface MedicalRecord {
   id: string
@@ -29,16 +30,17 @@ interface Appointment {
   review: { id: string; rating: number } | null
 }
 
-const TYPE_LABELS: Record<string, string> = {
-  ALL:          'All',
-  PRESCRIPTION: 'Prescriptions',
-  LAB_REPORT:   'Lab reports',
-  SURGERY:      'Surgeries',
-  ALLERGY:      'Allergies',
-  CHRONIC_MED:  'Chronic meds',
+const TYPE_KEYS: Record<string, string> = {
+  ALL:          'history.typeAll',
+  PRESCRIPTION: 'history.typePrescriptions',
+  LAB_REPORT:   'history.typeLabReports',
+  SURGERY:      'history.typeSurgeries',
+  ALLERGY:      'history.typeAllergies',
+  CHRONIC_MED:  'history.typeChronicMeds',
 }
 
 export default function HistoryPage() {
+  const { T } = useI18n()
   const [records,      setRecords]      = useState<MedicalRecord[]>([])
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [loading,      setLoading]      = useState(true)
@@ -94,8 +96,8 @@ export default function HistoryPage() {
   }
 
   async function cancel(id: string) {
-    if (!confirm('Cancel this appointment? Held payment is refunded automatically.')) return
-    const reason = prompt('Reason for cancellation (optional, helps us improve):') ?? ''
+    if (!confirm(T('history.cancelConfirm'))) return
+    const reason = prompt(T('history.cancelReason')) ?? ''
     setActionBusy(id)
     try {
       const res = await fetch(`/api/appointments/${id}`, {
@@ -120,19 +122,19 @@ export default function HistoryPage() {
       <header style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
         <div>
           <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--blue-700)', letterSpacing: '.08em', textTransform: 'uppercase' }}>
-            Medical vault
+            {T('history.kicker')}
           </span>
           <h1 style={{ margin: '4px 0 0', fontSize: 28, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--ink)' }}>
-            My medical history
+            {T('history.title')}
           </h1>
           <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--ink-3)' }}>
-            {records.length} records in your vault
+            {T('history.recordsCount').replace('{n}', String(records.length))}
           </p>
         </div>
         <Btn kind={showUpload ? 'secondary' : 'primary'}
              onClick={() => setShowUpload(!showUpload)}
              leading={showUpload ? <X size={14} /> : <Plus size={14} />}>
-          {showUpload ? 'Cancel' : 'Add record'}
+          {showUpload ? T('history.cancel') : T('history.addRecord')}
         </Btn>
       </header>
 
@@ -141,7 +143,7 @@ export default function HistoryPage() {
       )}
 
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-        {Object.entries(TYPE_LABELS).map(([value, label]) => {
+        {Object.entries(TYPE_KEYS).map(([value, key]) => {
           const active = filter === value
           return (
             <button key={value} onClick={() => setFilter(value)} className="focus-ring"
@@ -153,7 +155,7 @@ export default function HistoryPage() {
                 fontSize: 12, fontWeight: 600, cursor: 'pointer',
                 transition: 'all 200ms var(--ease-out-quart)',
               }}>
-              {label}
+              {T(key)}
             </button>
           )
         })}
@@ -182,7 +184,7 @@ export default function HistoryPage() {
             display: 'inline-flex', alignItems: 'center', gap: 8,
           }}>
             <FileText size={16} style={{ color: 'var(--blue-700)' }} />
-            Past consultations
+            {T('history.past')}
           </h2>
           <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
             {appointments.map(a => (
@@ -195,7 +197,7 @@ export default function HistoryPage() {
                   <div style={{ minWidth: 0, flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                       <span style={{ fontWeight: 700, color: 'var(--ink)', fontSize: 14 }}>
-                        {a.doctor?.specialization ?? a.department ?? 'Consultation'}
+                        {a.doctor?.specialization ?? a.department ?? T('history.consultation')}
                       </span>
                       <AppointmentStatusPill status={a.status as 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'REFUNDED'} />
                       {a.severityLevel && (
@@ -211,12 +213,12 @@ export default function HistoryPage() {
                       <>
                         <a href={`/api/appointments/${a.id}/prescription.pdf`} target="_blank" rel="noreferrer"
                            style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--blue-700)', fontWeight: 600, textDecoration: 'none' }}>
-                          <Download size={12} /> Rx
+                          <Download size={12} /> {T('history.rx')}
                         </a>
                         <a href={`/api/appointments/${a.id}/claim.pdf`} target="_blank" rel="noreferrer"
                            title="Insurance claim PDF (State Life / Adamjee / EFU)"
                            style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--blue-700)', fontWeight: 600, textDecoration: 'none' }}>
-                          <FileText size={12} /> Claim
+                          <FileText size={12} /> {T('history.claim')}
                         </a>
                       </>
                     )}
@@ -225,12 +227,12 @@ export default function HistoryPage() {
                         <button onClick={() => { setRescheduling(rescheduling === a.id ? null : a.id); setNewAt('') }}
                                 disabled={actionBusy === a.id}
                                 style={iconLink('ink')}>
-                          <Calendar size={12} /> Reschedule
+                          <Calendar size={12} /> {T('history.reschedule')}
                         </button>
                         <button onClick={() => cancel(a.id)} disabled={actionBusy === a.id}
                                 style={iconLink('red')}>
                           {actionBusy === a.id ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
-                          Cancel
+                          {T('history.cancelAppt')}
                         </button>
                       </>
                     )}
@@ -244,7 +246,7 @@ export default function HistoryPage() {
                       display: 'flex', alignItems: 'center', gap: 6,
                       fontSize: 12, color: 'var(--ink-3)',
                     }}>
-                      <span>Your rating:</span>
+                      <span>{T('history.yourRating')}</span>
                       {Array.from({ length: 5 }).map((_, i) => (
                         <Star key={i} size={13}
                               fill={i < a.review!.rating ? '#f59e0b' : 'transparent'}
@@ -278,10 +280,10 @@ export default function HistoryPage() {
                       }}
                     />
                     <Btn kind="primary" disabled={!newAt || actionBusy === a.id} onClick={() => reschedule(a.id)}>
-                      {actionBusy === a.id ? <Loader2 size={14} className="animate-spin" /> : 'Confirm'}
+                      {actionBusy === a.id ? <Loader2 size={14} className="animate-spin" /> : T('history.confirm')}
                     </Btn>
                     <Btn kind="ghost" onClick={() => { setRescheduling(null); setNewAt('') }}>
-                      Cancel
+                      {T('history.cancel')}
                     </Btn>
                   </div>
                 )}
@@ -291,7 +293,7 @@ export default function HistoryPage() {
           {nextCursor && (
             <Btn kind="secondary" onClick={loadMore} disabled={loadingMore}
                  style={{ alignSelf: 'center', marginTop: 4 }}>
-              {loadingMore ? <Loader2 size={14} className="animate-spin" /> : 'Load more'}
+              {loadingMore ? <Loader2 size={14} className="animate-spin" /> : T('history.loadMore')}
             </Btn>
           )}
         </section>

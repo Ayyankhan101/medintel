@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { MapPin, Phone, RefreshCw, AlertTriangle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useI18n } from '@/lib/i18n/client'
 
 interface Resource {
   id:          string
@@ -15,17 +16,18 @@ interface Resource {
   distance?:   number
 }
 
-const RESOURCE_TYPES = [
-  { value: '',                label: 'All Resources'  },
-  { value: 'HOSPITAL',       label: 'Hospitals'       },
-  { value: 'PHARMACY',       label: 'Pharmacies'      },
-  { value: 'OXYGEN',         label: 'Oxygen Cylinders'},
-  { value: 'VENTILATOR',     label: 'Ventilators'     },
-  { value: 'BLOOD_BANK',     label: 'Blood Banks'     },
-  { value: 'AMBULANCE',      label: 'Ambulances'      },
+const RESOURCE_TYPE_KEYS = [
+  { value: '',                key: 'finder.all'         },
+  { value: 'HOSPITAL',       key: 'finder.hospitals'   },
+  { value: 'PHARMACY',       key: 'finder.pharmacies'   },
+  { value: 'OXYGEN',         key: 'finder.oxygen'       },
+  { value: 'VENTILATOR',     key: 'finder.ventilators'  },
+  { value: 'BLOOD_BANK',     key: 'finder.bloodBanks'   },
+  { value: 'AMBULANCE',      key: 'finder.ambulances'   },
 ]
 
 export function ResourceFinder() {
+  const { T } = useI18n()
   const [type,      setType]      = useState('')
   const [resources, setResources] = useState<Resource[]>([])
   const [loading,   setLoading]   = useState(false)
@@ -33,10 +35,10 @@ export function ResourceFinder() {
   const [coords,    setCoords]    = useState<{ lat: number; lng: number } | null>(null)
 
   useEffect(() => {
-    if (!navigator.geolocation) { setLocError('Geolocation not supported'); return }
+    if (!navigator.geolocation) { setLocError(T('finder.locUnsupported')); return }
     navigator.geolocation.getCurrentPosition(
       ({ coords: c }) => setCoords({ lat: c.latitude, lng: c.longitude }),
-      () => setLocError('Location access denied — showing all resources'),
+      () => setLocError(T('finder.locDenied')),
     )
   }, [])
 
@@ -59,7 +61,7 @@ export function ResourceFinder() {
     <div className="space-y-4">
       {/* Filter bar */}
       <div className="flex flex-wrap gap-2">
-        {RESOURCE_TYPES.map(rt => (
+        {RESOURCE_TYPE_KEYS.map(rt => (
           <button
             key={rt.value}
             onClick={() => setType(rt.value)}
@@ -69,7 +71,7 @@ export function ResourceFinder() {
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
-            {rt.label}
+            {T(rt.key)}
           </button>
         ))}
         <Button size="sm" variant="ghost" onClick={fetchResources} disabled={loading} className="ml-auto">
@@ -87,13 +89,13 @@ export function ResourceFinder() {
       {loading && resources.length === 0 && (
         <div className="text-center py-10 text-gray-400">
           <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2" />
-          <p className="text-sm">Finding resources near you…</p>
+          <p className="text-sm">{T('finder.loading')}</p>
         </div>
       )}
 
       {!loading && resources.length === 0 && (
         <div className="text-center py-10 text-gray-400">
-          <p>No resources found. Try a different filter or expand your area.</p>
+          <p>{T('finder.empty')}</p>
         </div>
       )}
 
@@ -112,7 +114,7 @@ export function ResourceFinder() {
                   <p className="text-sm font-bold text-gray-700">{r.distance.toFixed(1)} km</p>
                 )}
                 <span className={`text-xs font-semibold ${r.isAvailable ? 'text-green-600' : 'text-red-500'}`}>
-                  {r.isAvailable ? 'Available' : 'Unavailable'}
+                  {r.isAvailable ? T('finder.available') : T('finder.unavailable')}
                 </span>
               </div>
             </div>
@@ -135,7 +137,7 @@ export function ResourceFinder() {
                 rel="noopener noreferrer"
                 className="flex items-center gap-1 text-sm text-blue-600 hover:underline"
               >
-                <MapPin className="w-3.5 h-3.5" /> Get Directions
+                <MapPin className="w-3.5 h-3.5" /> {T('finder.directions')}
               </a>
             </div>
           </li>

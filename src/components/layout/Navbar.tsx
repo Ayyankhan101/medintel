@@ -5,39 +5,40 @@ import { usePathname } from 'next/navigation'
 import { signOut } from 'next-auth/react'
 import { Menu, X, Activity, LogOut, User, Stethoscope, Sun, Moon, Zap, BarChart3 } from 'lucide-react'
 import { useTheme } from '@/components/ThemeProvider'
-import { LangToggle } from '@/lib/i18n/client'
+import { LangToggle, useI18n } from '@/lib/i18n/client'
 
 interface NavLink { label: string; href: string }
 
 const PATIENT_LINKS: NavLink[] = [
-  { label: 'Consult',     href: '/intake'         },
-  { label: 'Online now',  href: '/doctors/online' },
-  { label: 'History',     href: '/history'        },
-  { label: 'Resources',   href: '/resources'      },
+  { label: 'nav.consult',     href: '/intake'         },
+  { label: 'nav.onlineNow',   href: '/doctors/online' },
+  { label: 'nav.history',     href: '/history'        },
+  { label: 'nav.resources',   href: '/resources'      },
 ]
 
 const DOCTOR_LINKS: NavLink[] = [
-  { label: 'Dashboard', href: '/doctor/dashboard' },
-  { label: 'Patients',  href: '/doctor/patients'  },
-  { label: 'Analytics', href: '/doctor/analytics' },
-  { label: 'Settings',  href: '/doctor/settings'  },
+  { label: 'nav.dashboard', href: '/doctor/dashboard' },
+  { label: 'nav.patients',  href: '/doctor/patients'  },
+  { label: 'nav.analytics', href: '/doctor/analytics' },
+  { label: 'nav.settings',  href: '/doctor/settings'  },
 ]
 
 const ADMIN_LINKS: NavLink[] = [
-  { label: 'Overview', href: '/admin/dashboard' },
-  { label: 'Metrics',  href: '/admin/metrics'   },
-  { label: 'Research', href: '/admin/research'  },
-  { label: 'Doctors',  href: '/admin/doctors'   },
-  { label: 'Audit',    href: '/admin/audit'     },
+  { label: 'nav.overview', href: '/admin/dashboard' },
+  { label: 'nav.metrics',  href: '/admin/metrics'   },
+  { label: 'nav.research', href: '/admin/research'  },
+  { label: 'nav.doctors',  href: '/admin/doctors'   },
+  { label: 'nav.audit',    href: '/admin/audit'     },
 ]
 
 const CLINIC_LINKS: NavLink[] = [
-  { label: 'Dashboard', href: '/clinic/dashboard' },
+  { label: 'nav.dashboard', href: '/clinic/dashboard' },
 ]
 
 export function Navbar() {
   const pathname = usePathname()
   const { theme, toggle } = useTheme()
+  const { T } = useI18n()
   const [open, setOpen] = useState(false)
   const [role, setRole] = useState<string | null>(null)
   const [name, setName] = useState<string | null>(null)
@@ -82,7 +83,7 @@ export function Navbar() {
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800'
                 }`}
               >
-                {l.label}
+                {T(l.label)}
               </Link>
             ))}
           </nav>
@@ -110,7 +111,7 @@ export function Navbar() {
               <Link
                 href="/profile"
                 className="hidden sm:flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors"
-                title="Profile"
+                title={T('nav.profile')}
               >
                 {role === 'DOCTOR'
                   ? <Stethoscope className="w-3.5 h-3.5" />
@@ -122,16 +123,16 @@ export function Navbar() {
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950 transition-colors"
               >
                 <LogOut className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Sign out</span>
+                <span className="hidden sm:inline">{T('nav.signOut')}</span>
               </button>
             </>
           ) : (
             <div className="flex items-center gap-2">
               <Link href="/login" className="px-3 py-1.5 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors">
-                Sign in
+                {T('nav.signIn')}
               </Link>
               <Link href="/register" className="px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                Get started
+                {T('nav.getStarted')}
               </Link>
             </div>
           )}
@@ -162,7 +163,7 @@ export function Navbar() {
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800'
               }`}
             >
-              {l.label}
+              {T(l.label)}
             </Link>
           ))}
         </div>

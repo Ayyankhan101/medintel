@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import type { NearbyPlace } from './NearbyHospitals'
+import { useI18n } from '@/lib/i18n/client'
 
 // Leaflet's default marker icons reference paths that don't exist in our bundle —
 // fix the URLs to use the CDN so markers render correctly.
@@ -23,6 +24,7 @@ interface Props {
 }
 
 export default function NearbyHospitalsMap({ center, places }: Props) {
+  const { T } = useI18n()
   useEffect(fixDefaultIcons, [])
 
   return (
@@ -45,7 +47,7 @@ export default function NearbyHospitalsMap({ center, places }: Props) {
           radius={8}
           pathOptions={{ color: '#2563eb', fillColor: '#3b82f6', fillOpacity: 0.9 }}
         >
-          <Popup>You are here</Popup>
+          <Popup>{T('nearby.youAreHere')}</Popup>
         </CircleMarker>
         {places.map(p => (
           <Marker key={p.id} position={[p.lat, p.lng]}>

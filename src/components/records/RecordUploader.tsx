@@ -3,18 +3,20 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
+import { useI18n } from '@/lib/i18n/client'
 
-const RECORD_TYPES = [
-  { value: 'PRESCRIPTION', label: 'Prescription' },
-  { value: 'LAB_REPORT',   label: 'Lab Report' },
-  { value: 'SURGERY',      label: 'Surgery Record' },
-  { value: 'ALLERGY',      label: 'Allergy' },
-  { value: 'CHRONIC_MED',  label: 'Chronic Medication' },
-]
+const RECORD_TYPE_KEYS: Record<string, string> = {
+  PRESCRIPTION: 'upload.typePrescription',
+  LAB_REPORT:   'upload.typeLabReport',
+  SURGERY:      'upload.typeSurgery',
+  ALLERGY:      'upload.typeAllergy',
+  CHRONIC_MED:  'upload.typeChronicMed',
+}
 
 interface Props { onUploaded: () => void }
 
 export function RecordUploader({ onUploaded }: Props) {
+  const { T } = useI18n()
   const [type, setType]       = useState('PRESCRIPTION')
   const [title, setTitle]     = useState('')
   const [file, setFile]       = useState<File | null>(null)
@@ -27,7 +29,7 @@ export function RecordUploader({ onUploaded }: Props) {
     if (!file || !title) return
     setLoading(true)
     setSaved(false)
-    setStatus('Uploading document…')
+    setStatus(T('upload.uploading'))
 
     try {
       const form = new FormData()
@@ -55,47 +57,49 @@ export function RecordUploader({ onUploaded }: Props) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 p-4 border rounded-xl bg-gray-50">
-      <h3 className="font-semibold text-gray-800">Upload Medical Document</h3>
+      <h3 className="font-semibold text-gray-800">{T('upload.title')}</h3>
 
       <div>
-        <Label>Document Type</Label>
+        <Label>{T('upload.docType')}</Label>
         <select
           value={type}
           onChange={e => setType(e.target.value)}
           className="w-full mt-1 border rounded-md px-3 py-2 text-sm bg-white"
         >
-          {RECORD_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+          {Object.entries(RECORD_TYPE_KEYS).map(([value, key]) => (
+            <option key={value} value={value}>{T(key)}</option>
+          ))}
         </select>
       </div>
 
       <div>
-        <Label>Title / Description</Label>
+        <Label>{T('upload.titleLabel')}</Label>
         <Input
           value={title}
           onChange={e => setTitle(e.target.value)}
-          placeholder="e.g. Blood Pressure Prescription 2024"
+          placeholder={T('upload.titlePlaceholder')}
           required
         />
       </div>
 
       <div>
-        <Label>Document Photo or PDF</Label>
+        <Label>{T('upload.fileLabel')}</Label>
         <Input
           type="file"
           accept="image/jpeg,image/png,image/webp,application/pdf"
           onChange={e => setFile(e.target.files?.[0] ?? null)}
           required
         />
-        <p className="text-xs text-gray-400 mt-1">JPG, PNG, WEBP or PDF — max 10MB</p>
+        <p className="text-xs text-gray-400 mt-1">{T('upload.fileHint')}</p>
       </div>
 
       <Button type="submit" disabled={loading || !file || !title} className="w-full">
-        {loading ? (status || 'Uploading…') : 'Upload to vault'}
+        {loading ? (status || T('upload.uploading')) : T('upload.submit')}
       </Button>
 
       {saved && (
         <p className="text-green-600 text-sm text-center font-medium">
-          ✓ Document saved to your medical vault.
+          {T('upload.saved')}
         </p>
       )}
       {!loading && !saved && status && (

@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import dynamic from 'next/dynamic'
 import { MapPin, Phone, Loader2, AlertCircle } from 'lucide-react'
+import { useI18n } from '@/lib/i18n/client'
 
 // Leaflet touches `window`, so the map is client-only.
 const MapView = dynamic(() => import('./NearbyHospitalsMap'), {
@@ -33,6 +34,7 @@ const TYPE_COLORS: Record<string, string> = {
 const RADIUS_LADDER_M = [5_000, 15_000, 30_000, 50_000]
 
 export function NearbyHospitals() {
+  const { T } = useI18n()
   const [coords,  setCoords]  = useState<{ lat: number; lng: number } | null>(null)
   const [places,  setPlaces]  = useState<NearbyPlace[]>([])
   const [radiusKm, setRadiusKm] = useState<number | null>(null)
@@ -41,7 +43,7 @@ export function NearbyHospitals() {
 
   useEffect(() => {
     if (typeof navigator === 'undefined' || !navigator.geolocation) {
-      setError('Geolocation not available on this device.')
+      setError(T('nearby.geoUnavailable'))
       return
     }
     setLoading(true)
@@ -49,8 +51,8 @@ export function NearbyHospitals() {
       pos => setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
       err => {
         setLoading(false)
-        if (err.code === err.PERMISSION_DENIED) setError('Location permission denied. We can\'t show nearby places without it.')
-        else setError('Could not get your location.')
+        if (err.code === err.PERMISSION_DENIED) setError(T('nearby.permDenied'))
+        else setError(T('nearby.unableLocate'))
       },
       { enableHighAccuracy: false, timeout: 8000, maximumAge: 60_000 },
     )
@@ -92,15 +94,15 @@ export function NearbyHospitals() {
       <div className="px-5 pt-3 pb-3 flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
         <MapPin className="w-3 h-3 text-blue-600" />
         {coords
-          ? <>Within {radiusKm ?? 5} km of <span className="font-mono">{coords.lat.toFixed(3)}, {coords.lng.toFixed(3)}</span> · OpenStreetMap</>
-          : <>Locating you…</>
+          ? <>{T('nearby.withinKm').replace('{n}', String(radiusKm ?? 5)).replace('{coords}', `${coords.lat.toFixed(3)}, ${coords.lng.toFixed(3)}`)}</>
+          : <>{T('nearby.locating')}</>
         }
       </div>
 
       {loading && (
         <div className="px-5 pb-5 flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
           <Loader2 className="w-4 h-4 animate-spin" />
-          {coords ? 'Finding places…' : 'Getting your location…'}
+          {coords ? T('nearby.finding') : T('nearby.gettingLoc')}
         </div>
       )}
 
@@ -135,7 +137,7 @@ export function NearbyHospitals() {
                       href={`https://www.openstreetmap.org/?mlat=${p.lat}&mlon=${p.lng}#map=18/${p.lat}/${p.lng}`}
                       target="_blank" rel="noreferrer"
                       className="text-slate-500 dark:text-slate-400 hover:underline"
-                    >Directions</a>
+                    >{T('nearby.directions')}</a>
                   </div>
                 </div>
               </li>
@@ -146,8 +148,8 @@ export function NearbyHospitals() {
 
       {!loading && !error && coords && places.length === 0 && (
         <div className="px-5 pb-5 text-sm text-slate-500 dark:text-slate-400 space-y-1">
-          <p>No hospitals, clinics, or pharmacies found within {radiusKm ?? 50} km of <span className="font-mono">{coords.lat.toFixed(3)}, {coords.lng.toFixed(3)}</span>.</p>
-          <p className="text-xs">If that location looks wrong, your browser may have used a coarse IP-based estimate (common on desktop or VPN). Try opening this page on your phone with location services enabled.</p>
+          <p>{T('nearby.notFound').replace('{n}', String(radiusKm ?? 50)).replace('{coords}', `${coords.lat.toFixed(3)}, ${coords.lng.toFixed(3)}`)}</p>
+          <p className="text-xs">{T('nearby.coarseEstimate')}</p>
         </div>
       )}
     </div>

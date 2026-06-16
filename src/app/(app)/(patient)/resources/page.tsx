@@ -1,8 +1,10 @@
 'use client'
 import { ResourceFinder } from '@/components/resources/ResourceFinder'
 import { MapPin } from 'lucide-react'
+import { useI18n } from '@/lib/i18n/client'
 
 export default function ResourcesPage() {
+  const { T } = useI18n()
   return (
     <div style={{
       maxWidth: 760, margin: '0 auto',
@@ -12,16 +14,16 @@ export default function ResourcesPage() {
     }}>
       <header>
         <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--blue-700)', letterSpacing: '.08em', textTransform: 'uppercase' }}>
-          Nearby help
+          {T('resources.kicker')}
         </span>
         <h1 style={{
           margin: '4px 0 0', fontSize: 28, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--ink)',
           display: 'inline-flex', alignItems: 'center', gap: 10,
         }}>
-          <MapPin size={22} style={{ color: 'var(--blue-700)' }} /> Medical resources
+          <MapPin size={22} style={{ color: 'var(--blue-700)' }} /> {T('resources.title')}
         </h1>
         <p style={{ margin: '6px 0 0', fontSize: 14, color: 'var(--ink-3)', lineHeight: 1.55 }}>
-          Find the nearest hospitals, pharmacies, oxygen cylinders, and emergency equipment near you.
+          {T('resources.sub')}
         </p>
       </header>
       <ResourceFinder />

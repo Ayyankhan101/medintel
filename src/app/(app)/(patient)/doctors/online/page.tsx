@@ -10,6 +10,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loader2, Stethoscope, Star, Zap, AlertCircle } from 'lucide-react'
+import { useI18n } from '@/lib/i18n/client'
 
 interface OnlineDoctor {
   id:               string
@@ -25,6 +26,7 @@ interface OnlineDoctor {
 
 export default function DoctorsOnlinePage() {
   const router = useRouter()
+  const { T } = useI18n()
   const [docs,    setDocs]    = useState<OnlineDoctor[] | null>(null)
   const [err,     setErr]     = useState<string | null>(null)
   const [booking, setBooking] = useState<string | null>(null)
@@ -38,7 +40,7 @@ export default function DoctorsOnlinePage() {
         const data = await r.json()
         if (alive) setDocs(data.doctors)
       } catch (e) {
-        if (alive) setErr(e instanceof Error ? e.message : 'Failed to load')
+        if (alive) setErr(e instanceof Error ? e.message : T('online.failLoad'))
       }
     }
     refresh()
@@ -58,7 +60,7 @@ export default function DoctorsOnlinePage() {
       if (!r.ok) throw new Error(data?.error ?? `HTTP ${r.status}`)
       router.push(`/booking/${data.appointmentId}`)
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Failed to book')
+      setErr(e instanceof Error ? e.message : T('online.failBook'))
       setBooking(null)
     }
   }
@@ -71,13 +73,13 @@ export default function DoctorsOnlinePage() {
     }}>
       <header>
         <span style={{ fontSize: 11, fontWeight: 700, color: '#047857', letterSpacing: '.08em', textTransform: 'uppercase' }}>
-          Consult Now
+          {T('online.kicker')}
         </span>
         <h1 style={{ margin: '4px 0 0', fontSize: 26, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--ink)' }}>
-          Doctors available right now
+          {T('online.title')}
         </h1>
         <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--ink-3)' }}>
-          Pick a doctor, pay, and start a video call within minutes.
+          {T('online.sub')}
         </p>
       </header>
 
@@ -103,7 +105,7 @@ export default function DoctorsOnlinePage() {
           borderRadius: 16, padding: 28, textAlign: 'center', color: 'var(--ink-3)', fontSize: 14,
         }}>
           <Zap size={20} style={{ color: 'var(--ink-4)', marginBottom: 8 }} />
-          <p style={{ margin: 0 }}>No doctors online right now. Try scheduling instead.</p>
+          <p style={{ margin: 0 }}>{T('online.empty')}</p>
         </div>
       )}
 
@@ -130,16 +132,16 @@ export default function DoctorsOnlinePage() {
 
             <div style={{ minWidth: 0 }}>
               <p style={{ margin: 0, fontWeight: 600, color: 'var(--ink)' }}>
-                {d.name ?? 'Doctor'}
+                {d.name ?? T('online.doctor')}
                 {d.trustBadge && (
                   <span style={{
                     marginLeft: 8, fontSize: 10, fontWeight: 700, color: '#047857',
                     background: 'rgba(16,185,129,.12)', padding: '2px 6px', borderRadius: 6,
-                  }}>Verified</span>
+                  }}>{T('online.verified')}</span>
                 )}
               </p>
               <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--ink-3)' }}>
-                {d.specialization} · {d.yearsExperience}y exp
+                {d.specialization} · {T('online.yExp').replace('{y}', String(d.yearsExperience))}
                 {d.rating && (
                   <span style={{ marginLeft: 8, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
                     <Star size={11} fill="currentColor" style={{ color: '#f59e0b' }} />
@@ -164,7 +166,7 @@ export default function DoctorsOnlinePage() {
               }}
             >
               {booking === d.id ? <Loader2 size={14} className="animate-spin" /> : <Zap size={14} />}
-              {booking === d.id ? 'Booking…' : 'Consult Now'}
+              {booking === d.id ? T('online.bookingBtn') : T('online.consultBtn')}
             </button>
           </li>
         ))}

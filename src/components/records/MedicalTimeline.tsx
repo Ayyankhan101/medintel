@@ -1,27 +1,39 @@
+'use client'
 import { FileText, TestTube, Scissors, AlertTriangle, Pill, ClipboardList } from 'lucide-react'
+import { useI18n } from '@/lib/i18n/client'
 
 interface MedicalRecord {
   id: string; type: string; title: string; content: string; recordedAt: string; fileUrl?: string | null
 }
 
-const TYPE_CONFIG: Record<string, { label: string; icon: React.ElementType; bg: string; text: string; dot: string }> = {
-  PRESCRIPTION: { label: 'Prescription', icon: FileText,      bg: 'bg-blue-50',   text: 'text-blue-700',   dot: 'bg-blue-400'   },
-  LAB_REPORT:   { label: 'Lab Report',   icon: TestTube,      bg: 'bg-purple-50', text: 'text-purple-700', dot: 'bg-purple-400' },
-  SURGERY:      { label: 'Surgery',      icon: Scissors,      bg: 'bg-red-50',    text: 'text-red-700',    dot: 'bg-red-400'    },
-  ALLERGY:      { label: 'Allergy',      icon: AlertTriangle, bg: 'bg-orange-50', text: 'text-orange-700', dot: 'bg-orange-400' },
-  CHRONIC_MED:  { label: 'Chronic Med',  icon: Pill,          bg: 'bg-green-50',  text: 'text-green-700',  dot: 'bg-green-400'  },
+const TYPE_LABEL_KEYS: Record<string, string> = {
+  PRESCRIPTION: 'timeline.prescription',
+  LAB_REPORT:   'timeline.labReport',
+  SURGERY:      'timeline.surgery',
+  ALLERGY:      'timeline.allergy',
+  CHRONIC_MED:  'timeline.chronicMed',
 }
-const DEFAULT_CFG = { label: 'Note', icon: ClipboardList, bg: 'bg-slate-50', text: 'text-slate-700', dot: 'bg-slate-400' }
+const DEFAULT_LABEL_KEY = 'timeline.note'
+
+const TYPE_CONFIG: Record<string, { labelKey: string; icon: React.ElementType; bg: string; text: string; dot: string }> = {
+  PRESCRIPTION: { labelKey: 'timeline.prescription', icon: FileText,      bg: 'bg-blue-50',   text: 'text-blue-700',   dot: 'bg-blue-400'   },
+  LAB_REPORT:   { labelKey: 'timeline.labReport',   icon: TestTube,      bg: 'bg-purple-50', text: 'text-purple-700', dot: 'bg-purple-400' },
+  SURGERY:      { labelKey: 'timeline.surgery',      icon: Scissors,      bg: 'bg-red-50',    text: 'text-red-700',    dot: 'bg-red-400'    },
+  ALLERGY:      { labelKey: 'timeline.allergy',      icon: AlertTriangle, bg: 'bg-orange-50', text: 'text-orange-700', dot: 'bg-orange-400' },
+  CHRONIC_MED:  { labelKey: 'timeline.chronicMed',  icon: Pill,          bg: 'bg-green-50',  text: 'text-green-700',  dot: 'bg-green-400'  },
+}
+const DEFAULT_CFG = { labelKey: 'timeline.note', icon: ClipboardList, bg: 'bg-slate-50', text: 'text-slate-700', dot: 'bg-slate-400' }
 
 export function MedicalTimeline({ records }: { records: MedicalRecord[] }) {
+  const { T } = useI18n()
   if (records.length === 0) {
     return (
       <div className="text-center py-16 text-slate-400">
         <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
           <ClipboardList className="w-8 h-8 text-slate-300" />
         </div>
-        <p className="font-medium text-slate-500">No records yet</p>
-        <p className="text-sm mt-1">Upload your first medical document to get started</p>
+        <p className="font-medium text-slate-500">{T('timeline.empty')}</p>
+        <p className="text-sm mt-1">{T('timeline.emptySub')}</p>
       </div>
     )
   }
@@ -45,7 +57,7 @@ export function MedicalTimeline({ records }: { records: MedicalRecord[] }) {
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${cfg.bg} ${cfg.text}`}>
-                    {cfg.label}
+                    {T(cfg.labelKey)}
                   </span>
                   <span className="text-xs text-slate-400">
                     {new Date(record.recordedAt).toLocaleDateString('en-PK', { day: 'numeric', month: 'short', year: 'numeric' })}
