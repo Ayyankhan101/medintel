@@ -11,6 +11,7 @@ import type { TriageResult } from '@/types'
 import { Btn } from '@/components/design/Btn'
 import { useOnlineStatus } from '@/hooks/useOnlineStatus'
 import { useVoiceQueue } from '@/hooks/useVoiceQueue'
+import { useI18n } from '@/lib/i18n/client'
 
 interface DoctorMatch {
   id: string
@@ -38,11 +39,7 @@ interface FollowupQuestion {
 type IntakeMode = 'choose' | 'voice' | 'text'
 type ProcessingStep = 'transcribing' | 'analyzing' | 'matching' | 'followup'
 
-const STEPS = [
-  { num: 1, label: 'Describe' },
-  { num: 2, label: 'Review' },
-  { num: 3, label: 'Doctor' },
-] as const
+const STEP_KEYS = ['intake.step.describe', 'intake.step.review', 'intake.step.doctor'] as const
 
 const MAX_FOLLOWUP_ROUNDS = 2
 
@@ -59,14 +56,16 @@ export default function IntakePage() {
 }
 
 function StepIndicator({ current }: { current: number }) {
+  const { T } = useI18n()
   return (
     <div className="flex items-center justify-center gap-0" style={{ animation: 'mi-fade-up 320ms var(--ease-out-quart) both' }}>
-      {STEPS.map((step, i) => {
-        const isActive = current === step.num
-        const isComplete = current > step.num
-        const isLast = i === STEPS.length - 1
+      {STEP_KEYS.map((key, i) => {
+        const num = i + 1
+        const isActive = current === num
+        const isComplete = current > num
+        const isLast = i === STEP_KEYS.length - 1
         return (
-          <div key={step.num} className="flex items-center">
+          <div key={i} className="flex items-center">
             <div className="flex items-center gap-2">
               <span className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
                 isActive
@@ -75,12 +74,12 @@ function StepIndicator({ current }: { current: number }) {
                     ? 'bg-emerald-500 text-white'
                     : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500'
               }`}>
-                {isComplete ? <Check className="w-4 h-4" /> : step.num}
+                {isComplete ? <Check className="w-4 h-4" /> : num}
               </span>
               <span className={`text-xs font-medium hidden sm:inline transition-colors ${
                 isActive ? 'text-slate-800 dark:text-slate-100' : isComplete ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500'
               }`}>
-                {step.label}
+                {T(key)}
               </span>
             </div>
             {!isLast && (
@@ -108,6 +107,7 @@ function IntakeInner() {
   const [queued,    setQueued]    = useState(false)
   const [wizardStep, setWizardStep] = useState<2 | 3 | null>(null)
 
+  const { T, locale } = useI18n()
   const isOnline = useOnlineStatus()
 
   const [deleting, setDeleting] = useState(false)
@@ -299,10 +299,10 @@ function IntakeInner() {
                 </span>
                 <div>
                   <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: 'var(--ink)' }}>
-                    A few more details
+                    {T('intake.followup.title')}
                   </h3>
                   <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--ink-3)' }}>
-                    Round {followupRound}/{MAX_FOLLOWUP_ROUNDS} — help us refine the assessment
+                    {T('intake.followup.round').replace('{n}', String(followupRound)).replace('{max}', String(MAX_FOLLOWUP_ROUNDS))}
                   </p>
                 </div>
               </div>
@@ -310,11 +310,13 @@ function IntakeInner() {
                 {followupQs.map((q, i) => (
                   <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                     <label style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink-2)' }}>
-                      {q.en}
+                      {locale === 'ur' && q.ur ? q.ur : q.en}
                     </label>
-                    <label style={{ fontSize: 12, color: 'var(--ink-4)', fontStyle: 'italic' }}>
-                      {q.ur}
-                    </label>
+                    {locale !== 'ur' && q.ur && (
+                      <label style={{ fontSize: 12, color: 'var(--ink-4)', fontStyle: 'italic' }}>
+                        {q.ur}
+                      </label>
+                    )}
                     <textarea
                       value={followupAnswers[i] ?? ''}
                       onChange={e => {
@@ -322,7 +324,7 @@ function IntakeInner() {
                         next[i] = e.target.value
                         setFollowupAnswers(next)
                       }}
-                      placeholder="Your answer…"
+                      placeholder={T('intake.followup.placeholder')}
                       style={{
                         width: '100%', minHeight: 60, padding: '10px 12px',
                         borderRadius: 12, border: '1px solid var(--border)',
@@ -339,7 +341,7 @@ function IntakeInner() {
                      disabled={followupLoading}
                      onClick={handleFollowupSubmit}
                      leading={followupLoading ? <Loader2 size={16} className="animate-spin" /> : null}>
-                  {followupLoading ? 'Re-analyzing…' : 'Submit answers'}
+                  {followupLoading ? T('intake.followup.reanalyzing') : T('intake.followup.submit')}
                 </Btn>
               </div>
             </div>
@@ -352,7 +354,7 @@ function IntakeInner() {
               />
               <Btn kind="primary" full onClick={() => setWizardStep(3)}
                    trailing={<ArrowRight size={16} strokeWidth={2} />}>
-                Next: Find doctors
+                {T('intake.nextDoctor')}
               </Btn>
             </>
           )
@@ -369,13 +371,13 @@ function IntakeInner() {
                 </span>
                 <div>
                   <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--blue-700)', letterSpacing: '.08em', textTransform: 'uppercase' }}>
-                    Step 1
+                    {T('intake.step1')}
                   </span>
                   <h2 style={{ margin: '2px 0 0', fontSize: 18, fontWeight: 700, color: 'var(--ink)', letterSpacing: '-.01em' }}>
-                    Best {result.department} doctors
+                    {T('intake.doctor.title').replace('{dept}', result.department)}
                   </h2>
                   <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--ink-3)' }}>
-                    KYD-verified specialists ranked by match score.
+                    {T('intake.doctor.sub')}
                   </p>
                 </div>
               </header>
@@ -398,8 +400,8 @@ function IntakeInner() {
                   borderRadius: 14, border: '1px dashed var(--border)',
                   color: 'var(--ink-3)', fontSize: 13,
                 }}>
-                  <p style={{ fontWeight: 600, marginBottom: 4 }}>No verified {result.department} specialists found yet.</p>
-                  <p style={{ color: 'var(--ink-4)' }}>Try browsing all doctors or visit a nearby clinic instead.</p>
+                  <p style={{ fontWeight: 600, marginBottom: 4 }}>{T('intake.doctor.empty').replace('{dept}', result.department)}</p>
+                  <p style={{ color: 'var(--ink-4)' }}>{T('intake.doctor.emptySub')}</p>
                 </div>
               )}
               {!docsLoading && doctors.length > 0 && (
@@ -410,7 +412,7 @@ function IntakeInner() {
                   <Btn kind="secondary" full
                        onClick={() => router.push(`/doctors?${qs.toString()}`)}
                        trailing={<ArrowRight size={16} strokeWidth={2} />}>
-                    See all {result.department} doctors
+                    {T('intake.doctor.seeAll').replace('{dept}', result.department)}
                   </Btn>
                 </>
               )}
@@ -431,13 +433,13 @@ function IntakeInner() {
                   </span>
                   <div>
                     <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--blue-700)', letterSpacing: '.08em', textTransform: 'uppercase' }}>
-                      Step 2
+                      {T('intake.step2')}
                     </span>
                     <h2 style={{ margin: '2px 0 0', fontSize: 18, fontWeight: 700, color: 'var(--ink)', letterSpacing: '-.01em' }}>
-                      Nearest hospital or clinic
+                      {T('intake.hospital.title')}
                     </h2>
                     <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--ink-3)' }}>
-                      In-person care near you, in case you&apos;d rather walk in.
+                      {T('intake.hospital.sub')}
                     </p>
                   </div>
                 </header>
@@ -448,16 +450,16 @@ function IntakeInner() {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 8 }}>
               <Btn kind="ghost" onClick={() => setWizardStep(2)}
                    leading={<ChevronLeft size={16} strokeWidth={2} />}>
-                Back to review
+                {T('intake.backReview')}
               </Btn>
               <div className="flex items-center gap-2">
                 <button onClick={handleClearData} disabled={deleting}
                   className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors disabled:opacity-50">
                   {deleting ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
-                  Clear session
+                  {T('intake.clear')}
                 </button>
                 <Btn kind="secondary" onClick={() => { setResult(null); setWizardStep(null); setMode('choose'); setDoctors([]) }}>
-                  Start over
+                  {T('intake.startOver')}
                 </Btn>
               </div>
             </div>
@@ -477,12 +479,12 @@ function IntakeInner() {
 
       <header style={{ textAlign: 'center', marginTop: 4 }}>
         <h1 style={{ margin: 0, fontSize: 30, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--ink)' }}>
-          {mode === 'choose' ? 'How are you feeling?' : 'Describe your symptoms'}
+          {mode === 'choose' ? T('intake.describe.heading') : T('intake.text.label')}
         </h1>
         <p style={{ margin: '8px 0 0', fontSize: 15, color: 'var(--ink-3)', lineHeight: 1.5 }}>
           {mode === 'choose'
-            ? 'Describe your symptoms — we\'ll find the right doctor for you.'
-            : 'Speak or type naturally — our AI understands Urdu, Pashto, Punjabi, Sindhi, and English'
+            ? T('intake.describe.sub')
+            : T('intake.describe.subAlt')
           }
         </p>
       </header>
@@ -495,10 +497,10 @@ function IntakeInner() {
         }}>
           <WifiOff size={16} style={{ color: '#d97706', flex: 'none', marginTop: 2 }} />
           <div>
-            <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: '#92400e' }}>No internet connection</p>
+            <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: '#92400e' }}>{T('intake.noConnection')}</p>
             <p style={{ margin: '4px 0 0', fontSize: 12, color: '#b45309' }}>
-              You can record and type symptoms — they&apos;ll upload automatically when you reconnect.
-              For emergencies call <strong>1122</strong> or <strong>115</strong>.
+              {T('intake.offlineMsg')}
+              {' '}{T('intake.emergencyCall')}
             </p>
           </div>
         </div>
@@ -516,8 +518,8 @@ function IntakeInner() {
           }
           <p style={{ margin: 0, fontSize: 13, color: 'var(--blue-700)' }}>
             {draining
-              ? 'Uploading your saved recording…'
-              : `${queueLength} recording${queueLength > 1 ? 's' : ''} saved — will upload when connected.`}
+              ? T('intake.uploading')
+              : T('intake.queued').replace('{n}', String(queueLength))}
           </p>
         </div>
       )}
@@ -530,13 +532,13 @@ function IntakeInner() {
         }}>
           {!isOnline ? (
             <>
-              <ModeCard Icon={Keyboard} accent="blue" title="Type" sub="Works offline" onClick={() => setMode('text')} />
-              <ModeCard Icon={Mic} accent="red" title="Speak" sub="Urdu یا English" onClick={() => setMode('voice')} />
+              <ModeCard Icon={Keyboard} accent="blue" title={T('intake.mode.type')} sub={T('intake.mode.typeOffline')} onClick={() => setMode('text')} />
+              <ModeCard Icon={Mic} accent="red" title={T('intake.mode.speak')} sub={T('intake.mode.speakSub')} onClick={() => setMode('voice')} />
             </>
           ) : (
             <>
-              <ModeCard Icon={Mic} accent="red" title="Speak" sub="Urdu یا English" onClick={() => setMode('voice')} />
-              <ModeCard Icon={Keyboard} accent="blue" title="Type" sub="Write symptoms" onClick={() => setMode('text')} />
+              <ModeCard Icon={Mic} accent="red" title={T('intake.mode.speak')} sub={T('intake.mode.speakSub')} onClick={() => setMode('voice')} />
+              <ModeCard Icon={Keyboard} accent="blue" title={T('intake.mode.type')} sub={T('intake.mode.typeSub')} onClick={() => setMode('text')} />
             </>
           )}
         </div>
@@ -552,7 +554,7 @@ function IntakeInner() {
             <button onClick={() => setMode('choose')} className="focus-ring" style={iconBtn}>
               <ChevronLeft size={16} />
             </button>
-            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink-2)' }}>Voice recording</span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink-2)' }}>{T('intake.voice.label')}</span>
           </div>
           <VoiceRecorder onRecordingComplete={handleVoiceComplete} onProgressChange={setProcStep} />
         </div>
@@ -569,12 +571,12 @@ function IntakeInner() {
             <button onClick={() => setMode('choose')} className="focus-ring" style={iconBtn}>
               <ChevronLeft size={16} />
             </button>
-            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink-2)' }}>Describe your symptoms</span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink-2)' }}>{T('intake.text.label')}</span>
           </div>
           <textarea
             value={textInput}
             onChange={e => setTextInput(e.target.value)}
-            placeholder="e.g. I've had a severe headache for 2 days with nausea and sensitivity to light…"
+            placeholder={T('intake.textPlaceholder')}
             style={{
               width: '100%', minHeight: 160, padding: '12px 14px',
               borderRadius: 12, border: '1px solid var(--border)',
@@ -590,7 +592,7 @@ function IntakeInner() {
                onClick={handleTextSubmit}
                leading={loading ? <Loader2 size={16} className="animate-spin" /> : null}
                trailing={loading ? null : <ArrowRight size={16} strokeWidth={2} />}>
-            {loading ? 'Analyzing…' : 'Analyze symptoms'}
+            {loading ? T('intake.analyzingBtn') : T('intake.analyzeBtn')}
           </Btn>
         </div>
       )}
@@ -616,10 +618,10 @@ function IntakeInner() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <Loader2 size={16} className="animate-spin" style={{ color: 'var(--blue-600)' }} />
             <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink-2)' }}>
-              {procStep === 'transcribing' && 'Transcribing your audio…'}
-              {procStep === 'analyzing' && 'Analyzing your symptoms…'}
-              {procStep === 'matching' && 'Finding the best doctors…'}
-              {procStep === 'followup' && 'Preparing follow-up questions…'}
+              {procStep === 'transcribing' && T('intake.transcribing')}
+              {procStep === 'analyzing' && T('intake.analyzing')}
+              {procStep === 'matching' && T('intake.matching')}
+              {procStep === 'followup' && T('intake.followup')}
             </span>
           </div>
           <div style={{ display: 'flex', gap: 6 }}>
