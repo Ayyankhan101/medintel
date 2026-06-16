@@ -44,7 +44,7 @@ export function VideoCall({ token, roomName, onCallEnd }: Props) {
         connect={true}
         onConnected={() => setConnected(true)}
         onDisconnected={onCallEnd}
-        adaptiveStream={true}
+        options={{ adaptiveStream: true }}
         video={true}
         audio={true}
         className="w-full h-full"

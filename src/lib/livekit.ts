@@ -4,7 +4,7 @@ const API_KEY   = process.env.LIVEKIT_API_KEY!
 const API_SECRET = process.env.LIVEKIT_API_SECRET!
 const HOST      = process.env.LIVEKIT_HOST!
 
-export function generateVideoToken(identity: string, roomName: string): string {
+export async function generateVideoToken(identity: string, roomName: string): Promise<string> {
   const at = new AccessToken(API_KEY, API_SECRET, { identity, ttl: '1h' })
   at.addGrant({ roomJoin: true, room: roomName, canPublish: true, canSubscribe: true })
   return at.toJwt()

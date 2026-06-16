@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Recording consent required', code: 'CONSENT_REQUIRED' }, { status: 412 })
 
   const roomName = appointmentRoomName(appointment.id)
-  const token    = generateVideoToken(session.user.id!, roomName)
+  const token    = await generateVideoToken(session.user.id!, roomName)
 
   await prisma.appointment.update({
     where: { id: appointment.id },
