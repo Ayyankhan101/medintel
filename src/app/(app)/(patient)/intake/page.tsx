@@ -106,6 +106,7 @@ function IntakeInner() {
   const [doctors,    setDoctors]    = useState<DoctorMatch[]>([])
   const [docsLoading, setDocsLoading] = useState(false)
   const [queued,    setQueued]    = useState(false)
+  const [wizardStep, setWizardStep] = useState<2 | 3 | null>(null)
 
   const isOnline = useOnlineStatus()
 
@@ -128,7 +129,7 @@ function IntakeInner() {
     const raw  = await res.text()
     const data = raw ? JSON.parse(raw) : {}
     if (!res.ok) throw new Error(data.error ?? 'Transcription failed')
-    setResult(data)
+    setResult(data); setWizardStep(2)
   }
 
   const { queueLength, draining, addToQueue } = useVoiceQueue(uploadVoice)
@@ -185,7 +186,7 @@ function IntakeInner() {
       const raw  = await res.text()
       const data = raw ? JSON.parse(raw) : {}
       if (!res.ok) throw new Error(data.error ?? `Server error ${res.status}`)
-      setResult(data)
+      setResult(data); setWizardStep(2)
 
       // Check if follow-up is needed
       if (data.confidence != null && data.confidence < 0.7) {
@@ -231,7 +232,7 @@ function IntakeInner() {
       const raw = await res.text()
       const data = raw ? JSON.parse(raw) : {}
       if (!res.ok) throw new Error(data.error ?? 'Re-analysis failed')
-      setResult(data)
+      setResult(data); setWizardStep(2)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Follow-up analysis failed')
     } finally {
@@ -248,11 +249,11 @@ function IntakeInner() {
       console.error('[intake] cleanup failed', e)
     }
     setDeleting(false)
-    setResult(null); setMode('choose'); setDoctors([])
+    setResult(null); setWizardStep(null); setMode('choose'); setDoctors([])
     setFollowupQs([]); setFollowupAnswers([]); setShowFollowup(false); setFollowupRound(0)
   }
 
-  const step = result ? 3 : (mode !== 'choose' ? 2 : 1)
+  const step = wizardStep ?? (mode !== 'choose' ? 2 : 1)
 
   if (result) {
     const qs = new URLSearchParams({
@@ -272,7 +273,6 @@ function IntakeInner() {
       router.push(`/book?${p.toString()}`)
     }
 
-    // Follow-up UI — shown as an overlay before doctor cards
     const showFollowupSection = showFollowup && followupQs.length > 0 && followupRound <= MAX_FOLLOWUP_ROUNDS
 
     return (
@@ -281,75 +281,83 @@ function IntakeInner() {
         padding: '28px clamp(16px, 4vw, 32px) 64px',
         display: 'flex', flexDirection: 'column', gap: 22,
       }}>
-        <StepIndicator current={3} />
+        <StepIndicator current={step} />
 
-        {showFollowupSection ? (
-          <div style={{
-            background: 'var(--bg-elev)', border: '1px solid var(--border)',
-            borderRadius: 22, padding: 24, boxShadow: 'var(--shadow-card)',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
-              <span style={{
-                width: 36, height: 36, borderRadius: 12,
-                background: 'rgba(37,99,235,.10)', color: 'var(--blue-700)',
-                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                <MessageCircle size={18} strokeWidth={2} />
-              </span>
-              <div>
-                <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: 'var(--ink)' }}>
-                  A few more details
-                </h3>
-                <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--ink-3)' }}>
-                  Round {followupRound}/{MAX_FOLLOWUP_ROUNDS} — help us refine the assessment
-                </p>
+        {wizardStep === 2 ? (
+          showFollowupSection ? (
+            <div style={{
+              background: 'var(--bg-elev)', border: '1px solid var(--border)',
+              borderRadius: 22, padding: 24, boxShadow: 'var(--shadow-card)',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
+                <span style={{
+                  width: 36, height: 36, borderRadius: 12,
+                  background: 'rgba(37,99,235,.10)', color: 'var(--blue-700)',
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <MessageCircle size={18} strokeWidth={2} />
+                </span>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: 'var(--ink)' }}>
+                    A few more details
+                  </h3>
+                  <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--ink-3)' }}>
+                    Round {followupRound}/{MAX_FOLLOWUP_ROUNDS} — help us refine the assessment
+                  </p>
+                </div>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                {followupQs.map((q, i) => (
+                  <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <label style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink-2)' }}>
+                      {q.en}
+                    </label>
+                    <label style={{ fontSize: 12, color: 'var(--ink-4)', fontStyle: 'italic' }}>
+                      {q.ur}
+                    </label>
+                    <textarea
+                      value={followupAnswers[i] ?? ''}
+                      onChange={e => {
+                        const next = [...followupAnswers]
+                        next[i] = e.target.value
+                        setFollowupAnswers(next)
+                      }}
+                      placeholder="Your answer…"
+                      style={{
+                        width: '100%', minHeight: 60, padding: '10px 12px',
+                        borderRadius: 12, border: '1px solid var(--border)',
+                        background: 'var(--bg-soft)', color: 'var(--ink)',
+                        fontSize: 13, lineHeight: 1.5, resize: 'none',
+                        outline: 'none', fontFamily: 'var(--font-ui)',
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
+              <div style={{ marginTop: 18 }}>
+                <Btn kind="primary" full
+                     disabled={followupLoading}
+                     onClick={handleFollowupSubmit}
+                     leading={followupLoading ? <Loader2 size={16} className="animate-spin" /> : null}>
+                  {followupLoading ? 'Re-analyzing…' : 'Submit answers'}
+                </Btn>
               </div>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              {followupQs.map((q, i) => (
-                <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  <label style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink-2)' }}>
-                    {q.en}
-                  </label>
-                  <label style={{ fontSize: 12, color: 'var(--ink-4)', fontStyle: 'italic' }}>
-                    {q.ur}
-                  </label>
-                  <textarea
-                    value={followupAnswers[i] ?? ''}
-                    onChange={e => {
-                      const next = [...followupAnswers]
-                      next[i] = e.target.value
-                      setFollowupAnswers(next)
-                    }}
-                    placeholder="Your answer…"
-                    style={{
-                      width: '100%', minHeight: 60, padding: '10px 12px',
-                      borderRadius: 12, border: '1px solid var(--border)',
-                      background: 'var(--bg-soft)', color: 'var(--ink)',
-                      fontSize: 13, lineHeight: 1.5, resize: 'none',
-                      outline: 'none', fontFamily: 'var(--font-ui)',
-                    }}
-                  />
-                </div>
-              ))}
-            </div>
-            <div style={{ marginTop: 18 }}>
-              <Btn kind="primary" full
-                   disabled={followupLoading}
-                   onClick={handleFollowupSubmit}
-                   leading={followupLoading ? <Loader2 size={16} className="animate-spin" /> : null}>
-                {followupLoading ? 'Re-analyzing…' : 'Submit answers'}
+          ) : (
+            <>
+              <SymptomSummary {...result} />
+              <UploadDocs
+                triageId={result.triageId}
+                onRefined={updated => setResult({ ...result, ...updated })}
+              />
+              <Btn kind="primary" full onClick={() => setWizardStep(3)}
+                   trailing={<ArrowRight size={16} strokeWidth={2} />}>
+                Next: Find doctors
               </Btn>
-            </div>
-          </div>
+            </>
+          )
         ) : (
           <>
-            <SymptomSummary {...result} />
-            <UploadDocs
-              triageId={result.triageId}
-              onRefined={updated => setResult({ ...result, ...updated })}
-            />
-
             <section style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <header style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
                 <span style={{
@@ -437,15 +445,21 @@ function IntakeInner() {
               </section>
             )}
 
-            <div className="flex items-center justify-between pt-2">
-              <button onClick={handleClearData} disabled={deleting}
-                className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors disabled:opacity-50">
-                {deleting ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
-                Clear this session
-              </button>
-              <Btn kind="secondary" onClick={() => { setResult(null); setMode('choose'); setDoctors([]) }}>
-                Start over
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 8 }}>
+              <Btn kind="ghost" onClick={() => setWizardStep(2)}
+                   leading={<ChevronLeft size={16} strokeWidth={2} />}>
+                Back to review
               </Btn>
+              <div className="flex items-center gap-2">
+                <button onClick={handleClearData} disabled={deleting}
+                  className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors disabled:opacity-50">
+                  {deleting ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
+                  Clear session
+                </button>
+                <Btn kind="secondary" onClick={() => { setResult(null); setWizardStep(null); setMode('choose'); setDoctors([]) }}>
+                  Start over
+                </Btn>
+              </div>
             </div>
           </>
         )}
