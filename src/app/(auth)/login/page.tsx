@@ -53,13 +53,13 @@ function LoginForm() {
         <div style={{
           display: 'flex', alignItems: 'flex-start', gap: 10,
           background: 'rgba(16,185,129,.10)', border: '1px solid rgba(16,185,129,.30)',
-          borderRadius: 14, padding: 14, fontSize: 13, color: 'var(--ink-2)',
+          borderRadius: 14, padding: 14, fontSize: 'var(--text-sm)', color: 'var(--ink-2)',
         }}>
           <CheckCircle2 size={16} style={{ color: '#10b981', flex: 'none', marginTop: 2 }} />
           <div>
             <div style={{ fontWeight: 700, color: 'var(--ink)' }}>Account created!</div>
             <div>Your MedIntel Code: <strong className="mono">{medIntelCode}</strong></div>
-            <div style={{ fontSize: 11, color: 'var(--ink-3)', marginTop: 2 }}>
+            <div style={{ fontSize: 'var(--text-xxs)', color: 'var(--ink-3)', marginTop: 2 }}>
               Save this — it links your entire medical history.
             </div>
           </div>
@@ -70,7 +70,7 @@ function LoginForm() {
         <div style={{
           display: 'flex', alignItems: 'center', gap: 8,
           background: 'rgba(239,68,68,.08)', border: '1px solid rgba(239,68,68,.25)',
-          borderRadius: 12, padding: '10px 12px', fontSize: 13, color: 'var(--red-600)',
+          borderRadius: 12, padding: '10px 12px', fontSize: 'var(--text-sm)', color: 'var(--red-600)',
         }}>
           <AlertCircle size={14} /> {error}
         </div>
@@ -79,7 +79,7 @@ function LoginForm() {
         <div style={{
           display: 'flex', alignItems: 'flex-start', gap: 8,
           background: 'rgba(245,158,11,.10)', border: '1px solid rgba(245,158,11,.30)',
-          borderRadius: 12, padding: '12px 14px', fontSize: 13, color: 'var(--ink-2)',
+          borderRadius: 12, padding: '12px 14px', fontSize: 'var(--text-sm)', color: 'var(--ink-2)',
         }}>
           <AlertCircle size={14} style={{ flex: 'none', marginTop: 2, color: '#a16207' }} />
           <div>
@@ -97,7 +97,7 @@ function LoginForm() {
               style={{
                 marginTop: 4, background: 'transparent', border: 0,
                 color: 'var(--blue-700)', fontWeight: 600, textDecoration: 'underline',
-                cursor: 'pointer', padding: 0, fontSize: 13,
+                cursor: 'pointer', padding: 0, fontSize: 'var(--text-sm)',
               }}
             >
               Resend verification email
@@ -130,7 +130,7 @@ function LoginForm() {
         </Field>
 
         <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-          <Link href="/forgot-password" style={{ fontSize: 12, color: 'var(--blue-700)', fontWeight: 600, textDecoration: 'none' }}>
+          <Link href="/forgot-password" style={{ fontSize: 'var(--text-xs)', color: 'var(--blue-700)', fontWeight: 600, textDecoration: 'none' }}>
             Forgot password?
           </Link>
         </div>
@@ -141,7 +141,7 @@ function LoginForm() {
         </Btn>
       </form>
 
-      <p style={{ textAlign: 'center', fontSize: 13, color: 'var(--ink-3)', margin: 0 }}>
+      <p style={{ textAlign: 'center', fontSize: 'var(--text-sm)', color: 'var(--ink-3)', margin: 0 }}>
         No account?{' '}
         <Link href="/register" style={{ color: 'var(--blue-700)', fontWeight: 600, textDecoration: 'none' }}>
           Create one

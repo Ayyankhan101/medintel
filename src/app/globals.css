@@ -383,6 +383,24 @@
   }
 }
 
+/* ── Auth page responsive ───────────────────────────────────────── */
+@media (max-width: 640px) {
+  .auth-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .auth-brand-panel {
+    flex-direction: row !important;
+    align-items: center !important;
+    padding: 12px clamp(16px, 4vw, 32px) !important;
+    min-height: auto !important;
+    gap: 0 !important;
+  }
+  .auth-brand-panel > div:nth-child(2),
+  .auth-brand-panel > div:last-child {
+    display: none !important;
+  }
+}
+
 .glass {
   position: relative;
   background: var(--glass-reflect), var(--glass-bg);

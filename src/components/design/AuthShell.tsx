@@ -43,7 +43,7 @@ export function AuthShell({
   children: React.ReactNode
 }) {
   return (
-    <div style={{
+    <div className="auth-grid" style={{
       minHeight: '100vh',
       display: 'grid',
       gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 460px)',
@@ -57,15 +57,15 @@ export function AuthShell({
         <div style={{ width: '100%', maxWidth: 400, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 18 }}>
           {kicker && (
             <span style={{
-              fontSize: 11, fontWeight: 700, color: 'var(--blue-700)',
+              fontSize: 'var(--text-xxs)', fontWeight: 700, color: 'var(--blue-700)',
               letterSpacing: '.08em', textTransform: 'uppercase',
             }}>{kicker}</span>
           )}
           <div>
-            <h1 style={{ margin: 0, fontSize: 28, fontWeight: 700, letterSpacing: '-.02em', lineHeight: 1.15, color: 'var(--ink)' }}>
+            <h1 style={{ margin: 0, fontSize: 'var(--text-heading)', fontWeight: 700, letterSpacing: '-.02em', lineHeight: 1.15, color: 'var(--ink)' }}>
               {title}
             </h1>
-            {sub && <p style={{ margin: '8px 0 0', color: 'var(--ink-3)', fontSize: 14, lineHeight: 1.5 }}>{sub}</p>}
+            {sub && <p style={{ margin: '8px 0 0', color: 'var(--ink-3)', fontSize: 'var(--text-base)', lineHeight: 1.5 }}>{sub}</p>}
           </div>
           {children}
         </div>
@@ -152,13 +152,13 @@ export function Field({
   return (
     <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
       {label && (
-        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--ink-3)', letterSpacing: '.04em', textTransform: 'uppercase' }}>
+        <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--ink-3)', letterSpacing: '.04em', textTransform: 'uppercase' }}>
           {label}
         </span>
       )}
       {children}
-      {hint && !error && <span style={{ fontSize: 11, color: 'var(--ink-4)' }}>{hint}</span>}
-      {error && <span style={{ fontSize: 11, color: 'var(--red-600)' }}>{error}</span>}
+      {hint && !error && <span style={{ fontSize: 'var(--text-xxs)', color: 'var(--ink-4)' }}>{hint}</span>}
+      {error && <span style={{ fontSize: 'var(--text-xxs)', color: 'var(--red-600)' }}>{error}</span>}
     </label>
   )
 }
