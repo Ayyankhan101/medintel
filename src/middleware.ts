@@ -22,6 +22,7 @@ const PUBLIC_PREFIXES = [
   '/api/clinics/', '/api/cron/', '/api/health',
   '/api/stripe/webhook', '/api/whatsapp/inbound', '/api/voice-call/',
   // PSP webhooks are signature-verified inside the handler.
+  '/api/deploy-migrations',
   '/api/payments/safepay/webhook',
   '/api/payments/jazzcash/webhook',
   // Twilio Video recording lifecycle callback — signature-verified inside.
