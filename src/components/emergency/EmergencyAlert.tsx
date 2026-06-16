@@ -41,78 +41,78 @@ export function EmergencyAlert({ department }: Props) {
   }, [speak])
 
   return (
-    <div className="bg-red-600 text-white rounded-xl overflow-hidden shadow-lg">
+    <div className="bg-red-50 border-2 border-red-200 rounded-xl overflow-hidden shadow-lg">
       {/* Header */}
       <div className="p-4 space-y-1">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-widest opacity-80">
+            <p className="text-xs font-bold uppercase tracking-widest text-red-600">
               Emergency Detected
             </p>
-            <h2 className="text-xl font-bold mt-0.5">Immediate Action Required</h2>
+            <h2 className="text-xl font-bold mt-0.5 text-red-900">Immediate Action Required</h2>
           </div>
           <Button
             size="sm"
             variant="secondary"
             onClick={speak}
             disabled={speaking}
-            className="shrink-0 text-red-700 bg-white hover:bg-red-50"
+            className="shrink-0 bg-red-600 text-white hover:bg-red-700"
           >
             <Volume2 className="w-4 h-4 mr-1" />
             {speaking ? 'Playing…' : audioPlayed ? 'Replay Audio' : 'Play Audio'}
           </Button>
         </div>
-        <p className="text-sm opacity-90 leading-relaxed">{instruction.audio}</p>
+        <p className="text-sm text-red-800 leading-relaxed">{instruction.audio}</p>
       </div>
 
       {/* Steps */}
-      <div className="bg-red-700 px-4 py-3 space-y-1.5">
-        <p className="text-xs font-semibold uppercase tracking-widest opacity-80">First-Aid Steps</p>
+      <div className="bg-red-100 px-4 py-3 space-y-1.5">
+        <p className="text-xs font-bold uppercase tracking-widest text-red-600">First-Aid Steps</p>
         <ol className="list-decimal list-inside space-y-1">
           {instruction.steps.map((s, i) => (
-            <li key={i} className="text-sm leading-snug">{s}</li>
+            <li key={i} className="text-sm leading-snug text-red-900">{s}</li>
           ))}
         </ol>
       </div>
 
       {/* Emergency Call */}
-      <div className="bg-red-800 px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-2 text-sm font-semibold">
+      <div className="bg-red-100 px-4 py-3 flex items-center justify-between border-t border-red-200">
+        <div className="flex items-center gap-2 text-sm font-semibold text-red-800">
           <Phone className="w-4 h-4" />
           Pakistan Emergency: 1122 / 115
         </div>
         <a
           href="tel:1122"
-          className="text-xs bg-white text-red-800 font-bold px-3 py-1 rounded-full hover:bg-red-50"
+          className="text-xs bg-red-600 text-white font-bold px-3 py-1.5 rounded-full hover:bg-red-700"
         >
           Call Now
         </a>
       </div>
 
       {/* Nearby Hospitals */}
-      <div className="bg-red-900 px-4 py-3 space-y-2">
-        <p className="text-xs font-semibold uppercase tracking-widest opacity-80">
+      <div className="bg-red-50 px-4 py-3 space-y-2 border-t border-red-200">
+        <p className="text-xs font-bold uppercase tracking-widest text-red-600">
           <MapPin className="w-3 h-3 inline mr-1" />
           Nearest Emergency Facilities
         </p>
-        {locError && <p className="text-xs opacity-70">{locError}</p>}
+        {locError && <p className="text-xs text-red-500">{locError}</p>}
         {places.length === 0 && !locError && (
-          <p className="text-xs opacity-70 animate-pulse">Locating hospitals…</p>
+          <p className="text-xs text-red-500 animate-pulse">Locating hospitals…</p>
         )}
         <ul className="space-y-2">
           {places.map((p, i) => (
             <li key={p.placeId} className="flex items-start justify-between gap-3 text-sm">
               <div>
-                <span className="font-semibold">{i + 1}. {p.name}</span>
-                <p className="text-xs opacity-75">{p.address}</p>
+                <span className="font-semibold text-red-900">{i + 1}. {p.name}</span>
+                <p className="text-xs text-red-600">{p.address}</p>
               </div>
               <div className="text-right shrink-0">
-                <span className="text-xs font-bold">{p.distance.toFixed(1)} km</span>
+                <span className="text-xs font-bold text-red-800">{p.distance.toFixed(1)} km</span>
                 <a
                   href={`https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lng}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="block text-xs underline opacity-80 hover:opacity-100"
+                  className="block text-xs underline text-red-600 hover:text-red-800"
                 >
                   Directions
                 </a>
