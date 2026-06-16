@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { Loader2 } from 'lucide-react'
+import { GlassCard } from '@/components/design/GlassCard'
 
 interface Log {
   id:         string
@@ -52,7 +53,7 @@ export default function AuditPage() {
             padding: '8px 12px', borderRadius: 10,
             border: '1px solid var(--border)',
             background: 'var(--bg-elev)', color: 'var(--ink)',
-            fontSize: 13, fontFamily: 'var(--font-ui)', outline: 'none',
+            fontSize: 14, fontFamily: 'var(--font-ui)', outline: 'none',
           }}
         >
           {ACTIONS.map(a => <option key={a} value={a}>{a || 'All actions'}</option>)}
@@ -60,17 +61,14 @@ export default function AuditPage() {
       </header>
 
       {loading && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--ink-3)', fontSize: 13 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--ink-3)', fontSize: 14 }}>
           <Loader2 size={16} className="animate-spin" /> Loading…
         </div>
       )}
 
-      <div style={{
-        background: 'var(--bg-elev)', border: '1px solid var(--border)',
-        borderRadius: 18, overflow: 'hidden', boxShadow: 'var(--shadow-card)',
-      }}>
+      <GlassCard padding={0} style={{ overflow: 'hidden' }}>
         <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
             <thead style={{ background: 'var(--bg-soft)' }}>
               <tr>
                 {['When', 'Action', 'Entity', 'Actor', 'Detail'].map(h => (
@@ -85,17 +83,17 @@ export default function AuditPage() {
             <tbody>
               {logs.map(l => (
                 <tr key={l.id} style={{ borderTop: '1px solid var(--border)' }}>
-                  <td style={{ padding: '10px 14px', fontSize: 11, color: 'var(--ink-3)', whiteSpace: 'nowrap' }}>
+                  <td style={{ padding: '10px 14px', fontSize: 12, color: 'var(--ink-3)', whiteSpace: 'nowrap' }}>
                     {new Date(l.createdAt).toLocaleString('en-PK', { dateStyle: 'short', timeStyle: 'short' })}
                   </td>
-                  <td className="mono" style={{ padding: '10px 14px', fontSize: 11, color: 'var(--ink-2)' }}>
+                  <td className="mono" style={{ padding: '10px 14px', fontSize: 12, color: 'var(--ink-2)' }}>
                     {l.action}
                   </td>
-                  <td style={{ padding: '10px 14px', fontSize: 11, color: 'var(--ink-3)' }}>
+                  <td style={{ padding: '10px 14px', fontSize: 12, color: 'var(--ink-3)' }}>
                     <span style={{ color: 'var(--ink-2)' }}>{l.entityType}</span>
                     <span className="mono" style={{ marginLeft: 4, color: 'var(--ink-4)' }}>{l.entityId.slice(0, 8)}…</span>
                   </td>
-                  <td style={{ padding: '10px 14px', fontSize: 11, color: 'var(--ink-3)' }}>
+                  <td style={{ padding: '10px 14px', fontSize: 12, color: 'var(--ink-3)' }}>
                     <span className="mono">{l.actorId?.slice(0, 8) ?? 'system'}</span>
                     {l.actorRole && (
                       <span style={{ marginLeft: 4, fontSize: 10, color: 'var(--ink-4)', letterSpacing: '.08em', textTransform: 'uppercase' }}>
@@ -104,7 +102,7 @@ export default function AuditPage() {
                     )}
                   </td>
                   <td className="mono" style={{
-                    padding: '10px 14px', fontSize: 11, color: 'var(--ink-3)',
+                    padding: '10px 14px', fontSize: 12, color: 'var(--ink-3)',
                     maxWidth: 380, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                   }}>
                     {l.metadata ? JSON.stringify(l.metadata) : '—'}
@@ -115,9 +113,9 @@ export default function AuditPage() {
           </table>
         </div>
         {!loading && logs.length === 0 && (
-          <div style={{ textAlign: 'center', padding: '40px 0', fontSize: 13, color: 'var(--ink-3)' }}>No entries.</div>
+          <div style={{ textAlign: 'center', padding: '40px 0', fontSize: 14, color: 'var(--ink-3)' }}>No entries.</div>
         )}
-      </div>
+      </GlassCard>
     </div>
   )
 }

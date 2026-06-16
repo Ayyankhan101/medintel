@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Users, Stethoscope, Calendar, Banknote, ShieldAlert, ArrowRight, Loader2 } from 'lucide-react'
+import { GlassCard } from '@/components/design/GlassCard'
 
 interface Stats {
   patients: number
@@ -37,7 +38,7 @@ export default function AdminDashboardPage() {
     <div style={{ maxWidth: 920, margin: '0 auto', padding: '28px 16px' }}>
       <div style={{
         background: 'rgba(239,68,68,.08)', border: '1px solid rgba(239,68,68,.25)',
-        borderRadius: 12, padding: '10px 12px', fontSize: 13, color: 'var(--red-600)',
+        borderRadius: 12, padding: '10px 12px', fontSize: 14, color: 'var(--red-600)',
       }}>{err}</div>
     </div>
   )
@@ -71,12 +72,12 @@ export default function AdminDashboardPage() {
       </div>
 
       <Link href="/admin/doctors?status=PENDING"
+        className="glass glass-hover"
         style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           padding: 16, borderRadius: 18,
-          background: 'rgba(245,158,11,.06)', border: '1px solid rgba(245,158,11,.25)',
+          background: 'rgba(245,158,11,.06)', borderColor: 'rgba(245,158,11,.25)',
           textDecoration: 'none', color: 'var(--ink)',
-          transition: 'background-color 200ms ease',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -91,7 +92,7 @@ export default function AdminDashboardPage() {
             <p style={{ margin: 0, fontWeight: 700, color: 'var(--ink)' }}>
               {stats.doctors.pending} doctors waiting for verification
             </p>
-            <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--ink-3)' }}>
+            <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--ink-3)' }}>
               Review credentials and approve or reject.
             </p>
           </div>
@@ -117,11 +118,7 @@ export default function AdminDashboardPage() {
 function Stat({ Icon, tone, label, value }: { Icon: IconCmp; tone: keyof typeof TONES; label: string; value: number }) {
   const t = TONES[tone]
   return (
-    <div style={{
-      background: 'var(--bg-elev)', border: '1px solid var(--border)',
-      borderRadius: 18, padding: 16, boxShadow: 'var(--shadow-card)',
-      display: 'flex', flexDirection: 'column', gap: 10,
-    }}>
+    <GlassCard padding={16} hover style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <span style={{
           width: 32, height: 32, borderRadius: 10,
@@ -130,33 +127,30 @@ function Stat({ Icon, tone, label, value }: { Icon: IconCmp; tone: keyof typeof 
         }}>
           <Icon size={16} strokeWidth={2} />
         </span>
-        <span style={{ fontSize: 12, color: 'var(--ink-3)' }}>{label}</span>
+        <span style={{ fontSize: 13, color: 'var(--ink-3)' }}>{label}</span>
       </div>
       <p className="mono" style={{ margin: 0, fontSize: 26, fontWeight: 700, color: 'var(--ink)', lineHeight: 1, letterSpacing: '-.01em' }}>
         {value.toLocaleString('en-PK')}
       </p>
-    </div>
+    </GlassCard>
   )
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section style={{
-      background: 'var(--bg-elev)', border: '1px solid var(--border)',
-      borderRadius: 18, padding: 18, boxShadow: 'var(--shadow-card)',
-    }}>
+    <GlassCard as="section" padding={18}>
       <h2 style={{ margin: 0, fontSize: 13, fontWeight: 700, color: 'var(--ink)', marginBottom: 12 }}>{title}</h2>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
         {children}
       </div>
-    </section>
+    </GlassCard>
   )
 }
 
 function Breakdown({ label, value, color }: { label: string; value: number; color: string }) {
   return (
     <div>
-      <p style={{ margin: 0, fontSize: 11, color: 'var(--ink-3)' }}>{label}</p>
+      <p style={{ margin: 0, fontSize: 12, color: 'var(--ink-3)' }}>{label}</p>
       <p className="mono" style={{ margin: '4px 0 0', fontSize: 20, fontWeight: 700, color }}>{value}</p>
     </div>
   )

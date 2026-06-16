@@ -5,6 +5,7 @@ import { Search, AlertCircle, Loader2, CheckCircle2 } from 'lucide-react'
 import { Btn } from '@/components/design/Btn'
 import { EscrowStatusPill, AppointmentStatusPill } from '@/components/design/badges'
 import { PKR } from '@/components/design/helpers'
+import { GlassCard } from '@/components/design/GlassCard'
 
 interface Snapshot {
   id:                 string
@@ -85,7 +86,7 @@ export default function AdminRefundsPage() {
         <h1 style={{ margin: '4px 0 0', fontSize: 28, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--ink)' }}>
           Refunds &amp; disputes
         </h1>
-        <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--ink-3)' }}>
+        <p style={{ margin: '4px 0 0', fontSize: 14, color: 'var(--ink-3)' }}>
           Look up an appointment, issue a full or partial refund.
         </p>
       </header>
@@ -100,7 +101,7 @@ export default function AdminRefundsPage() {
             flex: 1, padding: '10px 14px',
             borderRadius: 12, border: '1px solid var(--border)',
             background: 'var(--bg-elev)', color: 'var(--ink)',
-            fontSize: 13, fontFamily: 'var(--font-mono)', outline: 'none',
+            fontSize: 14, fontFamily: 'var(--font-mono)', outline: 'none',
           }}
           onFocus={e => { e.target.style.boxShadow = '0 0 0 4px rgba(37,99,235,.14)'; e.target.style.borderColor = 'var(--blue-600)' }}
           onBlur={e => { e.target.style.boxShadow = ''; e.target.style.borderColor = 'var(--border)' }}
@@ -114,7 +115,7 @@ export default function AdminRefundsPage() {
       {error && (
         <div style={{
           display: 'flex', alignItems: 'center', gap: 8,
-          fontSize: 13, color: 'var(--red-600)',
+          fontSize: 14, color: 'var(--red-600)',
         }}>
           <AlertCircle size={14} /> {error}
         </div>
@@ -122,21 +123,17 @@ export default function AdminRefundsPage() {
       {success && (
         <div style={{
           display: 'flex', alignItems: 'center', gap: 8,
-          fontSize: 13, color: '#047857',
+          fontSize: 14, color: '#047857',
         }}>
           <CheckCircle2 size={14} /> {success}
         </div>
       )}
 
       {snap && (
-        <section style={{
-          background: 'var(--bg-elev)', border: '1px solid var(--border)',
-          borderRadius: 22, padding: 22, boxShadow: 'var(--shadow-card)',
-          display: 'flex', flexDirection: 'column', gap: 16,
-        }}>
+        <GlassCard as="section" padding={22} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
             <AppointmentStatusPill status={snap.status as 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'REFUNDED'} />
-            <span style={{ fontSize: 12, color: 'var(--ink-3)' }}>
+            <span style={{ fontSize: 13, color: 'var(--ink-3)' }}>
               {new Date(snap.scheduledAt).toLocaleString('en-PK')}
             </span>
           </div>
@@ -166,7 +163,7 @@ export default function AdminRefundsPage() {
                 </div>
               </>
             ) : (
-              <p style={{ margin: 0, fontSize: 13, color: 'var(--ink-3)' }}>No escrow attached to this appointment.</p>
+              <p style={{ margin: 0, fontSize: 14, color: 'var(--ink-3)' }}>No escrow attached to this appointment.</p>
             )}
           </div>
 
@@ -178,7 +175,7 @@ export default function AdminRefundsPage() {
                   }}>
               <h3 style={{ margin: 0, fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>Issue refund</h3>
               <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--ink-3)', letterSpacing: '.04em', textTransform: 'uppercase' }}>
+                <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-3)', letterSpacing: '.04em', textTransform: 'uppercase' }}>
                   Amount (PKR) — blank for full
                 </span>
                 <input
@@ -189,12 +186,12 @@ export default function AdminRefundsPage() {
                     width: 200, padding: '10px 12px',
                     borderRadius: 10, border: '1px solid var(--border)',
                     background: 'var(--bg-elev)', color: 'var(--ink)',
-                    fontSize: 13, fontFamily: 'var(--font-mono)', outline: 'none',
+                    fontSize: 14, fontFamily: 'var(--font-mono)', outline: 'none',
                   }}
                 />
               </label>
               <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--ink-3)', letterSpacing: '.04em', textTransform: 'uppercase' }}>
+                <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-3)', letterSpacing: '.04em', textTransform: 'uppercase' }}>
                   Reason (required)
                 </span>
                 <textarea
@@ -205,7 +202,7 @@ export default function AdminRefundsPage() {
                     width: '100%', padding: '10px 12px',
                     borderRadius: 10, border: '1px solid var(--border)',
                     background: 'var(--bg-elev)', color: 'var(--ink)',
-                    fontSize: 13, lineHeight: 1.5, resize: 'vertical',
+                    fontSize: 14, lineHeight: 1.5, resize: 'vertical',
                     outline: 'none', fontFamily: 'var(--font-ui)',
                   }}
                 />
@@ -218,7 +215,7 @@ export default function AdminRefundsPage() {
               </Btn>
             </form>
           )}
-        </section>
+        </GlassCard>
       )}
     </div>
   )
@@ -228,11 +225,11 @@ function Row({ k, v, mono }: { k: string; v: string; mono?: boolean }) {
   return (
     <div style={{ display: 'flex', gap: 8, alignItems: 'baseline' }}>
       <span style={{
-        minWidth: 110, fontSize: 10, fontWeight: 700,
+        minWidth: 110, fontSize: 11, fontWeight: 700,
         color: 'var(--ink-4)', letterSpacing: '.06em', textTransform: 'uppercase',
       }}>{k}</span>
       <span className={mono ? 'mono' : ''} style={{
-        fontSize: mono ? 12 : 13,
+        fontSize: mono ? 13 : 14,
         color: 'var(--ink)', wordBreak: 'break-all',
       }}>{v}</span>
     </div>

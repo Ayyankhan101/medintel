@@ -5,6 +5,7 @@ import { Check, X, Loader2, ShieldCheck } from 'lucide-react'
 import { Btn } from '@/components/design/Btn'
 import { KYDBadge } from '@/components/design/badges'
 import { PKR } from '@/components/design/helpers'
+import { GlassCard } from '@/components/design/GlassCard'
 
 interface Doctor {
   id: string
@@ -123,7 +124,7 @@ function AdminDoctorsInner() {
       {error && (
         <div style={{
           background: 'rgba(239,68,68,.08)', border: '1px solid rgba(239,68,68,.25)',
-          borderRadius: 12, padding: '10px 12px', fontSize: 13, color: 'var(--red-600)',
+          borderRadius: 12, padding: '10px 12px', fontSize: 14, color: 'var(--red-600)',
         }}>{error}</div>
       )}
       {loading && (
@@ -133,21 +134,14 @@ function AdminDoctorsInner() {
       )}
 
       {!loading && doctors.length === 0 && (
-        <div style={{
-          background: 'var(--bg-elev)', border: '1px solid var(--border)',
-          borderRadius: 18, padding: 40, textAlign: 'center',
-          color: 'var(--ink-3)', fontSize: 13,
-        }}>
+        <GlassCard padding={40} style={{ textAlign: 'center', color: 'var(--ink-3)', fontSize: 14 }}>
           No doctors in this state.
-        </div>
+        </GlassCard>
       )}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {doctors.map(d => (
-          <div key={d.id} style={{
-            background: 'var(--bg-elev)', border: '1px solid var(--border)',
-            borderRadius: 18, padding: 18, boxShadow: 'var(--shadow-card)',
-          }}>
+          <GlassCard key={d.id} padding={18} hover style={{ display: 'flex', flexDirection: 'column' }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
               <div style={{ flex: 1, minWidth: 280 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
@@ -159,7 +153,7 @@ function AdminDoctorsInner() {
                   )}
                   <KYDBadge status={d.kydStatus} />
                 </div>
-                <p style={{ margin: '4px 0 12px', fontSize: 11, color: 'var(--ink-3)' }}>
+                <p style={{ margin: '4px 0 12px', fontSize: 12, color: 'var(--ink-3)' }}>
                   {d.user.email}{d.user.phone ? ` · ${d.user.phone}` : ''}
                 </p>
                 <div style={{
@@ -175,7 +169,7 @@ function AdminDoctorsInner() {
                   <Field label="Stripe"         value={d.stripeAccountId ? 'connected' : 'not connected'} />
                   <Field label="Joined"         value={new Date(d.user.createdAt).toLocaleDateString('en-PK')} />
                 </div>
-                {d.bio && <p style={{ margin: '12px 0 0', fontSize: 12, color: 'var(--ink-3)', fontStyle: 'italic' }}>{d.bio}</p>}
+                {d.bio && <p style={{ margin: '12px 0 0', fontSize: 13, color: 'var(--ink-3)', fontStyle: 'italic' }}>{d.bio}</p>}
               </div>
               {d.kydStatus === 'PENDING' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flex: 'none' }}>
@@ -196,7 +190,7 @@ function AdminDoctorsInner() {
                 </div>
               )}
             </div>
-          </div>
+          </GlassCard>
         ))}
       </div>
     </div>
@@ -207,10 +201,10 @@ function Field({ label, value, mono }: { label: string; value: string; mono?: bo
   return (
     <div>
       <p style={{
-        margin: 0, fontSize: 10, fontWeight: 700, color: 'var(--ink-4)',
+        margin: 0, fontSize: 11, fontWeight: 700, color: 'var(--ink-4)',
         letterSpacing: '.06em', textTransform: 'uppercase',
       }}>{label}</p>
-      <p className={mono ? 'mono' : ''} style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--ink-2)' }}>{value}</p>
+      <p className={mono ? 'mono' : ''} style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--ink-2)' }}>{value}</p>
     </div>
   )
 }

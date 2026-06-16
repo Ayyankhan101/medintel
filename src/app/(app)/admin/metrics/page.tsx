@@ -1,10 +1,3 @@
-/**
- * /admin/metrics — operator dashboard.
- *
- * Pulls /api/admin/metrics, renders bare numbers in a tight grid. No charts;
- * counts are the demo-relevant view (and dependency-light). Updates whenever
- * the user picks a different window from the dropdown.
- */
 'use client'
 import { useEffect, useState } from 'react'
 
@@ -32,16 +25,21 @@ export default function AdminMetricsPage() {
   }, [days])
 
   return (
-    <main style={{ maxWidth: 1100, margin: '0 auto', padding: '32px 24px' }}>
+    <main style={{ maxWidth: 1100, margin: '0 auto', padding: '28px clamp(16px, 4vw, 32px) 64px' }}>
       <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 22 }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700 }}>Metrics</h1>
-          <p style={{ margin: '4px 0 0', fontSize: 12, color: '#64748b' }}>
+          <span style={{ fontSize: 11, fontWeight: 700, color: '#a16207', letterSpacing: '.08em', textTransform: 'uppercase' }}>
+            Admin
+          </span>
+          <h1 style={{ margin: '4px 0 0', fontSize: 28, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--ink)' }}>
+            Metrics
+          </h1>
+          <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--ink-3)' }}>
             {data ? `As of ${new Date(data.asOf).toLocaleString('en-PK')}` : 'Loading…'}
           </p>
         </div>
         <select value={days} onChange={e => setDays(Number(e.target.value))}
-                style={{ padding: '8px 12px', borderRadius: 10, border: '1px solid #e2e8f0' }}>
+                style={{ padding: '8px 12px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--bg-elev)', color: 'var(--ink)', fontSize: 14, outline: 'none' }}>
           <option value={7}>Last 7 days</option>
           <option value={30}>Last 30 days</option>
           <option value={90}>Last 90 days</option>
@@ -49,8 +47,8 @@ export default function AdminMetricsPage() {
         </select>
       </header>
 
-      {err && <div style={{ background: '#fee2e2', border: '1px solid #fecaca', padding: 12, borderRadius: 10, color: '#991b1b' }}>Failed to load: {err}</div>}
-      {!data && !err && <div style={{ color: '#64748b' }}>Loading…</div>}
+      {err && <div style={{ background: 'rgba(239,68,68,.08)', border: '1px solid rgba(239,68,68,.25)', padding: 12, borderRadius: 10, color: 'var(--red-600)', fontSize: 14 }}>Failed to load: {err}</div>}
+      {!data && !err && <div style={{ color: 'var(--ink-3)', fontSize: 14 }}>Loading…</div>}
 
       {data && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14 }}>
@@ -98,8 +96,8 @@ export default function AdminMetricsPage() {
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 14, padding: 16 }}>
-      <h2 style={{ margin: '0 0 10px', fontSize: 12, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.06em' }}>{title}</h2>
+    <section className="glass" style={{ borderRadius: 14, padding: 16 }}>
+      <h2 style={{ margin: '0 0 10px', fontSize: 13, color: 'var(--ink-3)', textTransform: 'uppercase', letterSpacing: '.06em' }}>{title}</h2>
       <div style={{ display: 'grid', gap: 8 }}>{children}</div>
     </section>
   )
@@ -108,10 +106,10 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 function Stat({ label, value, highlight, bad }: { label: string; value: number | string; highlight?: boolean; bad?: boolean }) {
   return (
     <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
-      <span style={{ fontSize: 12, color: '#64748b' }}>{label}</span>
+      <span style={{ fontSize: 13, color: 'var(--ink-3)' }}>{label}</span>
       <span style={{
         fontSize: 16, fontWeight: 700,
-        color: bad ? '#dc2626' : highlight ? '#16a34a' : '#0f172a',
+        color: bad ? '#dc2626' : highlight ? '#16a34a' : 'var(--ink)',
       }}>{value}</span>
     </div>
   )

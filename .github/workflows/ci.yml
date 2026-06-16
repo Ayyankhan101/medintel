@@ -43,6 +43,27 @@ jobs:
       - name: Unit tests
         run: npm test
 
+  db-migrate:
+    name: Deploy Prisma migrations
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Deploy migrations
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: npx prisma migrate deploy
+
   triage-fallback:
     name: Triage fallback eval (offline)
     runs-on: ubuntu-latest

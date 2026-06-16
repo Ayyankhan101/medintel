@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { AlertTriangle, ShieldAlert, MessagesSquare, Loader2, ExternalLink } from 'lucide-react'
 import { PKR } from '@/components/design/helpers'
+import { GlassCard } from '@/components/design/GlassCard'
 
 interface ModerationData {
   unmatchedCritical: Array<{
@@ -48,7 +49,7 @@ export default function ModerationPage() {
     </div>
   )
   if (!data) return (
-    <div style={{ maxWidth: 960, margin: '0 auto', padding: '40px 16px', fontSize: 13, color: 'var(--red-600)' }}>Failed to load</div>
+    <div style={{ maxWidth: 960, margin: '0 auto', padding: '40px 16px', fontSize: 14, color: 'var(--red-600)' }}>Failed to load</div>
   )
 
   return (
@@ -65,7 +66,7 @@ export default function ModerationPage() {
         <h1 style={{ margin: '4px 0 0', fontSize: 28, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--ink)' }}>
           Moderation queue
         </h1>
-        <p style={{ margin: '4px 0 0', fontSize: 11, color: 'var(--ink-4)' }}>
+        <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--ink-4)' }}>
           Generated {new Date(data.generatedAt).toLocaleString('en-PK')}
         </p>
       </header>
@@ -75,31 +76,28 @@ export default function ModerationPage() {
                empty="No unmatched critical triages in the last 2 hours."
                items={data.unmatchedCritical}
                render={t => (
-        <li key={t.id} style={{
-          borderRadius: 14, padding: '12px 14px',
-          background: 'rgba(239,68,68,.06)', border: '1px solid rgba(239,68,68,.20)',
-        }}>
+        <GlassCard key={t.id} as="li" tone="red" padding="12px 14px">
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
             <div style={{ minWidth: 0 }}>
-              <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: 'var(--red-600)' }}>
+              <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: 'var(--red-600)' }}>
                 {t.department} · {new Date(t.createdAt).toLocaleString('en-PK')}
               </p>
-              <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--ink-2)', lineHeight: 1.5,
+              <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--ink-2)', lineHeight: 1.5,
                 display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                 {t.summary}
               </p>
-              <p style={{ margin: '4px 0 0', fontSize: 11, color: 'var(--ink-3)' }}>
+              <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--ink-3)' }}>
                 {t.patient.user.name ?? '—'} · {t.patient.user.email} · {t.patient.user.phone ?? 'no phone'}
               </p>
             </div>
             {t.patient.user.phone && (
               <a href={`tel:${t.patient.user.phone}`}
-                 style={{ flex: 'none', fontSize: 12, fontWeight: 700, color: 'var(--red-600)', textDecoration: 'none' }}>
+                 style={{ flex: 'none', fontSize: 13, fontWeight: 700, color: 'var(--red-600)', textDecoration: 'none' }}>
                 Call now →
               </a>
             )}
           </div>
-        </li>
+        </GlassCard>
       )} />
 
       <Section title="Doctor no-show patterns (30d)"
@@ -107,22 +105,18 @@ export default function ModerationPage() {
                empty="No doctors flagged for repeated no-shows."
                items={data.noShowDoctors}
                render={d => (
-        <li key={d.id} style={{
-          borderRadius: 14, padding: '12px 14px',
-          background: 'rgba(245,158,11,.08)', border: '1px solid rgba(245,158,11,.25)',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
-        }}>
+        <GlassCard key={d.id} as="li" tone="amber" padding="12px 14px" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
           <div style={{ minWidth: 0 }}>
-            <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>
+            <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: 'var(--ink)' }}>
               Dr. {d.user.name ?? '—'} · {d.specialization}
             </p>
-            <p style={{ margin: '2px 0 0', fontSize: 11, color: 'var(--ink-3)' }}>{d.user.email}</p>
+            <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--ink-3)' }}>{d.user.email}</p>
           </div>
           <div style={{ textAlign: 'right' }}>
             <p className="mono" style={{ margin: 0, fontSize: 20, fontWeight: 700, color: '#a16207' }}>{d.noShowCount}</p>
             <p style={{ margin: 0, fontSize: 10, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--ink-4)' }}>no-shows</p>
           </div>
-        </li>
+        </GlassCard>
       )} />
 
       <Section title="Recent disputes (30d)"
@@ -134,27 +128,24 @@ export default function ModerationPage() {
           ? `${a.escrow.status} · ${PKR(Number(a.escrow.amount))}${a.escrow.refundedAmount ? ` (refunded ${a.escrow.refundedAmount})` : ''}`
           : 'no escrow'
         return (
-          <li key={a.id} style={{
-            borderRadius: 14, padding: '12px 14px',
-            background: 'var(--bg-elev)', border: '1px solid var(--border)',
-          }}>
+          <GlassCard key={a.id} as="li" padding="12px 14px">
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
               <div style={{ minWidth: 0, flex: 1 }}>
-                <p style={{ margin: 0, fontSize: 13, color: 'var(--ink)', fontWeight: 600 }}>
+                <p style={{ margin: 0, fontSize: 14, color: 'var(--ink)', fontWeight: 600 }}>
                   {a.patient.user.name ?? a.patient.user.email}
                   {a.doctor && <span style={{ color: 'var(--ink-4)' }}> → Dr. {a.doctor.user.name ?? '—'}</span>}
                 </p>
-                <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--ink-2)' }}>&ldquo;{a.cancellationReason}&rdquo;</p>
-                <p style={{ margin: '4px 0 0', fontSize: 11, color: 'var(--ink-3)' }}>
+                <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--ink-2)' }}>&ldquo;{a.cancellationReason}&rdquo;</p>
+                <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--ink-3)' }}>
                   {a.cancelledBy} · {new Date(a.cancelledAt).toLocaleString('en-PK')} · {escrowSummary}
                 </p>
               </div>
               <Link href={`/admin/refunds?id=${a.id}`}
-                    style={{ flex: 'none', fontSize: 12, fontWeight: 700, color: 'var(--blue-700)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    style={{ flex: 'none', fontSize: 13, fontWeight: 700, color: 'var(--blue-700)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                 Review <ExternalLink size={12} />
               </Link>
             </div>
-          </li>
+          </GlassCard>
         )
       }} />
     </div>
@@ -174,10 +165,10 @@ function Section<T>({ title, icon, items, empty, render }: {
         margin: 0, fontSize: 13, fontWeight: 700, color: 'var(--ink)',
         display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: 10,
       }}>
-        {icon} {title} <span style={{ fontWeight: 400, color: 'var(--ink-3)', fontSize: 12 }}>({items.length})</span>
+        {icon} {title} <span style={{ fontWeight: 400, color: 'var(--ink-3)', fontSize: 13 }}>({items.length})</span>
       </h2>
       {items.length === 0
-        ? <p style={{ margin: 0, fontSize: 12, color: 'var(--ink-4)', fontStyle: 'italic' }}>{empty}</p>
+        ? <p style={{ margin: 0, fontSize: 13, color: 'var(--ink-4)', fontStyle: 'italic' }}>{empty}</p>
         : <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>{items.map(render)}</ul>}
     </section>
   )
