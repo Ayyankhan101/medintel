@@ -401,6 +401,13 @@
   }
 }
 
+/* ── Hero preview responsive (landing page) ─────────────────────── */
+@media (max-width: 640px) {
+  .hero-preview-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
 .glass {
   position: relative;
   background: var(--glass-reflect), var(--glass-bg);

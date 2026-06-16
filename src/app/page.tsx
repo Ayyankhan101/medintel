@@ -181,7 +181,7 @@ function HeroPreview() {
         borderRadius: 24, boxShadow: '0 30px 80px -30px rgba(15,23,42,.40), var(--shadow-card)',
         padding: 22,
       }}>
-        <div style={{
+        <div className="hero-preview-grid" style={{
           display: 'grid', gridTemplateColumns: 'minmax(0,1.2fr) minmax(0,1fr)',
           gap: 18, alignItems: 'center',
         }}>
@@ -196,7 +196,7 @@ function HeroPreview() {
             }}>
               <Mic size={40} />
             </button>
-            <div style={{ fontSize: 14, fontWeight: 600 }}>Tap and describe how you feel</div>
+            <div style={{ fontSize: 'var(--text-base)', fontWeight: 600 }}>Tap and describe how you feel</div>
             <div style={{
               display: 'flex', gap: 8, padding: 4,
               background: 'var(--bg-soft)', border: '1px solid var(--border)',
@@ -206,7 +206,7 @@ function HeroPreview() {
                 <span key={c} className={c === 'EN' ? '' : 'urdu'} style={{
                   padding: '4px 10px', borderRadius: 999,
                   background: i === 1 ? 'var(--bg-elev)' : 'transparent',
-                  fontSize: c === 'EN' ? 12 : 14,
+                  fontSize: c === 'EN' ? 'var(--text-xs)' : 'var(--text-base)',
                   fontWeight: 600,
                   color: i === 1 ? 'var(--ink)' : 'var(--ink-3)',
                   boxShadow: i === 1 ? '0 1px 0 rgba(15,23,42,.06)' : 'none',
@@ -242,10 +242,10 @@ function PreviewLine({ label, sub, tone }: { label: string; sub: string; tone: '
       border: '1px solid var(--border)', background: 'var(--bg-soft)',
     }}>
       <span style={{
-        fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase',
+        fontSize: 'var(--text-xxs)', fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase',
         color: m.fg, padding: '2px 8px', borderRadius: 999, background: m.bg,
       }}>{label}</span>
-      <span style={{ fontSize: 13, color: 'var(--ink-2)' }}>{sub}</span>
+      <span style={{ fontSize: 'var(--text-sm)', color: 'var(--ink-2)' }}>{sub}</span>
       <Check size={14} strokeWidth={2.5} style={{ color: m.fg }} />
     </div>
   )
