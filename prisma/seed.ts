@@ -14,6 +14,7 @@ function qs(arr: string[]): string[] {
   return isSQLite ? (JSON.stringify(arr) as unknown as string[]) : arr
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function jf(val: unknown): any {
   return isSQLite ? JSON.stringify(val) : val
 }
@@ -582,12 +583,15 @@ async function seedAppointments(patientMap: Record<string, string>, doctorMap: R
       create: {
         id: a.id, patientId,
         doctorId: a.doctorId,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         status: a.status as any,
         scheduledAt,
         completedAt: a.completedOffset ? new Date(NOW.getTime() + a.completedOffset) : undefined,
         cancelledAt: a.cancelledOffset ? new Date(NOW.getTime() + a.cancelledOffset) : undefined,
         transcript: a.transcript, aiSummary: a.aiSummary,
-        severityScore: a.severityScore, severityLevel: a.severityLevel as any,
+        severityScore: a.severityScore,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        severityLevel: a.severityLevel as any,
         department: a.department,
         prescriptionText: a.prescriptionText,
         cancellationReason: a.cancellationReason,
@@ -688,7 +692,8 @@ async function seedEscrow(apptMap: Record<string, string>) {
         heldAt,
         releasedAt: e.releasedOffset ? new Date(NOW.getTime() + e.releasedOffset) : undefined,
         refundedAt: 'refundedOffset' in e && e.refundedOffset ? new Date(NOW.getTime() + e.refundedOffset) : undefined,
-        refundReason: (e as any).refundReason,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+refundReason: (e as any).refundReason,
       },
     })
     count++
