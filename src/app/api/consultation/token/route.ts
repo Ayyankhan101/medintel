@@ -2,13 +2,17 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { generateVideoToken, appointmentRoomName } from '@/lib/twilio'
+import { generateVideoToken, appointmentRoomName } from '@/lib/livekit'
+import { rateLimit } from '@/lib/rate-limit'
 
 const schema = z.object({ appointmentId: z.string().min(1) })
 
 export async function POST(req: NextRequest) {
   const session = await auth()
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const rl = rateLimit(req, { key: 'consultation-token', max: 10, windowMs: 60_000 })
+  if (!rl.ok) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
 
   const body   = await req.json()
   const parsed = schema.safeParse(body)

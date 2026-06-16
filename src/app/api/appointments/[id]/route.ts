@@ -4,8 +4,10 @@ import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { providerFor, type ProviderId } from '@/lib/payments'
 import { sendAppointmentCancelled, sendAppointmentRescheduled } from '@/lib/email'
-import { completeVideoRoom, appointmentRoomName } from '@/lib/twilio'
+import { completeVideoRoom, appointmentRoomName } from '@/lib/livekit'
 import { audit } from '@/lib/audit'
+import { captureError } from '@/lib/observability'
+import { rateLimitDb } from '@/lib/rate-limit'
 
 export async function GET(
   req: NextRequest,
@@ -187,6 +189,7 @@ export async function PATCH(
       })
     } catch (e) {
       console.error('[appointments PATCH cancel] PSP refund error', e)
+      captureError(e, { context: 'appointments PATCH cancel PSP refund' })
       return NextResponse.json({ error: 'Refund failed — try again or contact support' }, { status: 502 })
     }
     // Step 2: record in DB. PSP refund already happened — if this write fails,
@@ -197,6 +200,7 @@ export async function PATCH(
       data:  { status: 'REFUNDED', refundedAt: new Date(), refundReason: reason ?? `Cancelled by ${cancelledBy.toLowerCase()}` },
     }).catch(e => {
       console.error('[appointments PATCH cancel] escrow DB update failed after PSP refund', e)
+      captureError(e, { context: 'appointments PATCH cancel escrow DB after PSP refund' })
       void audit('escrow.refund_db_failed', 'Appointment', id, {
         escrowId: appointment.escrow!.id, error: String(e),
       })
