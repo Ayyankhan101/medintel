@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { RefreshCw, AlertTriangle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { useI18n } from '@/lib/i18n/client'
 
 interface QueueAppointment {
   id:             string
@@ -16,9 +17,7 @@ interface QueueAppointment {
   escrow?: { status: string } | null
 }
 
-const STATUS_LABELS: Record<string, string> = {
-  SCHEDULED: 'Scheduled', IN_PROGRESS: 'In Progress', COMPLETED: 'Completed', CANCELLED: 'Cancelled',
-}
+
 
 const SEVERITY_COLORS: Record<string, string> = {
   ROUTINE:  'bg-green-100 text-green-800',
@@ -27,6 +26,10 @@ const SEVERITY_COLORS: Record<string, string> = {
 }
 
 export function AppointmentQueue() {
+  const { T } = useI18n()
+  const STATUS_LABELS: Record<string, string> = {
+    SCHEDULED: T('doctor.queue.statusScheduled'), IN_PROGRESS: T('doctor.queue.statusInProgress'), COMPLETED: T('doctor.queue.statusCompleted'), CANCELLED: T('doctor.queue.statusCancelled'),
+  }
   const [filter,       setFilter]       = useState('')
   const [appointments, setAppointments] = useState<QueueAppointment[]>([])
   const [loading,      setLoading]      = useState(true)
@@ -55,7 +58,7 @@ export function AppointmentQueue() {
                 : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
             }`}
           >
-            {s ? STATUS_LABELS[s] : 'All'}
+            {s ? STATUS_LABELS[s] : T('doctor.queue.filterAll')}
           </button>
         ))}
         <Button size="sm" variant="ghost" onClick={load} disabled={loading} className="ml-auto">
@@ -64,7 +67,7 @@ export function AppointmentQueue() {
       </div>
 
       {!loading && appointments.length === 0 && (
-        <div className="text-center py-12 text-slate-400">No appointments found.</div>
+        <div className="text-center py-12 text-slate-400">{T('doctor.queue.empty')}</div>
       )}
 
       <ul className="space-y-3">
@@ -100,9 +103,9 @@ export function AppointmentQueue() {
                   {a.severityLevel && (
                     <span
                       className={`text-xs px-2 py-0.5 rounded font-semibold ${SEVERITY_COLORS[a.severityLevel] ?? ''}`}
-                      title="AI suggestion — your clinical judgement decides"
+                      title={T('doctor.queue.severityTooltip')}
                     >
-                      AI: {a.severityLevel} {a.severityScore != null && `(${a.severityScore}/10)`}
+                      {T('doctor.queue.severityPrefix')}{a.severityLevel} {a.severityScore != null && `(${a.severityScore}/10)`}
                     </span>
                   )}
                   <Badge variant={a.status === 'COMPLETED' ? 'default' : 'secondary'} className="text-xs">
@@ -113,19 +116,19 @@ export function AppointmentQueue() {
 
               {a.aiSummary && (
                 <p className="text-sm text-slate-600 dark:text-slate-300 leading-snug bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded px-3 py-2">
-                  <strong className="text-amber-700 dark:text-amber-300">AI suggestion (verify clinically):</strong> {a.aiSummary}
+                  <strong className="text-amber-700 dark:text-amber-300">{T('doctor.queue.aiSuggestionLabel')}</strong> {a.aiSummary}
                 </p>
               )}
 
               <div className="flex gap-3 pt-1">
                 {(a.status === 'SCHEDULED' || a.status === 'IN_PROGRESS') && (
                   <a href={`/consultation/${a.id}`} className="text-sm text-blue-600 hover:underline font-medium">
-                    {a.status === 'IN_PROGRESS' ? 'Rejoin Call →' : 'Start Consultation →'}
+                    {a.status === 'IN_PROGRESS' ? T('doctor.queue.rejoinCall') : T('doctor.queue.startConsultation')}
                   </a>
                 )}
                 {a.escrow?.status === 'HELD' && (
                   <span className="text-xs text-green-700 font-medium bg-green-50 px-2 py-0.5 rounded">
-                    Payment Held
+                    {T('doctor.queue.paymentHeld')}
                   </span>
                 )}
               </div>

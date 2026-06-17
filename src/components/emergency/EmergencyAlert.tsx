@@ -4,12 +4,14 @@ import { getEmergencyInstructions } from '@/lib/emergency'
 import type { NearbyPlace } from '@/app/api/resources/nearby/route'
 import { Volume2, MapPin, Phone } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useI18n } from '@/lib/i18n/client'
 
 interface Props {
   department: string
 }
 
 export function EmergencyAlert({ department }: Props) {
+  const { T } = useI18n()
   const instruction = getEmergencyInstructions(department)
   const [places,      setPlaces]      = useState<NearbyPlace[]>([])
   const [locError,    setLocError]    = useState('')
@@ -28,7 +30,7 @@ export function EmergencyAlert({ department }: Props) {
   }, [instruction.audio])
 
   useEffect(() => {
-    if (!navigator.geolocation) { setLocError('Geolocation unavailable'); return }
+    if (!navigator.geolocation) { setLocError(T('emergency.geoUnavailable')); return }
     navigator.geolocation.getCurrentPosition(
       ({ coords }) => {
         fetch(`/api/resources/nearby?lat=${coords.latitude}&lng=${coords.longitude}&keyword=emergency+hospital&limit=3`)
@@ -36,7 +38,7 @@ export function EmergencyAlert({ department }: Props) {
           .then(setPlaces)
           .catch(() => {})
       },
-      () => setLocError('Location access denied — showing default hospitals'),
+      () => setLocError(T('emergency.locDenied')),
     )
   }, [speak])
 
@@ -47,9 +49,9 @@ export function EmergencyAlert({ department }: Props) {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-xs font-bold uppercase tracking-widest text-white/80">
-              Emergency Detected
+              {T('emergency.detected')}
             </p>
-            <h2 className="text-xl font-bold mt-0.5 text-white">Immediate Action Required</h2>
+            <h2 className="text-xl font-bold mt-0.5 text-white">{T('emergency.actionRequired')}</h2>
           </div>
           <Button
             size="sm"
@@ -59,7 +61,7 @@ export function EmergencyAlert({ department }: Props) {
             className="shrink-0 bg-white text-rose-700 hover:bg-rose-50"
           >
             <Volume2 className="w-4 h-4 mr-1" />
-            {speaking ? 'Playing…' : audioPlayed ? 'Replay Audio' : 'Play Audio'}
+            {speaking ? T('emergency.playing') : audioPlayed ? T('emergency.replayAudio') : T('emergency.playAudio')}
           </Button>
         </div>
         <p className="text-sm text-white/90 leading-relaxed">{instruction.audio}</p>
@@ -67,7 +69,7 @@ export function EmergencyAlert({ department }: Props) {
 
       {/* Steps */}
       <div className="bg-rose-700 px-4 py-3 space-y-1.5">
-        <p className="text-xs font-bold uppercase tracking-widest text-white/80">First-Aid Steps</p>
+        <p className="text-xs font-bold uppercase tracking-widest text-white/80">{T('emergency.firstAidSteps')}</p>
         <ol className="list-decimal list-inside space-y-1">
           {instruction.steps.map((s, i) => (
             <li key={i} className="text-sm leading-snug text-white">{s}</li>
@@ -79,13 +81,13 @@ export function EmergencyAlert({ department }: Props) {
       <div className="bg-rose-800 px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2 text-sm font-semibold text-white">
           <Phone className="w-4 h-4" />
-          Pakistan Emergency: 1122 / 115
+          {T('emergency.pakistanHelpline')}
         </div>
         <a
           href="tel:1122"
           className="text-xs bg-white text-rose-800 font-bold px-3 py-1.5 rounded-full hover:bg-rose-50"
         >
-          Call Now
+          {T('emergency.callNow')}
         </a>
       </div>
 
@@ -93,11 +95,11 @@ export function EmergencyAlert({ department }: Props) {
       <div className="bg-rose-900 px-4 py-3 space-y-2">
         <p className="text-xs font-bold uppercase tracking-widest text-white/80">
           <MapPin className="w-3 h-3 inline mr-1" />
-          Nearest Emergency Facilities
+          {T('emergency.nearestFacilities')}
         </p>
         {locError && <p className="text-xs text-white/70">{locError}</p>}
         {places.length === 0 && !locError && (
-          <p className="text-xs text-white/70 animate-pulse">Locating hospitals…</p>
+          <p className="text-xs text-white/70 animate-pulse">{T('emergency.locatingHospitals')}</p>
         )}
         <ul className="space-y-2">
           {places.map((p, i) => (
@@ -107,14 +109,14 @@ export function EmergencyAlert({ department }: Props) {
                 <p className="text-xs text-white/75">{p.address}</p>
               </div>
               <div className="text-right shrink-0">
-                <span className="text-xs font-bold text-white">{p.distance.toFixed(1)} km</span>
+                <span className="text-xs font-bold text-white">{p.distance.toFixed(1)}{T('emergency.distanceKm')}</span>
                 <a
                   href={`https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lng}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="block text-xs underline text-white/80 hover:text-white"
                 >
-                  Directions
+                  {T('emergency.directions')}
                 </a>
               </div>
             </li>

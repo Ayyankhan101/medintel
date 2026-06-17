@@ -1,5 +1,6 @@
 'use client'
 import { useState, useRef, useCallback, useEffect } from 'react'
+import { useI18n } from '@/lib/i18n/client'
 import { Mic, Square, Loader2, AlertCircle, Play, RotateCcw, Check } from 'lucide-react'
 
 interface Props {
@@ -47,6 +48,7 @@ function extFromMime(mime: string | undefined): string {
 }
 
 export function VoiceRecorder({ onRecordingComplete, onProgressChange }: Props) {
+  const { T } = useI18n()
   const [state,       setState]    = useState<State>('idle')
   const [seconds,     setSeconds]  = useState(0)
   const [level,       setLevel]    = useState(0)
@@ -104,13 +106,13 @@ export function VoiceRecorder({ onRecordingComplete, onProgressChange }: Props) 
       chunksRef.current = []
 
       recorder.ondataavailable = e => { if (e.data.size > 0) chunksRef.current.push(e.data) }
-      recorder.onerror = () => { cleanup(); setState('error'); setErrorMsg('Recording failed. Please try again.') }
+      recorder.onerror = () => { cleanup(); setState('error'); setErrorMsg(T('voice.recFailed')) }
       recorder.onstop = () => {
         const blob = new Blob(chunksRef.current, { type: recorder.mimeType || mimeType || 'audio/webm' })
         const ext = extFromMime(recorder.mimeType || mimeType)
         cleanup()
         if (blob.size === 0) {
-          setState('error'); setErrorMsg('No audio captured. Check that your microphone is working.')
+          setState('error'); setErrorMsg(T('voice.noAudioCheckMic'))
           return
         }
         setRecordedBlob(blob); setRecordedExt(ext)
@@ -154,11 +156,11 @@ export function VoiceRecorder({ onRecordingComplete, onProgressChange }: Props) 
       setState('error')
       const name = (e as { name?: string })?.name
       if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
-        setErrorMsg('Microphone permission denied. Allow it in your browser settings and try again.')
+        setErrorMsg(T('voice.micDeniedSettings'))
       } else if (name === 'NotFoundError') {
-        setErrorMsg('No microphone found on this device.')
+        setErrorMsg(T('voice.noMicDevice'))
       } else {
-        setErrorMsg('Could not start recording. Please try again.')
+        setErrorMsg(T('voice.cantStartRetry'))
       }
     }
   }, [cleanup])
@@ -207,19 +209,19 @@ export function VoiceRecorder({ onRecordingComplete, onProgressChange }: Props) 
         <div className="flex flex-col items-center gap-5" style={{ animation: 'mi-fade-up 320ms var(--ease-out-quart) both' }}>
           <div className="text-center space-y-1 max-w-xs">
             <p className="text-slate-700 dark:text-slate-200 font-medium text-base">
-              Tap the mic and describe your symptoms
+              {T('voice.tapMic')}
             </p>
-            <p className="text-sm text-slate-500">Urdu یا English — we understand both</p>
+            <p className="text-sm text-slate-500">{T('voice.understandBoth')}</p>
           </div>
           <button onClick={startRecording}
             className="relative w-40 h-40 rounded-full group focus:outline-none focus:ring-4 focus:ring-red-200"
-            aria-label="Start recording">
+            aria-label={T('voice.startRecording')}>
             <span className="absolute inset-0 rounded-full bg-red-100 dark:bg-red-900/30 group-hover:scale-110 transition-transform duration-300" />
             <span className="absolute inset-3 rounded-full bg-red-500 group-hover:bg-red-600 transition-colors shadow-lg shadow-red-200 dark:shadow-red-900/40 flex items-center justify-center">
               <Mic className="w-16 h-16 text-white" />
             </span>
           </button>
-          <div className="flex flex-wrap items-center justify-center gap-1.5" role="radiogroup" aria-label="Select language">
+          <div className="flex flex-wrap items-center justify-center gap-1.5" role="radiogroup" aria-label={T('voice.selectLanguage')}>
             {LANGUAGES.map(l => (
               <button key={l.code} onClick={() => setLanguage(l.code)} role="radio" aria-checked={language === l.code}
                 className={`text-xs px-3 py-1.5 rounded-full border transition-all ${
@@ -233,7 +235,7 @@ export function VoiceRecorder({ onRecordingComplete, onProgressChange }: Props) 
             ))}
           </div>
           <div className="px-4 py-2.5 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-700/50 max-w-sm">
-            <p className="text-xs text-slate-600 leading-relaxed text-center">{LANG_TIPS[language]}</p>
+            <p className="text-xs text-slate-600 leading-relaxed text-center">{language === 'en' ? T('voice.tipEn') : LANG_TIPS[language]}</p>
           </div>
         </div>
       )}
@@ -242,14 +244,14 @@ export function VoiceRecorder({ onRecordingComplete, onProgressChange }: Props) 
       {state === 'recording' && (
         <div className="flex flex-col items-center gap-4" style={{ animation: 'mi-fade-up 320ms var(--ease-out-quart) both' }}>
           <div className="text-center space-y-1">
-            <p className="text-slate-700 dark:text-slate-200 font-medium">Listening — tap to stop</p>
+            <p className="text-slate-700 dark:text-slate-200 font-medium">{T('voice.listening')}</p>
             {currentLang && (
               <p className="text-xs text-slate-500">{currentLang.label} ({currentLang.english})</p>
             )}
           </div>
           <button onClick={stopRecording}
             className="relative w-40 h-40 rounded-full focus:outline-none focus:ring-4 focus:ring-red-300"
-            aria-label="Stop recording">
+            aria-label={T('voice.stopRecording')}>
             <span className="absolute inset-0 rounded-full bg-red-300/60 dark:bg-red-700/50 animate-ping" />
             <span className="absolute inset-0 rounded-full bg-red-400/80 dark:bg-red-600/70 transition-transform duration-100 ease-out"
               style={{ transform: `scale(${ringScale})` }} />
@@ -258,7 +260,7 @@ export function VoiceRecorder({ onRecordingComplete, onProgressChange }: Props) 
             </span>
             <span className="absolute top-1 right-1 flex items-center gap-1 bg-red-600 text-white text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full shadow-lg">
               <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-              REC
+              {T('voice.rec')}
             </span>
           </button>
           <div className="flex items-end gap-1 h-8" aria-hidden>
@@ -272,10 +274,10 @@ export function VoiceRecorder({ onRecordingComplete, onProgressChange }: Props) 
               {fmt(seconds)}
             </span>
             {seconds > WARN_AT_S && seconds < MAX_RECORDING_S - 10 && (
-              <p className="text-xs text-amber-500 mt-1 font-medium">Will auto-stop at {fmt(MAX_RECORDING_S)}</p>
+              <p className="text-xs text-amber-500 mt-1 font-medium">{T('voice.autoStopAt').replace('{t}', fmt(MAX_RECORDING_S))}</p>
             )}
             {seconds >= MAX_RECORDING_S - 10 && (
-              <p className="text-xs text-red-500 mt-1 font-medium">Stopping…</p>
+              <p className="text-xs text-red-500 mt-1 font-medium">{T('voice.stopping')}</p>
             )}
           </div>
         </div>
@@ -288,12 +290,12 @@ export function VoiceRecorder({ onRecordingComplete, onProgressChange }: Props) 
             <div className="w-14 h-14 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mx-auto mb-3">
               <Check className="w-7 h-7 text-emerald-600" />
             </div>
-            <p className="text-slate-700 dark:text-slate-200 font-medium">Recording complete</p>
-            <p className="text-xs text-slate-500">Duration: {fmt(seconds)}</p>
+            <p className="text-slate-700 dark:text-slate-200 font-medium">{T('voice.recordingComplete')}</p>
+            <p className="text-xs text-slate-500">{T('voice.duration')}{fmt(seconds)}</p>
           </div>
           <button onClick={handlePlayback}
             className="flex items-center gap-3 px-6 py-3 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors border border-slate-200 dark:border-slate-700"
-            aria-label={isPlaying ? 'Playing' : 'Play recording'}>
+            aria-label={isPlaying ? T('voice.playingNoEllipsis') : T('voice.playRecording')}>
             <span className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isPlaying ? 'bg-emerald-500' : 'bg-blue-600'}`}>
               {isPlaying
                 ? <span className="flex items-end gap-0.5 h-4"><span className="w-0.5 bg-white rounded-full animate-bounce" style={{animationDelay:'0ms',height:'8px'}} /><span className="w-0.5 bg-white rounded-full animate-bounce" style={{animationDelay:'150ms',height:'12px'}} /><span className="w-0.5 bg-white rounded-full animate-bounce" style={{animationDelay:'300ms',height:'6px'}} /></span>
@@ -301,20 +303,20 @@ export function VoiceRecorder({ onRecordingComplete, onProgressChange }: Props) 
               }
             </span>
             <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-              {isPlaying ? 'Playing…' : 'Play back recording'}
+              {isPlaying ? T('voice.playing') : T('voice.playback')}
             </span>
           </button>
           <div className="flex gap-3 w-full max-w-xs">
             <button onClick={handleReRecord}
               className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-sm font-medium">
-              <RotateCcw className="w-4 h-4" /> Re-record
+              <RotateCcw className="w-4 h-4" /> {T('voice.reRecord')}
             </button>
             <button onClick={handleConfirm}
               className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white transition-colors text-sm font-medium shadow-lg shadow-blue-200 dark:shadow-blue-900/40">
-              <Mic className="w-4 h-4" /> Send for analysis
+              <Mic className="w-4 h-4" /> {T('voice.sendAnalysis')}
             </button>
           </div>
-          <p className="text-xs text-slate-500 text-center max-w-xs">Your audio won&apos;t be stored — only the transcript is saved.</p>
+          <p className="text-xs text-slate-500 text-center max-w-xs">{T('voice.notStored')}</p>
         </div>
       )}
 
@@ -326,9 +328,9 @@ export function VoiceRecorder({ onRecordingComplete, onProgressChange }: Props) 
           </div>
           <div className="flex flex-col gap-2 w-full max-w-xs">
             {[
-              { key: 'transcribing' as const, label: 'Transcribing your audio…' },
-              { key: 'analyzing' as const,    label: 'Analyzing your symptoms…' },
-              { key: 'matching' as const,     label: 'Finding the best doctors…' },
+              { key: 'transcribing' as const, label: T('voice.transcribing') },
+              { key: 'analyzing' as const,    label: T('voice.analyzing') },
+              { key: 'matching' as const,     label: T('voice.matching') },
             ].map(step => {
               const stepIdx = ['transcribing', 'analyzing', 'matching'].indexOf(step.key)
               const curIdx  = ['transcribing', 'analyzing', 'matching'].indexOf(procStep)
@@ -349,12 +351,12 @@ export function VoiceRecorder({ onRecordingComplete, onProgressChange }: Props) 
                   </span>
                   <span className="text-sm font-medium">{step.label}</span>
                   {isCurrent && <Loader2 className="w-3.5 h-3.5 text-blue-500 animate-spin ml-auto" />}
-                  {isDone && <span className="text-emerald-500 text-xs ml-auto">Done</span>}
+                  {isDone && <span className="text-emerald-500 text-xs ml-auto">{T('voice.done')}</span>}
                 </div>
               )
             })}
           </div>
-          <p className="text-xs text-slate-500 text-center max-w-xs">This usually takes 10–15 seconds</p>
+          <p className="text-xs text-slate-500 text-center max-w-xs">{T('voice.takes10')}</p>
         </div>
       )}
 
@@ -367,7 +369,7 @@ export function VoiceRecorder({ onRecordingComplete, onProgressChange }: Props) 
           </div>
           <button onClick={() => { setState('idle'); setErrorMsg(null) }}
             className="text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors underline underline-offset-2">
-            Try again
+            {T('voice.tryAgain')}
           </button>
         </div>
       )}

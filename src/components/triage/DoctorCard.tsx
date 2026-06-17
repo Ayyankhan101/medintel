@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Star, ShieldCheck, Clock, ArrowRight, BadgeCheck, Sparkles } from 'lucide-react'
 import { Btn } from '@/components/design/Btn'
 import { PKR } from '@/components/design/helpers'
+import { useI18n } from '@/lib/i18n/client'
 
 interface Doctor {
   id: string
@@ -31,7 +32,8 @@ const AVATAR_GRADIENTS = [
 ]
 
 function Avatar({ name }: { name: string }) {
-  const initials = name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase() || 'DR'
+  const { T } = useI18n()
+  const initials = name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase() || T('doctorCard.initials')
   const grad = AVATAR_GRADIENTS[name.charCodeAt(0) % AVATAR_GRADIENTS.length]
   return (
     <span style={{
@@ -46,6 +48,7 @@ function Avatar({ name }: { name: string }) {
 }
 
 export function DoctorCard({ doctor, onBook }: Props) {
+  const { T } = useI18n()
   const rating = doctor.rating != null ? Number(doctor.rating).toFixed(1) : null
   const matchPct = doctor.score != null ? Math.round(doctor.score * 100 / 1.5) : null
   return (
@@ -80,7 +83,7 @@ export function DoctorCard({ doctor, onBook }: Props) {
                     border: '1px solid rgba(245,158,11,.22)',
                     fontSize: 9, fontWeight: 700, letterSpacing: '.04em', textTransform: 'uppercase',
                   }}>
-                    <BadgeCheck size={9} strokeWidth={2.5} /> Senior
+                    <BadgeCheck size={9} strokeWidth={2.5} />{T('doctorCard.senior')}
                   </span>
                 )}
                 {doctor.trustBadge && (
@@ -91,7 +94,7 @@ export function DoctorCard({ doctor, onBook }: Props) {
                     border: '1px solid rgba(13,148,136,.22)',
                     fontSize: 10, fontWeight: 700, letterSpacing: '.04em',
                   }}>
-                    <ShieldCheck size={10} strokeWidth={2.5} /> KYD
+                    <ShieldCheck size={10} strokeWidth={2.5} />{T('doctorCard.kyd')}
                   </span>
                 )}
               </div>
@@ -108,11 +111,11 @@ export function DoctorCard({ doctor, onBook }: Props) {
                     padding: '2px 8px', borderRadius: 999,
                     background: 'var(--bg-soft)', color: 'var(--ink-3)',
                     fontSize: 10, fontWeight: 600, letterSpacing: '.04em', textTransform: 'uppercase',
-                  }}>New</span>
+                  }}>{T('doctorCard.newBadge')}</span>
                 )}
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                   <Clock size={12} />
-                  {doctor.yearsExperience} yrs
+                  {doctor.yearsExperience}{T('doctorCard.years')}
                 </span>
                 {matchPct && (
                   <span style={{
@@ -120,7 +123,7 @@ export function DoctorCard({ doctor, onBook }: Props) {
                     color: '#2563eb', fontWeight: 600,
                   }}>
                     <Sparkles size={11} />
-                    {matchPct}% match
+                    {matchPct}{T('doctorCard.matchPercent')}
                   </span>
                 )}
               </div>
@@ -130,7 +133,7 @@ export function DoctorCard({ doctor, onBook }: Props) {
               <div className="mono" style={{ fontSize: 20, fontWeight: 700, color: 'var(--ink)', letterSpacing: '-.01em', lineHeight: 1 }}>
                 {PKR(Number(doctor.consultationFee))}
               </div>
-              <div style={{ fontSize: 11, color: 'var(--ink-4)', marginTop: 2 }}>per session</div>
+              <div style={{ fontSize: 11, color: 'var(--ink-4)', marginTop: 2 }}>{T('doctorCard.perSession')}</div>
             </div>
           </div>
 
@@ -151,12 +154,12 @@ export function DoctorCard({ doctor, onBook }: Props) {
           href={`/doctors/${doctor.id}`}
           style={{ fontSize: 12, fontWeight: 600, color: 'var(--ink-3)', textDecoration: 'none' }}
         >
-          View profile →
+          {T('doctorCard.viewProfile')}
         </Link>
         <Btn kind="primary"
              onClick={() => onBook(doctor.id)}
              trailing={<ArrowRight size={14} strokeWidth={2.5} />}>
-          Book now
+          {T('doctorCard.bookNow')}
         </Btn>
       </div>
     </div>

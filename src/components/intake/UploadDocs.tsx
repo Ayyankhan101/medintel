@@ -1,6 +1,7 @@
 'use client'
 import { useRef, useState, useEffect } from 'react'
 import { Paperclip, Loader2, AlertCircle, CheckCircle2, ChevronDown, ChevronUp, X } from 'lucide-react'
+import { useI18n } from '@/lib/i18n/client'
 
 export interface KeyFinding {
   metric:         string
@@ -26,6 +27,7 @@ interface Props {
 }
 
 export function UploadDocs({ triageId, onRefined }: Props) {
+  const { T } = useI18n()
   const inputRef = useRef<HTMLInputElement>(null)
   const [open,    setOpen]    = useState(false)
   const [files,   setFiles]   = useState<File[]>([])
@@ -62,14 +64,14 @@ export function UploadDocs({ triageId, onRefined }: Props) {
       const res = await fetch(`/api/triage/${triageId}/refine`, { method: 'POST', body: form })
       const raw = await res.text()
       const data = raw ? JSON.parse(raw) : {}
-      if (!res.ok) throw new Error(data.error ?? 'Upload failed')
+      if (!res.ok) throw new Error(data.error ?? T('uploadDocs.uploadFailed'))
       onRefined(data)
       previews.forEach(p => URL.revokeObjectURL(p))
       setFiles([])
       setPreviews([])
       if (inputRef.current) inputRef.current.value = ''
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Upload failed')
+      setError(e instanceof Error ? e.message : T('uploadDocs.uploadFailed'))
     } finally {
       setBusy(false)
     }
@@ -83,10 +85,10 @@ export function UploadDocs({ triageId, onRefined }: Props) {
           <Paperclip className="w-4 h-4 text-blue-600" />
           <div>
             <h3 className="font-semibold text-sm text-slate-900 dark:text-slate-100">
-              Have lab reports or a prescription?
+              {T('uploadDocs.prompt')}
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Upload images for AI re-analysis
+              {T('uploadDocs.reanalyze')}
             </p>
           </div>
         </div>
@@ -97,7 +99,7 @@ export function UploadDocs({ triageId, onRefined }: Props) {
         <div className="px-4 pb-4 space-y-3 border-t border-slate-100 dark:border-slate-700 pt-3"
           style={{ animation: 'mi-fade-up 200ms var(--ease-out-quart) both' }}>
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            JPG/PNG only, up to 3 files. The AI will re-read findings and update the severity.
+            {T('uploadDocs.hint')}
           </p>
 
           <label className="flex items-center justify-center gap-2 px-4 py-6 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-500 transition-colors cursor-pointer bg-slate-50/50 dark:bg-slate-800/50">
@@ -112,7 +114,7 @@ export function UploadDocs({ triageId, onRefined }: Props) {
             />
             <Paperclip className="w-5 h-5 text-slate-400" />
             <span className="text-sm text-slate-500 dark:text-slate-400">
-              {files.length > 0 ? `${files.length} file${files.length > 1 ? 's' : ''} selected` : 'Tap to browse files'}
+              {files.length > 0 ? T('uploadDocs.filesSelected').replace('{n}', String(files.length)) : T('uploadDocs.tapBrowse')}
             </span>
           </label>
 
@@ -123,7 +125,7 @@ export function UploadDocs({ triageId, onRefined }: Props) {
                   <img src={url} alt={files[i]?.name ?? ''} className="w-full h-20 object-cover" />
                   <button onClick={() => removeFile(i)}
                     className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                    aria-label={`Remove ${files[i]?.name}`}>
+                    aria-label={T('uploadDocs.removeFile').replace('{name}', files[i]?.name ?? '')}>
                     <X className="w-3 h-3" />
                   </button>
                   <div className="px-1.5 py-1">
@@ -147,8 +149,8 @@ export function UploadDocs({ triageId, onRefined }: Props) {
             className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium rounded-xl flex items-center justify-center gap-2 text-sm transition-colors"
           >
             {busy
-              ? <><Loader2 className="w-4 h-4 animate-spin" /> Reading documents…</>
-              : <><CheckCircle2 className="w-4 h-4" /> Re-analyse with these documents</>}
+              ? <><Loader2 className="w-4 h-4 animate-spin" /> {T('uploadDocs.reading')}</>
+              : <><CheckCircle2 className="w-4 h-4" /> {T('uploadDocs.reanalyzeBtn')}</>}
           </button>
         </div>
       )}

@@ -1,6 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
+import { I18nProvider } from '@/lib/i18n/client'
 import { VoiceRecorder } from '@/components/voice/VoiceRecorder'
+
+function W({ children }: { children: React.ReactNode }) { return <I18nProvider>{children}</I18nProvider> }
 
 beforeEach(() => {
   vi.stubGlobal('MediaRecorder', vi.fn().mockImplementation(() => ({
@@ -22,63 +25,61 @@ beforeEach(() => {
       }),
     },
   })
-
-  vi.stubGlobal('AudioContext', vi.fn().mockImplementation(() => ({
-    createMediaStreamSource: vi.fn(() => ({ connect: vi.fn() })),
-    createAnalyser: vi.fn(() => ({
-      frequencyBinCount: 128,
-      getByteTimeDomainData: vi.fn(),
-      connect: vi.fn(),
-    })),
-    state: 'running',
-    close: vi.fn().mockResolvedValue(undefined),
-  })))
-  ;(window as unknown as { webkitAudioContext: unknown }).webkitAudioContext = undefined
 })
+
+const onRecordingComplete = vi.fn()
 
 describe('<VoiceRecorder>', () => {
   it('renders idle state with mic button', () => {
-    render(<VoiceRecorder onRecordingComplete={vi.fn()} />)
+    render(<VoiceRecorder onRecordingComplete={onRecordingComplete} />, { wrapper: W })
     expect(screen.getByLabelText(/Start recording/i)).toBeTruthy()
   })
 
   it('renders language selector with all options', () => {
-    render(<VoiceRecorder onRecordingComplete={vi.fn()} />)
-    expect(screen.getByLabelText('Select language')).toBeTruthy()
-    expect(screen.getByText(/اردو/)).toBeTruthy()
-    const eng = screen.getAllByText(/English/)
-    expect(eng.length).toBeGreaterThan(0)
+    render(<VoiceRecorder onRecordingComplete={onRecordingComplete} />, { wrapper: W })
+    expect(screen.getByText('English')).toBeTruthy()
+    expect(screen.getByText('اردو')).toBeTruthy()
   })
 
   it('shows language tip for default language (Urdu)', () => {
-    render(<VoiceRecorder onRecordingComplete={vi.fn()} />)
-    expect(screen.getByText(/اپنی علامات/)).toBeTruthy()
+    render(<VoiceRecorder onRecordingComplete={onRecordingComplete} />, { wrapper: W })
+    expect(screen.getByText(/اپنی علامات قدرتی طور پر بیان کریں/i)).toBeTruthy()
   })
 
   it('renders "describe your symptoms" prompt', () => {
-    render(<VoiceRecorder onRecordingComplete={vi.fn()} />)
-    expect(screen.getByText(/describe your symptoms/i)).toBeTruthy()
+    render(<VoiceRecorder onRecordingComplete={onRecordingComplete} />, { wrapper: W })
+    expect(screen.getByText(/Tap the mic and describe your symptoms/i)).toBeTruthy()
   })
 
   it('handles microphone permission error gracefully', async () => {
     vi.stubGlobal('navigator', {
       mediaDevices: {
-        getUserMedia: vi.fn().mockRejectedValue({ name: 'NotAllowedError' }),
+        getUserMedia: vi.fn().mockRejectedValue(
+          Object.assign(new Error('Permission denied'), { name: 'NotAllowedError' }),
+        ),
       },
     })
-    render(<VoiceRecorder onRecordingComplete={vi.fn()} />)
-    screen.getByLabelText(/Start recording/i).click()
-    expect(await screen.findByText(/Microphone permission denied/i)).toBeTruthy()
+    render(<VoiceRecorder onRecordingComplete={onRecordingComplete} />, { wrapper: W })
+    const btn = screen.getByLabelText(/Start recording/i)
+    btn.click()
+    await vi.waitFor(() => {
+      expect(screen.getByText(/Microphone permission denied/i)).toBeTruthy()
+    })
   })
 
   it('handles no microphone error', async () => {
     vi.stubGlobal('navigator', {
       mediaDevices: {
-        getUserMedia: vi.fn().mockRejectedValue({ name: 'NotFoundError' }),
+        getUserMedia: vi.fn().mockRejectedValue(
+          Object.assign(new Error('Not found'), { name: 'NotFoundError' }),
+        ),
       },
     })
-    render(<VoiceRecorder onRecordingComplete={vi.fn()} />)
-    screen.getByLabelText(/Start recording/i).click()
-    expect(await screen.findByText(/No microphone found/i)).toBeTruthy()
+    render(<VoiceRecorder onRecordingComplete={onRecordingComplete} />, { wrapper: W })
+    const btn = screen.getByLabelText(/Start recording/i)
+    btn.click()
+    await vi.waitFor(() => {
+      expect(screen.getByText(/No microphone found/i)).toBeTruthy()
+    })
   })
 })
