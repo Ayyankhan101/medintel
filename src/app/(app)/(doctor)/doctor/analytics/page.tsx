@@ -1,8 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useI18n } from '@/lib/i18n/client'
-
-export const dynamic = 'force-dynamic'
 import {
   TrendingUp, Activity, Heart, Users,
   BarChart2, DollarSign, ChevronDown,
@@ -112,8 +110,7 @@ function Sparkline({ series }: { series: { date: string; count: number }[] }) {
   )
 }
 
-function RecoveryDonut({ byStatus }: { byStatus: Record<string, number> }) {
-  const { T } = useI18n()
+function RecoveryDonut({ byStatus, T }: { byStatus: Record<string, number>; T: (k: string) => string }) {
   const improved  = byStatus.IMPROVED  ?? 0
   const unchanged = byStatus.UNCHANGED ?? 0
   const worse     = byStatus.WORSE     ?? 0
@@ -325,7 +322,7 @@ export default function DoctorAnalyticsPage() {
                 <Heart size={15} style={{ color: 'var(--ink-3)' }} />
                 <h2 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: 'var(--ink)' }}>{T('doctor.analytics.recoveryOutcomes')}</h2>
               </div>
-              <RecoveryDonut byStatus={data.recovery.byStatus} />
+              <RecoveryDonut T={T} byStatus={data.recovery.byStatus} />
             </section>
 
             {/* Top departments */}
