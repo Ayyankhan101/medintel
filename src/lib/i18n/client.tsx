@@ -57,7 +57,11 @@ function applyLocaleToDocument(l: Locale) {
 
 export function useI18n(): I18nCtx {
   const c = useContext(Ctx)
-  if (!c) throw new Error('useI18n must be used inside <I18nProvider>')
+  if (!c) return {
+    locale: DEFAULT_LOCALE,
+    setLocale: () => {},
+    T: (key: string) => t(key, DEFAULT_LOCALE),
+  }
   return c
 }
 
