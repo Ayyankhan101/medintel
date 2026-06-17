@@ -3,7 +3,10 @@ import { useEffect, useState, use } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
-import { Loader2, CheckCircle2, FileText, Video, AlertCircle, Stethoscope } from 'lucide-react'
+import {
+  Loader2, CheckCircle2, FileText, Video, AlertCircle, Stethoscope
+} from 'lucide-react'
+import { useI18n } from '@/lib/i18n/client'
 import { PrescriptionUploader } from '@/components/consultation/PrescriptionUploader'
 import { Btn } from '@/components/design/Btn'
 import { SeverityPill } from '@/components/design/badges'
@@ -76,6 +79,7 @@ function AISummary({ summary, level, score }: {
   level?: string | null
   score?: number | null
 }) {
+  const { T } = useI18n()
   return (
     <div style={{
       background: 'rgba(245,158,11,.08)', border: '1px solid rgba(245,158,11,.25)',
@@ -92,7 +96,7 @@ function AISummary({ summary, level, score }: {
       <div style={{ flex: 1 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
           <strong style={{ color: '#a16207', fontSize: 11, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase' }}>
-            AI suggestion · verify clinically
+            {T('consult.aiSuggestion')}
           </strong>
           {level && (
             <SeverityPill level={level === 'CRITICAL' ? 'EMERGENCY' : level === 'URGENT' ? 'URGENT' : 'ROUTINE'} />
@@ -136,6 +140,7 @@ function HistoryGroup({ label, color, icon, records }: {
 }
 
 function DoctorConsultation({ appointmentId }: { appointmentId: string }) {
+  const { T } = useI18n()
   const [phase,       setPhase]       = useState<DoctorPhase>('loading')
   const [videoToken,  setVideoToken]  = useState<string | null>(null)
   const [roomName,    setRoomName]    = useState('')
@@ -155,7 +160,7 @@ function DoctorConsultation({ appointmentId }: { appointmentId: string }) {
           if (hr.ok) setHistory(await hr.json())
         }
       })
-      .catch(() => setError('Could not load appointment'))
+      .catch(() => setError(T('consult.couldNotLoad')))
   }, [appointmentId])
 
   async function joinCall() {
@@ -168,7 +173,7 @@ function DoctorConsultation({ appointmentId }: { appointmentId: string }) {
       })
       if (!statusRes.ok && statusRes.status !== 409) {
         const err = await statusRes.json()
-        throw new Error(err.error ?? 'Could not start consultation')
+        throw new Error(err.error ?? T('consult.couldNotStart'))
       }
       const res  = await fetch('/api/consultation/token', {
         method:  'POST',
@@ -176,15 +181,15 @@ function DoctorConsultation({ appointmentId }: { appointmentId: string }) {
         body:    JSON.stringify({ appointmentId }),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error ?? 'Failed to start call')
+      if (!res.ok) throw new Error(data.error ?? T('consult.failedStartCall'))
       setVideoToken(data.token); setRoomName(data.roomName); setPhase('call')
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not connect to call')
+      setError(e instanceof Error ? e.message : T('consult.couldNotConnect'))
     }
   }
 
   async function completeWithoutRx() {
-    if (!confirm('End this consultation WITHOUT issuing a prescription? The patient will not be billed and any held payment can be refunded.')) return
+    if (!confirm(T('consult.confirmEndNoRx'))) return
     setError('')
     try {
       const res = await fetch(`/api/appointments/${appointmentId}`, {
@@ -195,7 +200,7 @@ function DoctorConsultation({ appointmentId }: { appointmentId: string }) {
       if (!res.ok) throw new Error((await res.json()).error ?? `HTTP ${res.status}`)
       setPhase('done')
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not mark complete')
+      setError(e instanceof Error ? e.message : T('consult.couldNotMarkComplete'))
     }
   }
 
@@ -210,10 +215,10 @@ function DoctorConsultation({ appointmentId }: { appointmentId: string }) {
     }}>
       <header>
         <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--violet-600)', letterSpacing: '.08em', textTransform: 'uppercase' }}>
-          Doctor console
+          {T('consult.doctorConsole')}
         </span>
         <h1 style={{ margin: '4px 0 0', fontSize: 26, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--ink)' }}>
-          Consultation
+            {T('consult.consultation')}
         </h1>
       </header>
 
@@ -231,7 +236,7 @@ function DoctorConsultation({ appointmentId }: { appointmentId: string }) {
 
           {phase === 'pre' && (
             <Btn kind="primary" full onClick={joinCall} leading={<Video size={18} />}>
-              Start video call
+              {T('consult.startCall')}
             </Btn>
           )}
 
@@ -239,7 +244,7 @@ function DoctorConsultation({ appointmentId }: { appointmentId: string }) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <VideoCall token={videoToken} roomName={roomName} onCallEnd={() => setPhase('prescription')} />
               <p style={{ margin: 0, fontSize: 12, textAlign: 'center', color: 'var(--ink-3)' }}>
-                End the call to upload the prescription and collect payment.
+                {T('consult.endCallHint')}
               </p>
             </div>
           )}
@@ -255,16 +260,16 @@ function DoctorConsultation({ appointmentId }: { appointmentId: string }) {
                   textDecoration: 'underline',
                 }}
               >
-                End without prescription (no charge)
+                {T('consult.endNoRx')}
               </button>
             </div>
           )}
 
           {phase === 'done' && (
             <DonePanel
-              title="Prescription saved. Payment released."
+              title={T('consult.prescriptionSaved')}
               backHref="/doctor/dashboard"
-              backLabel="Back to dashboard"
+              backLabel={T('consult.backToDash')}
             />
           )}
 
@@ -278,7 +283,7 @@ function DoctorConsultation({ appointmentId }: { appointmentId: string }) {
                 fontWeight: 600,
               }}
             >
-              <FileText size={14} /> Download consultation summary (PDF)
+              <FileText size={14} /> {T('consult.downloadPDF')}
             </a>
           )}
         </div>
@@ -293,7 +298,7 @@ function DoctorConsultation({ appointmentId }: { appointmentId: string }) {
             <p style={{
               margin: 0, fontSize: 10, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase',
               color: 'var(--ink-4)',
-            }}>Patient</p>
+            }}>{T('consult.patientLabel')}</p>
             <p style={{ margin: '4px 0 0', fontSize: 14, fontWeight: 600, color: 'var(--ink)' }}>
               {appointment?.patient?.user?.email}
             </p>
@@ -307,19 +312,19 @@ function DoctorConsultation({ appointmentId }: { appointmentId: string }) {
               margin: 0, fontSize: 10, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase',
               color: 'var(--ink-4)', marginBottom: 10,
             }}>
-              Medical history {history && `(${history.recordCount})`}
+              {T('consult.medicalHistory')} {history && `(${history.recordCount})`}
             </p>
-            {!history && <p style={{ margin: 0, fontSize: 12, color: 'var(--ink-3)' }}>Loading…</p>}
+            {!history && <p style={{ margin: 0, fontSize: 12, color: 'var(--ink-3)' }}>{T('consult.loading')}</p>}
             {history && history.recordCount === 0 && (
-              <p style={{ margin: 0, fontSize: 12, color: 'var(--ink-3)' }}>No prior records.</p>
+              <p style={{ margin: 0, fontSize: 12, color: 'var(--ink-3)' }}>{T('consult.noRecords')}</p>
             )}
             {history && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <HistoryGroup label="Allergies"     icon="⚠️" color="var(--red-600)"        records={history.grouped.ALLERGY} />
-                <HistoryGroup label="Chronic meds"  icon="💊" color="#a16207"               records={history.grouped.CHRONIC_MED} />
-                <HistoryGroup label="Surgeries"     icon="🔪" color="var(--ink-2)"          records={history.grouped.SURGERY} />
-                <HistoryGroup label="Lab reports"   icon="🧪" color="var(--blue-700)"       records={history.grouped.LAB_REPORT} />
-                <HistoryGroup label="Prescriptions" icon="📋" color="#047857"               records={history.grouped.PRESCRIPTION} />
+                <HistoryGroup label={T('consult.allergies')}     icon="⚠️" color="var(--red-600)"        records={history.grouped.ALLERGY} />
+                <HistoryGroup label={T('consult.chronicMeds')}  icon="💊" color="#a16207"               records={history.grouped.CHRONIC_MED} />
+                <HistoryGroup label={T('consult.surgeries')}     icon="🔪" color="var(--ink-2)"          records={history.grouped.SURGERY} />
+                <HistoryGroup label={T('consult.labReports')}   icon="🧪" color="var(--blue-700)"       records={history.grouped.LAB_REPORT} />
+                <HistoryGroup label={T('consult.prescriptions')} icon="📋" color="#047857"               records={history.grouped.PRESCRIPTION} />
               </div>
             )}
           </div>
@@ -335,6 +340,7 @@ type PatientPhase = 'loading' | 'payment' | 'waiting' | 'call' | 'done'
 
 function PatientConsultation({ appointmentId }: { appointmentId: string }) {
   const router = useRouter()
+  const { T } = useI18n()
   const [phase,       setPhase]       = useState<PatientPhase>('loading')
   const [appointment, setAppointment] = useState<AppointmentData | null>(null)
   const [videoToken,  setVideoToken]  = useState<string | null>(null)
@@ -357,7 +363,7 @@ function PatientConsultation({ appointmentId }: { appointmentId: string }) {
         }
         setPhase(data.escrow.status === 'HELD' ? 'waiting' : 'payment')
       })
-      .catch(() => setError('Could not load appointment'))
+      .catch(() => setError(T('consult.couldNotLoad')))
   }, [appointmentId, router])
 
   async function joinCall() {
@@ -373,14 +379,14 @@ function PatientConsultation({ appointmentId }: { appointmentId: string }) {
       if (!res.ok) throw new Error(data.error ?? 'Failed to join')
       setVideoToken(data.token); setRoomName(data.roomName); setPhase('call')
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not connect to call')
+      setError(e instanceof Error ? e.message : T('consult.couldNotConnect'))
     }
   }
 
   async function consentAndJoin() {
     setError('')
     const res = await fetch(`/api/appointments/${appointmentId}/consent`, { method: 'POST' })
-    if (!res.ok) { setError('Could not record consent. Try again.'); return }
+    if (!res.ok) { setError(T('consult.couldNotConsent')); return }
     setNeedsConsent(false)
     joinCall()
   }
@@ -396,7 +402,7 @@ function PatientConsultation({ appointmentId }: { appointmentId: string }) {
     }}>
       <header>
         <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--blue-700)', letterSpacing: '.08em', textTransform: 'uppercase' }}>
-          Your consultation
+          {T('consult.yourConsultation')}
         </span>
         <h1 style={{ margin: '4px 0 0', fontSize: 26, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--ink)' }}>
           {appointment?.doctor?.specialization ?? 'Consultation'}
@@ -411,10 +417,10 @@ function PatientConsultation({ appointmentId }: { appointmentId: string }) {
           borderRadius: 14, padding: 16, color: 'var(--ink-2)',
           display: 'flex', flexDirection: 'column', gap: 8, fontSize: 13,
         }}>
-          <strong style={{ color: '#a16207' }}>No doctor assigned yet</strong>
-          <p style={{ margin: 0 }}>Pick a doctor before continuing to payment.</p>
+          <strong style={{ color: '#a16207' }}>{T('consult.noDoctor')}</strong>
+          <p style={{ margin: 0 }}>{T('consult.pickDoctor')}</p>
           <Link href="/intake" style={{ color: 'var(--blue-700)', fontWeight: 600, textDecoration: 'none', fontSize: 13 }}>
-            Start triage →
+            {T('consult.startTriage')} →
           </Link>
         </div>
       )}
@@ -443,15 +449,15 @@ function PatientConsultation({ appointmentId }: { appointmentId: string }) {
           </span>
           <div>
             <p style={{ margin: 0, fontWeight: 700, fontSize: 16, color: 'var(--ink)' }}>
-              Payment confirmed — funds held in escrow
+              {T('consult.paymentConfirmed')}
             </p>
             <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--ink-3)' }}>
-              Funds release to doctor only after prescription is uploaded.
+              {T('consult.fundsRelease')}
             </p>
+            <Btn kind="primary" full onClick={joinCall} leading={<Video size={18} />}>
+              {T('consult.joinCall')}
+            </Btn>
           </div>
-          <Btn kind="primary" full onClick={joinCall} leading={<Video size={18} />}>
-            Join video call
-          </Btn>
         </div>
       )}
 
@@ -463,17 +469,17 @@ function PatientConsultation({ appointmentId }: { appointmentId: string }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <VideoCall token={videoToken} roomName={roomName} onCallEnd={() => setPhase('done')} />
           <p style={{ margin: 0, fontSize: 12, textAlign: 'center', color: 'var(--ink-4)' }}>
-            The call is recording for safety. Your prescription will appear in Medical History.
+            {T('consult.callRecording')}
           </p>
         </div>
       )}
 
       {phase === 'done' && (
         <DonePanel
-          title="Consultation complete"
-          sub="Your prescription has been added to your medical vault."
+          title={T('consult.complete')}
+          sub={T('consult.prescriptionAdded')}
           backHref="/history"
-          backLabel="View medical history"
+          backLabel={T('consult.viewHistory')}
         />
       )}
     </div>
@@ -507,6 +513,7 @@ function DonePanel({ title, sub, backHref, backLabel }: {
 }
 
 function ConsentModal({ onCancel, onConsent }: { onCancel: () => void; onConsent: () => void }) {
+  const { T } = useI18n()
   return (
     <div style={{
       position: 'fixed', inset: 0, zIndex: 50,
@@ -521,25 +528,24 @@ function ConsentModal({ onCancel, onConsent }: { onCancel: () => void; onConsent
         boxShadow: '0 30px 80px -30px rgba(0,0,0,.4)',
         animation: 'mi-modal-in 280ms var(--ease-out-quart) both',
       }}>
-        <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: 'var(--ink)' }}>Recording consent</h2>
+        <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: 'var(--ink)' }}>{T('consult.consentTitle')}</h2>
         <div style={{ fontSize: 13, color: 'var(--ink-2)', lineHeight: 1.55, display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <p style={{ margin: 0 }}>This consultation will be <strong>video and audio recorded</strong> for:</p>
+          <p style={{ margin: 0 }}>{T('consult.consentIntro')}</p>
           <ul style={{ margin: 0, paddingLeft: 18, display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <li>Generating your medical record &amp; SOAP note</li>
-            <li>Patient safety &amp; dispute resolution (PMDC requirement)</li>
-            <li>Doctor quality assurance</li>
+            <li>{T('consult.consentReason1')}</li>
+            <li>{T('consult.consentReason2')}</li>
+            <li>{T('consult.consentReason3')}</li>
           </ul>
           <p style={{ margin: 0 }}>
-            Recordings are encrypted at rest. Raw transcript is purged after 12 months; structured
-            medical fields are retained as part of your medical history.
+            {T('consult.consentDetail')}
           </p>
           <p style={{ margin: 0, fontSize: 11, color: 'var(--ink-4)' }}>
-            You can request deletion at any time via your account settings.
+            {T('consult.consentDeletion')}
           </p>
         </div>
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', paddingTop: 4 }}>
-          <Btn kind="ghost" onClick={onCancel}>Cancel</Btn>
-          <Btn kind="primary" onClick={onConsent}>I consent — join call</Btn>
+          <Btn kind="ghost" onClick={onCancel}>{T('consult.cancel')}</Btn>
+          <Btn kind="primary" onClick={onConsent}>{T('consult.consentJoin')}</Btn>
         </div>
       </div>
     </div>
