@@ -6,8 +6,10 @@ import Link from 'next/link'
 import { Loader2, AlertCircle, CheckCircle2, Mail, Lock } from 'lucide-react'
 import { AuthShell, Field, FieldInput } from '@/components/design/AuthShell'
 import { Btn } from '@/components/design/Btn'
+import { useI18n } from '@/lib/i18n/client'
 
 function LoginForm() {
+  const { T } = useI18n()
   const params = useSearchParams()
   const [email,    setEmail]    = useState('')
   const [password, setPassword] = useState('')
@@ -24,7 +26,7 @@ function LoginForm() {
     const result = await signIn('credentials', { email, password, redirect: false })
     if (result?.error) {
       setLoading(false)
-      setError(result.code === 'email_not_verified' ? 'UNVERIFIED' : 'Invalid email or password')
+      setError(result.code === 'email_not_verified' ? 'UNVERIFIED' : T('auth.login.invalid'))
       return
     }
     // Look up the freshly-set session to pick the role-specific home — avoids
@@ -45,9 +47,9 @@ function LoginForm() {
 
   return (
     <AuthShell
-      kicker="Welcome back"
-      title="Sign in to MedIntel"
-      sub="Use the email and password from your account."
+      kicker={T('auth.login.kicker')}
+      title={T('auth.login.title')}
+      sub={T('auth.login.sub')}
     >
       {justRegistered && medIntelCode && (
         <div style={{
@@ -57,10 +59,10 @@ function LoginForm() {
         }}>
           <CheckCircle2 size={16} style={{ color: '#10b981', flex: 'none', marginTop: 2 }} />
           <div>
-            <div style={{ fontWeight: 700, color: 'var(--ink)' }}>Account created!</div>
-            <div>Your MedIntel Code: <strong className="mono">{medIntelCode}</strong></div>
+            <div style={{ fontWeight: 700, color: 'var(--ink)' }}>{T('auth.login.accountCreated')}</div>
+            <div>{T('auth.login.yourCode')} <strong className="mono">{medIntelCode}</strong></div>
             <div style={{ fontSize: 'var(--text-xxs)', color: 'var(--ink-3)', marginTop: 2 }}>
-              Save this — it links your entire medical history.
+              {T('auth.login.saveCode')}
             </div>
           </div>
         </div>
@@ -83,7 +85,7 @@ function LoginForm() {
         }}>
           <AlertCircle size={14} style={{ flex: 'none', marginTop: 2, color: '#a16207' }} />
           <div>
-            <div style={{ fontWeight: 600, color: 'var(--ink)' }}>Email not verified yet.</div>
+            <div style={{ fontWeight: 600, color: 'var(--ink)' }}>{T('auth.login.notVerified')}</div>
             <button
               type="button"
               onClick={async () => {
@@ -92,7 +94,7 @@ function LoginForm() {
                   headers: { 'content-type': 'application/json' },
                   body:    JSON.stringify({ email }),
                 })
-                setError('Verification email resent. Check your inbox.')
+                setError(T('auth.login.resent'))
               }}
               style={{
                 marginTop: 4, background: 'transparent', border: 0,
@@ -100,29 +102,29 @@ function LoginForm() {
                 cursor: 'pointer', padding: 0, fontSize: 'var(--text-sm)',
               }}
             >
-              Resend verification email
+              {T('auth.login.resend')}
             </button>
           </div>
         </div>
       )}
 
       <form onSubmit={onSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-        <Field label="Email">
+        <Field label={T('common.email')}>
           <FieldInput
             type="email" name="email" autoComplete="username"
             required
-            placeholder="you@example.com"
+            placeholder={T('auth.login.emailPlaceholder')}
             value={email}
             onChange={e => setEmail(e.target.value)}
             leading={<Mail size={16} />}
           />
         </Field>
 
-        <Field label="Password">
+        <Field label={T('common.password')}>
           <FieldInput
             type="password" name="password" autoComplete="current-password"
             required
-            placeholder="••••••••"
+            placeholder={T('auth.login.passwordPlaceholder')}
             value={password}
             onChange={e => setPassword(e.target.value)}
             leading={<Lock size={16} />}
@@ -131,20 +133,20 @@ function LoginForm() {
 
         <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
           <Link href="/forgot-password" style={{ fontSize: 'var(--text-xs)', color: 'var(--blue-700)', fontWeight: 600, textDecoration: 'none' }}>
-            Forgot password?
+            {T('auth.login.forgot')}
           </Link>
         </div>
 
         <Btn kind="primary" full disabled={loading} type="submit"
              leading={loading ? <Loader2 size={16} className="animate-spin" /> : null}>
-          {loading ? 'Signing in…' : 'Sign in'}
+          {loading ? T('auth.login.signingIn') : T('common.signIn')}
         </Btn>
       </form>
 
       <p style={{ textAlign: 'center', fontSize: 'var(--text-sm)', color: 'var(--ink-3)', margin: 0 }}>
-        No account?{' '}
+        {T('auth.login.noAccount')}{' '}
         <Link href="/register" style={{ color: 'var(--blue-700)', fontWeight: 600, textDecoration: 'none' }}>
-          Create one
+          {T('auth.login.createOne')}
         </Link>
       </p>
     </AuthShell>

@@ -2,6 +2,7 @@
 
 import * as React from 'react'
 import { Shield } from 'lucide-react'
+import { useI18n } from '@/lib/i18n/client'
 
 type Side = 'default' | 'doctor' | 'clinic'
 
@@ -9,24 +10,6 @@ const PALETTES: Record<Side, { from: string; to: string }> = {
   default: { from: 'var(--blue-700)', to: 'var(--violet-600)' },
   doctor:  { from: '#7c3aed',         to: '#4338ca' },
   clinic:  { from: '#0d9488',         to: '#0e7490' },
-}
-
-const COPY: Record<Side, { kicker: string; title: string; line: string }> = {
-  default: {
-    kicker: 'Patient',
-    title:  'Care that meets you where you are.',
-    line:   'Five languages. PMDC-verified doctors. Escrow protection.',
-  },
-  doctor: {
-    kicker: 'For doctors',
-    title:  'Practice digitally. Get paid same day.',
-    line:   'PMDC re-verification every 90 days. Stripe Connect payouts. AI-assisted notes.',
-  },
-  clinic: {
-    kicker: 'For clinics',
-    title:  'Stand up a clinic in a weekend.',
-    line:   'Branded patient profile. WhatsApp + voice numbers. Per-doctor analytics.',
-  },
 }
 
 export function AuthShell({
@@ -75,8 +58,12 @@ export function AuthShell({
 }
 
 function BrandPanel({ variant }: { variant: Side }) {
+  const { T } = useI18n()
   const p = PALETTES[variant]
-  const c = COPY[variant]
+  const k = variant === 'doctor' ? 'auth.shell.doctor.kicker' : variant === 'clinic' ? 'auth.shell.clinic.kicker' : 'auth.shell.patient.kicker'
+  const t = variant === 'doctor' ? 'auth.shell.doctor.title' : variant === 'clinic' ? 'auth.shell.clinic.title' : 'auth.shell.patient.title'
+  const l = variant === 'doctor' ? 'auth.shell.doctor.line' : variant === 'clinic' ? 'auth.shell.clinic.line' : 'auth.shell.patient.line'
+  const badges = [T('auth.shell.badgeNadra'), T('auth.shell.badgePmdc'), T('auth.shell.badgeStripe')]
   return (
     <div
       style={{
@@ -103,12 +90,12 @@ function BrandPanel({ variant }: { variant: Side }) {
         <span style={{
           fontSize: 11, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase',
           color: 'rgba(255,255,255,.75)',
-        }}>{c.kicker}</span>
+        }}>{T(k)}</span>
         <h2 style={{ margin: 0, fontSize: 30, fontWeight: 700, letterSpacing: '-.02em', lineHeight: 1.15 }}>
-          {c.title}
+          {T(t)}
         </h2>
         <p style={{ margin: 0, color: 'rgba(255,255,255,.82)', fontSize: 14, lineHeight: 1.55, maxWidth: 360 }}>
-          {c.line}
+          {T(l)}
         </p>
       </div>
 
@@ -122,11 +109,11 @@ function BrandPanel({ variant }: { variant: Side }) {
         }}>
           <Shield size={18} strokeWidth={2} />
           <span style={{ fontSize: 13 }}>
-            <strong style={{ fontWeight: 700 }}>End-to-end encrypted.</strong> Audited by PMDC.
+            <strong style={{ fontWeight: 700 }}>{T('auth.shell.e2e')}</strong> {T('auth.shell.e2eSub')}
           </span>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          {['NADRA-verified', 'PMDC-licensed', 'Stripe escrow'].map(s => (
+          {badges.map(s => (
             <span key={s} style={{
               padding: '4px 10px', borderRadius: 999,
               background: 'rgba(255,255,255,.10)', color: 'rgba(255,255,255,.92)',

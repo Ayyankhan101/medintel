@@ -8,6 +8,7 @@ import Link from 'next/link'
 import { Loader2, AlertCircle, ShieldCheck } from 'lucide-react'
 import { AuthShell, Field, FieldInput } from '@/components/design/AuthShell'
 import { Btn } from '@/components/design/Btn'
+import { useI18n } from '@/lib/i18n/client'
 
 const schema = z.object({
   fullName:    z.string().min(2, 'Full name required'),
@@ -20,6 +21,7 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>
 
 export default function RegisterPage() {
+  const { T } = useI18n()
   const router = useRouter()
   const [error,   setError]   = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -44,9 +46,9 @@ export default function RegisterPage() {
 
   return (
     <AuthShell
-      kicker="Get started"
-      title="Create your account"
-      sub="Your CNIC will be verified with NADRA. Takes about a minute."
+      kicker={T('auth.register.kicker')}
+      title={T('auth.register.title')}
+      sub={T('auth.register.sub')}
     >
       {error && (
         <div style={{
@@ -60,21 +62,21 @@ export default function RegisterPage() {
 
       <form onSubmit={handleSubmit(onSubmit)} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-          <Field label="Full Name" error={errors.fullName?.message}>
-            <FieldInput placeholder="Muhammad Ali" {...register('fullName')} />
+          <Field label={T('auth.register.fullName')} error={errors.fullName?.message}>
+            <FieldInput placeholder={T('auth.register.namePlaceholder')} {...register('fullName')} />
           </Field>
-          <Field label="Date of Birth">
+          <Field label={T('auth.register.dob')}>
             <FieldInput type="date" {...register('dateOfBirth')} />
           </Field>
         </div>
 
         <Field
-          label="CNIC Number"
-          hint="13 digits, no dashes"
+          label={T('auth.register.cnic')}
+          hint={T('auth.register.cnicHint')}
           error={errors.cnicNumber?.message}
         >
           <FieldInput
-            placeholder="3520212345679"
+            placeholder={T('auth.register.cnicPlaceholder')}
             maxLength={13}
             className="mono"
             style={{ fontFamily: 'var(--font-mono)', letterSpacing: '.04em' }}
@@ -83,32 +85,32 @@ export default function RegisterPage() {
         </Field>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-          <Field label="Email" error={errors.email?.message}>
-            <FieldInput type="email" placeholder="you@example.com" {...register('email')} />
+          <Field label={T('common.email')} error={errors.email?.message}>
+            <FieldInput type="email" placeholder={T('common.emailPlaceholder')} {...register('email')} />
           </Field>
-          <Field label="Phone" error={errors.phone?.message}>
-            <FieldInput type="tel" placeholder="+92 300 1234567" {...register('phone')} />
+          <Field label={T('common.phone')} error={errors.phone?.message}>
+            <FieldInput type="tel" placeholder={T('auth.register.phonePlaceholder')} {...register('phone')} />
           </Field>
         </div>
 
-        <Field label="Password" error={errors.password?.message}>
-          <FieldInput type="password" placeholder="Min. 8 characters" {...register('password')} />
+        <Field label={T('common.password')} error={errors.password?.message}>
+          <FieldInput type="password" placeholder={T('auth.register.passwordHint')} {...register('password')} />
         </Field>
 
         <Btn kind="primary" full type="submit" disabled={loading}
              leading={loading ? <Loader2 size={16} className="animate-spin" /> : <ShieldCheck size={16} />}>
-          {loading ? 'Verifying CNIC…' : 'Create account'}
+          {loading ? T('auth.register.verifying') : T('auth.register.submit')}
         </Btn>
       </form>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6, textAlign: 'center', fontSize: 13, color: 'var(--ink-3)' }}>
         <span>
-          Already have an account?{' '}
-          <Link href="/login" style={{ color: 'var(--blue-700)', fontWeight: 600, textDecoration: 'none' }}>Sign in</Link>
+          {T('auth.register.hasAccount')}{' '}
+          <Link href="/login" style={{ color: 'var(--blue-700)', fontWeight: 600, textDecoration: 'none' }}>{T('common.signIn')}</Link>
         </span>
         <span>
-          Are you a doctor?{' '}
-          <Link href="/register/doctor" style={{ color: 'var(--blue-700)', fontWeight: 600, textDecoration: 'none' }}>Join as a doctor</Link>
+          {T('auth.register.areDoctor')}{' '}
+          <Link href="/register/doctor" style={{ color: 'var(--blue-700)', fontWeight: 600, textDecoration: 'none' }}>{T('auth.register.joinDoctor')}</Link>
         </span>
       </div>
     </AuthShell>

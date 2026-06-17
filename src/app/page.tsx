@@ -10,6 +10,7 @@ import {
 import { Btn } from '@/components/design/Btn'
 import { VerifiedBadge } from '@/components/design/badges'
 import { PKR } from '@/components/design/helpers'
+import { useI18n } from '@/lib/i18n/client'
 
 type NavTarget = 'intake' | 'register-doctor' | 'register' | 'login' | 'legal-terms' | 'legal-privacy' | 'legal-pmdc'
 
@@ -44,6 +45,7 @@ export default function HomePage() {
 
 /* ───── top nav ───── */
 function TopNav({ onSignIn, onCta }: { onSignIn: () => void; onCta: () => void }) {
+  const { T } = useI18n()
   return (
     <header style={{
       position: 'sticky', top: 0, zIndex: 30,
@@ -67,7 +69,7 @@ function TopNav({ onSignIn, onCta }: { onSignIn: () => void; onCta: () => void }
       <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
         <button onClick={onSignIn} className="focus-ring"
           style={{ background: 'transparent', border: 0, color: 'var(--ink-2)', fontWeight: 600, fontSize: 13, cursor: 'pointer', padding: '8px 12px' }}>
-          Sign in
+          {T('common.signIn')}
         </button>
         <button onClick={onCta} className="focus-ring"
           style={{
@@ -75,7 +77,7 @@ function TopNav({ onSignIn, onCta }: { onSignIn: () => void; onCta: () => void }
             padding: '8px 14px', borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer',
             boxShadow: '0 4px 12px -4px rgba(37,99,235,.45)',
           }}>
-          Get started
+          {T('nav.getStarted')}
         </button>
       </div>
     </header>
@@ -84,6 +86,7 @@ function TopNav({ onSignIn, onCta }: { onSignIn: () => void; onCta: () => void }
 
 /* ───── hero ───── */
 function Hero({ onCta, onSecondary }: { onCta: () => void; onSecondary: () => void }) {
+  const { T } = useI18n()
   return (
     <section style={{
       position: 'relative',
@@ -110,7 +113,7 @@ function Hero({ onCta, onSecondary }: { onCta: () => void; onSecondary: () => vo
               color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
               fontSize: 11, fontWeight: 700,
             }}>✦</span>
-            <span>New · PMDC-licensed telemedicine for Pakistan</span>
+            <span>{T('landing.hero.badge')}</span>
           </span>
 
           <h1 style={{
@@ -120,12 +123,12 @@ function Hero({ onCta, onSecondary }: { onCta: () => void; onSecondary: () => vo
             maxWidth: 920,
             animation: 'mi-fade-up 480ms var(--ease-out-quart) 80ms both',
           }}>
-            Talk to a doctor in your language.
+            {T('landing.hero.title1')}
             <br />
             <span style={{
               background: 'linear-gradient(90deg, var(--blue-600), var(--violet-500))',
               WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent',
-            }}>Paid only when they help.</span>
+            }}>{T('landing.hero.title2')}</span>
           </h1>
 
           <p style={{
@@ -133,9 +136,7 @@ function Hero({ onCta, onSecondary }: { onCta: () => void; onSecondary: () => vo
             color: 'var(--ink-2)', lineHeight: 1.5,
             animation: 'mi-fade-up 480ms var(--ease-out-quart) 180ms both',
           }}>
-            MedIntel is voice-first telemedicine built for Pakistan. Describe your symptoms
-            in Urdu, Pashto, Punjabi, Sindhi, or English. A PMDC-licensed doctor sees you in
-            minutes. Fees are held in escrow until a prescription is issued.
+            {T('landing.hero.sub')}
           </p>
 
           <div style={{
@@ -143,9 +144,9 @@ function Hero({ onCta, onSecondary }: { onCta: () => void; onSecondary: () => vo
             animation: 'mi-fade-up 480ms var(--ease-out-quart) 280ms both',
           }}>
             <Btn kind="primary" onClick={onCta} trailing={<ArrowRight size={16} strokeWidth={2} />}>
-              Start a consult
+              {T('landing.cta.start')}
             </Btn>
-            <Btn kind="secondary" onClick={onSecondary}>I&apos;m a doctor</Btn>
+            <Btn kind="secondary" onClick={onSecondary}>{T('landing.cta.doctor')}</Btn>
           </div>
 
           <div style={{
@@ -156,10 +157,10 @@ function Hero({ onCta, onSecondary }: { onCta: () => void; onSecondary: () => vo
             <VerifiedBadge tier={3} compact />
             <span style={{ width: 1, height: 14, background: 'var(--border)' }} />
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-              <Shield size={13} strokeWidth={2} /> E2E encrypted
+              <Shield size={13} strokeWidth={2} /> {T('landing.hero.e2e')}
             </span>
             <span style={{ width: 1, height: 14, background: 'var(--border)' }} />
-            <span>Audited by PMDC under Telemedicine Guidelines 2022</span>
+            <span>{T('landing.hero.audited')}</span>
           </div>
         </div>
 
@@ -170,7 +171,8 @@ function Hero({ onCta, onSecondary }: { onCta: () => void; onSecondary: () => vo
 }
 
 function HeroPreview() {
-  const langs: [string, string][] = [['English', 'EN'], ['اردو', 'UR'], ['پښتو', 'PS'], ['پنجابی', 'PA'], ['سنڌي', 'SD']]
+  const { T } = useI18n()
+  const langs: [string, string][] = [[T('intake.lang.en'), 'EN'], ['اردو', 'UR'], ['پښتو', 'PS'], ['پنجابی', 'PA'], ['سنڌي', 'SD']]
   return (
     <div style={{
       position: 'relative', margin: '0 auto', maxWidth: 1080, width: '100%',
@@ -196,7 +198,7 @@ function HeroPreview() {
             }}>
               <Mic size={40} />
             </button>
-            <div style={{ fontSize: 'var(--text-base)', fontWeight: 600 }}>Tap and describe how you feel</div>
+            <div style={{ fontSize: 'var(--text-base)', fontWeight: 600 }}>{T('landing.preview.tap')}</div>
             <div style={{
               display: 'flex', gap: 8, padding: 4,
               background: 'var(--bg-soft)', border: '1px solid var(--border)',
@@ -215,10 +217,10 @@ function HeroPreview() {
             </div>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <PreviewLine label="AI triage" sub="Lower-back pain · 3-day duration" tone="violet" />
-            <PreviewLine label="Severity"  sub="Routine · GP suggested" tone="emerald" />
-            <PreviewLine label="Match"     sub="Dr. Ayesha Khan · in 12 min" tone="blue" />
-            <PreviewLine label="Escrow"    sub={`${PKR(600)} held until Rx issued`} tone="amber" />
+            <PreviewLine label={T('landing.preview.aiTriage')} sub={T('landing.preview.lbp')} tone="violet" />
+            <PreviewLine label={T('landing.preview.severity')} sub={T('landing.preview.routine')} tone="emerald" />
+            <PreviewLine label={T('landing.preview.match')} sub={T('landing.preview.drMatch')} tone="blue" />
+            <PreviewLine label={T('landing.preview.escrow')} sub={T('landing.preview.escrowLine').replace('{fee}', PKR(600))} tone="amber" />
           </div>
         </div>
       </div>
@@ -253,11 +255,12 @@ function PreviewLine({ label, sub, tone }: { label: string; sub: string; tone: '
 
 /* ───── stats band ───── */
 function StatsBand() {
+  const { T } = useI18n()
   const stats: [string, string, string][] = [
-    ['142,000+', 'Consults completed',    'last 12 months'],
-    ['1,284',    'PMDC-licensed doctors', 'verified quarterly'],
-    ['9m 12s',   'Median wait time',      'patient → doctor'],
-    ['71',       'Net promoter score',    'patients · 30-day'],
+    ['142,000+', T('landing.stats.consults'),    T('landing.stats.consultsSub')],
+    ['1,284',    T('landing.stats.doctors'),      T('landing.stats.doctorsSub')],
+    ['9m 12s',   T('landing.stats.waitTime'),     T('landing.stats.waitTimeSub')],
+    ['71',       T('landing.stats.nps'),           T('landing.stats.npsSub')],
   ]
   return (
     <section style={{ padding: '48px clamp(20px, 4vw, 56px)' }}>
@@ -290,21 +293,22 @@ const ACCENT_MAP: Record<Accent, { fg: string; bg: string }> = {
 type IconCmp = React.ComponentType<{ size?: number; strokeWidth?: number }>
 
 function FeatureGrid() {
+  const { T } = useI18n()
   const feats: { kicker: string; accent: Accent; title: string; sub: string; Icon: IconCmp }[] = [
-    { kicker: 'Voice-first',   accent: 'blue',    title: 'Describe symptoms in five languages',         sub: 'Urdu, Pashto, Punjabi, Sindhi, English. Live translation for the doctor.',                 Icon: Mic         },
-    { kicker: 'AI triage',     accent: 'violet',  title: 'Severity ranked before you wait',             sub: 'An AI clinical scribe pre-reads symptoms so the right doctor sees you faster.',           Icon: Activity    },
-    { kicker: 'Escrow',        accent: 'amber',   title: 'Pay only when you receive care',              sub: 'Funds are held in escrow until a prescription is issued. Refunds for no-shows.',          Icon: CreditCard  },
-    { kicker: 'PMDC-verified', accent: 'emerald', title: 'Every doctor is licensed — every quarter',    sub: 'We re-verify against the PMDC register every 90 days. No expired licenses.',              Icon: ShieldCheck },
-    { kicker: 'Low bandwidth', accent: 'blue',    title: 'Voice-only fallback when video drops',        sub: 'If your data dips below 250 Kbps, we switch you to a clean audio consult automatically.', Icon: Wifi        },
-    { kicker: 'Family',        accent: 'violet',  title: 'Share with family safely',                    sub: 'Add your spouse, parents, or children with role-based access. Records stay encrypted.',   Icon: Users       },
+    { kicker: T('landing.feat.voice'),   accent: 'blue',    title: T('landing.feat.voiceTitle'),  sub: T('landing.feat.voiceSub'),  Icon: Mic         },
+    { kicker: T('landing.feat.ai'),      accent: 'violet',  title: T('landing.feat.aiTitle'),     sub: T('landing.feat.aiSub'),     Icon: Activity    },
+    { kicker: T('landing.feat.escrow'),  accent: 'amber',   title: T('landing.feat.escrowTitle'), sub: T('landing.feat.escrowSub'), Icon: CreditCard  },
+    { kicker: T('landing.feat.pmdc'),    accent: 'emerald', title: T('landing.feat.pmdcTitle'),   sub: T('landing.feat.pmdcSub'),   Icon: ShieldCheck },
+    { kicker: T('landing.feat.bandwidth'), accent: 'blue',  title: T('landing.feat.bandwidthTitle'), sub: T('landing.feat.bandwidthSub'), Icon: Wifi },
+    { kicker: T('landing.feat.family'),  accent: 'violet',  title: T('landing.feat.familyTitle'), sub: T('landing.feat.familySub'), Icon: Users       },
   ]
   return (
     <section style={{ padding: '32px clamp(20px, 4vw, 56px)' }}>
       <div style={{ maxWidth: 1180, margin: '0 auto' }}>
         <SectionHeader
-          kicker="What we do differently"
-          title="Built for how Pakistan actually talks, pays, and trusts."
-          sub="Most telehealth assumes English, debit cards, and broadband. We assumed none of that and started over."
+          kicker={T('landing.features.kicker')}
+          title={T('landing.features.title')}
+          sub={T('landing.features.sub')}
         />
         <div style={{
           display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
@@ -364,15 +368,16 @@ function SectionHeader({ kicker, title, sub }: { kicker?: string; title: string;
 
 /* ───── how it works ───── */
 function HowItWorks() {
+  const { T } = useI18n()
   const steps: [string, string][] = [
-    ['Talk',  "Tap the mic. Describe what's bothering you in your language. We listen for 30–60 seconds."],
-    ['Match', 'We pre-read symptoms and route you to a PMDC-licensed doctor who speaks your language.'],
-    ['Treat', 'Video consult, AI-assisted notes, and a prescription. Escrow releases when Rx is issued.'],
+    [T('landing.step1.title'), T('landing.step1.desc')],
+    [T('landing.step2.title'), T('landing.step2.desc')],
+    [T('landing.step3.title'), T('landing.step3.desc')],
   ]
   return (
     <section style={{ padding: '64px clamp(20px, 4vw, 56px)' }}>
       <div style={{ maxWidth: 1180, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 32 }}>
-        <SectionHeader kicker="How it works" title="Three steps. Calm pace. No surprises." />
+        <SectionHeader kicker={T('landing.how.kicker')} title={T('landing.how.title')} />
         <ol style={{
           listStyle: 'none', margin: 0, padding: 0,
           display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
@@ -404,11 +409,12 @@ function HowItWorks() {
 
 /* ───── compliance ───── */
 function ComplianceSection() {
+  const { T } = useI18n()
   const items: { Icon: IconCmp; t: string; s: string }[] = [
-    { Icon: ShieldCheck, t: 'PMDC', s: 'Pakistan Medical & Dental Council · doctor licensure' },
-    { Icon: CreditCard,  t: 'SBP',  s: 'State Bank · escrow & PCI-DSS via Stripe Connect' },
-    { Icon: Shield,      t: 'PECA', s: 'Prevention of Electronic Crimes Act · data residency' },
-    { Icon: Phone,       t: 'PTA',  s: 'Telecom Authority · OTP & SMS compliance' },
+    { Icon: ShieldCheck, t: 'PMDC', s: T('landing.compliance.pmdc') },
+    { Icon: CreditCard,  t: 'SBP',  s: T('landing.compliance.sbp') },
+    { Icon: Shield,      t: 'PECA', s: T('landing.compliance.peca') },
+    { Icon: Phone,       t: 'PTA',  s: T('landing.compliance.pta') },
   ]
   return (
     <section style={{
@@ -418,8 +424,8 @@ function ComplianceSection() {
     }}>
       <div style={{ maxWidth: 1180, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 24 }}>
         <SectionHeader
-          kicker="Built on regulated rails"
-          title="Identity, licensing, and money — verified by the institutions Pakistan already trusts."
+          kicker={T('landing.compliance.kicker')}
+          title={T('landing.compliance.title')}
         />
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
           {items.map(({ Icon, t, s }) => (
@@ -449,6 +455,7 @@ function ComplianceSection() {
 
 /* ───── footer CTA ───── */
 function FooterCta({ onCta }: { onCta: () => void }) {
+  const { T } = useI18n()
   return (
     <section style={{ padding: '64px clamp(20px, 4vw, 56px)' }}>
       <div style={{
@@ -461,10 +468,10 @@ function FooterCta({ onCta }: { onCta: () => void }) {
         position: 'relative', overflow: 'hidden',
       }}>
         <h2 style={{ margin: 0, fontSize: 'clamp(28px, 4vw, 42px)', fontWeight: 700, letterSpacing: '-.02em' }}>
-          A doctor in your pocket — in your language.
+          {T('landing.ctaTitle')}
         </h2>
         <p style={{ margin: 0, fontSize: 16, color: 'rgba(255,255,255,.85)', maxWidth: 540, lineHeight: 1.5 }}>
-          Start a consult in under a minute. You pay nothing until a prescription is issued.
+          {T('landing.ctaSub')}
         </p>
         <button onClick={onCta} className="focus-ring"
           style={{
@@ -474,7 +481,7 @@ function FooterCta({ onCta }: { onCta: () => void }) {
             display: 'inline-flex', alignItems: 'center', gap: 8,
             boxShadow: '0 8px 20px -8px rgba(0,0,0,.25)', marginTop: 6,
           }}>
-          Start a consult <ArrowRight size={16} strokeWidth={2.5} />
+          {T('landing.ctaBtn')} <ArrowRight size={16} strokeWidth={2.5} />
         </button>
       </div>
     </section>
@@ -483,6 +490,7 @@ function FooterCta({ onCta }: { onCta: () => void }) {
 
 /* ───── footer ───── */
 function Footer({ onNav }: { onNav: (t: NavTarget) => void }) {
+  const { T } = useI18n()
   return (
     <footer style={{ padding: '40px clamp(20px, 4vw, 56px) 60px', borderTop: '1px solid var(--border)' }}>
       <div style={{
@@ -500,24 +508,24 @@ function Footer({ onNav }: { onNav: (t: NavTarget) => void }) {
             <span style={{ fontWeight: 700, fontSize: 15 }}>MedIntel</span>
           </div>
           <p style={{ margin: 0, fontSize: 12, color: 'var(--ink-3)', lineHeight: 1.5 }}>
-            Voice-first telemedicine for Pakistan.<br />
-            Made in Karachi · regulated under PMDC.
+            {T('landing.footer.tagline')}<br />
+            {T('landing.footer.tagline2')}
           </p>
         </div>
-        <FooterCol title="Product" items={[
-          ['For patients', 'intake'],
-          ['For doctors',  'register-doctor'],
-          ['For clinics',  'register'],
+        <FooterCol title={T('landing.footer.product')} items={[
+          [T('landing.footer.forPatients'), 'intake'],
+          [T('landing.footer.forDoctors'),  'register-doctor'],
+          [T('landing.footer.forClinics'),  'register'],
         ]} onNav={onNav} />
-        <FooterCol title="Trust" items={[
-          ['Terms',           'legal-terms'],
-          ['Privacy',         'legal-privacy'],
-          ['PMDC compliance', 'legal-pmdc'],
+        <FooterCol title={T('landing.footer.trust')} items={[
+          [T('landing.footer.terms'),           'legal-terms'],
+          [T('landing.footer.privacy'),         'legal-privacy'],
+          [T('landing.footer.pmdc'), 'legal-pmdc'],
         ]} onNav={onNav} />
-        <FooterCol title="Company" items={[['About', null], ['Careers', null], ['Press', null]]} />
+        <FooterCol title={T('landing.footer.company')} items={[[T('landing.footer.about'), null], [T('landing.footer.careers'), null], [T('landing.footer.press'), null]]} />
         <div>
           <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--ink-3)', letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 10 }}>
-            Need help?
+            {T('landing.footer.needHelp')}
           </div>
           <div style={{ fontSize: 13, color: 'var(--ink-2)', lineHeight: 1.6 }}>
             <a href="tel:+92021111634683" style={{ color: 'inherit', textDecoration: 'none' }}>+92 21 111 MEDINT</a><br />

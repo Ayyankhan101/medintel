@@ -4,26 +4,28 @@ import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Loader2, CheckCircle2, XCircle } from 'lucide-react'
 import { AuthShell } from '@/components/design/AuthShell'
+import { useI18n } from '@/lib/i18n/client'
 
 function VerifyEmailInner() {
+  const { T } = useI18n()
   const params = useSearchParams()
   const token = params.get('token')
   const [state, setState] = useState<'loading' | 'ok' | 'fail'>('loading')
   const [msg, setMsg] = useState('')
 
   useEffect(() => {
-    if (!token) { setState('fail'); setMsg('No token provided.'); return }
+    if (!token) { setState('fail'); setMsg(T('auth.verify.msg.noToken')); return }
     fetch(`/api/auth/verify-email?token=${encodeURIComponent(token)}`)
       .then(async r => {
         const d = await r.json().catch(() => ({}))
-        if (r.ok) { setState('ok'); setMsg('Your email is verified.') }
-        else      { setState('fail'); setMsg(d.error ?? 'Verification failed.') }
+        if (r.ok) { setState('ok'); setMsg(T('auth.verify.msg.ok')) }
+        else      { setState('fail'); setMsg(d.error ?? T('auth.verify.msg.fail')) }
       })
-      .catch(() => { setState('fail'); setMsg('Network error.') })
+      .catch(() => { setState('fail'); setMsg(T('auth.verify.msg.network')) })
   }, [token])
 
-  const kicker = state === 'loading' ? 'Hold on'         : state === 'ok' ? 'Confirmed' : 'Action needed'
-  const title  = state === 'loading' ? 'Verifying email…' : state === 'ok' ? 'Email verified' : 'Verification failed'
+  const kicker = state === 'loading' ? T('auth.verify.kicker.loading') : state === 'ok' ? T('auth.verify.kicker.ok') : T('auth.verify.kicker.fail')
+  const title  = state === 'loading' ? T('auth.verify.title.loading') : state === 'ok' ? T('auth.verify.title.ok') : T('auth.verify.title.fail')
 
   return (
     <AuthShell kicker={kicker} title={title} sub={msg || undefined}>
@@ -56,7 +58,7 @@ function VerifyEmailInner() {
           fontSize: 14, fontWeight: 600, textDecoration: 'none',
           boxShadow: state === 'ok' ? '0 8px 20px -8px rgba(37,99,235,.55)' : 'none',
         }}>
-          {state === 'ok' ? 'Continue to sign in' : 'Back to sign in'}
+          {state === 'ok' ? T('auth.verify.continue') : T('auth.verify.back')}
         </Link>
       )}
     </AuthShell>

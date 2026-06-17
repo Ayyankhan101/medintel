@@ -4,8 +4,10 @@ import Link from 'next/link'
 import { Mail, Loader2, CheckCircle2 } from 'lucide-react'
 import { AuthShell, Field, FieldInput } from '@/components/design/AuthShell'
 import { Btn } from '@/components/design/Btn'
+import { useI18n } from '@/lib/i18n/client'
 
 export default function ForgotPasswordPage() {
+  const { T } = useI18n()
   const [email, setEmail]     = useState('')
   const [sent, setSent]       = useState(false)
   const [loading, setLoading] = useState(false)
@@ -24,9 +26,9 @@ export default function ForgotPasswordPage() {
 
   return (
     <AuthShell
-      kicker="Reset access"
-      title="Forgot password"
-      sub="We'll send a reset link to your email. The link expires in 1 hour."
+      kicker={T('auth.forgot.kicker')}
+      title={T('auth.forgot.title')}
+      sub={T('auth.forgot.sub')}
     >
       {sent ? (
         <div style={{
@@ -36,29 +38,28 @@ export default function ForgotPasswordPage() {
         }}>
           <CheckCircle2 size={16} style={{ color: 'var(--emerald-500)', flex: 'none', marginTop: 1 }} />
           <p style={{ margin: 0 }}>
-            If an account exists for <strong style={{ color: 'var(--ink)' }}>{email}</strong>,
-            a reset link is on its way.
+            {(() => { const p = T('auth.forgot.sent').split('{email}'); return <>{p[0]}<strong style={{ color: 'var(--ink)' }}>{email}</strong>{p[1]}</> })()}
           </p>
         </div>
       ) : (
         <form onSubmit={onSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <Field label="Email">
+          <Field label={T('common.email')}>
             <FieldInput
               type="email" required
               value={email} onChange={e => setEmail(e.target.value)}
-              placeholder="you@example.com"
+              placeholder={T('common.emailPlaceholder')}
               leading={<Mail size={16} />}
             />
           </Field>
           <Btn kind="primary" full type="submit" disabled={loading}
                leading={loading ? <Loader2 size={16} className="animate-spin" /> : null}>
-            {loading ? 'Sending…' : 'Send reset link'}
+            {loading ? T('auth.forgot.sending') : T('auth.forgot.submit')}
           </Btn>
         </form>
       )}
 
       <p style={{ textAlign: 'center', fontSize: 13, color: 'var(--ink-3)', margin: 0 }}>
-        <Link href="/login" style={{ color: 'var(--ink-2)', textDecoration: 'none' }}>Back to sign in</Link>
+        <Link href="/login" style={{ color: 'var(--ink-2)', textDecoration: 'none' }}>{T('auth.forgot.back')}</Link>
       </p>
     </AuthShell>
   )

@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import { Lock, Loader2, CheckCircle2 } from 'lucide-react'
 import { AuthShell, Field, FieldInput } from '@/components/design/AuthShell'
 import { Btn } from '@/components/design/Btn'
+import { useI18n } from '@/lib/i18n/client'
 
 export default function ResetPasswordPage() {
   return (
@@ -19,6 +20,7 @@ export default function ResetPasswordPage() {
 }
 
 function ResetPasswordInner() {
+  const { T } = useI18n()
   const params = useSearchParams()
   const token  = params.get('token') ?? ''
   const [password, setPassword] = useState('')
@@ -30,9 +32,9 @@ function ResetPasswordInner() {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
-    if (password.length < 8)  return setError('Password must be at least 8 characters.')
-    if (password !== confirm) return setError('Passwords do not match.')
-    if (!token)               return setError('Missing reset token. Request a new link.')
+    if (password.length < 8)  return setError(T('auth.reset.tooShort'))
+    if (password !== confirm) return setError(T('auth.reset.noMatch'))
+    if (!token)               return setError(T('auth.reset.missingToken'))
 
     setLoading(true)
     const r = await fetch('/api/auth/reset-password', {
@@ -48,7 +50,7 @@ function ResetPasswordInner() {
 
   if (done) {
     return (
-      <AuthShell kicker="Done" title="Password updated" sub="You can now sign in with your new password.">
+      <AuthShell kicker={T('auth.verify.kicker.ok')} title={T('auth.reset.doneTitle')} sub={T('auth.reset.doneSub')}>
         <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0' }}>
           <span style={{
             width: 56, height: 56, borderRadius: 16,
@@ -65,21 +67,21 @@ function ResetPasswordInner() {
           fontSize: 14, fontWeight: 600, textDecoration: 'none',
           boxShadow: '0 8px 20px -8px rgba(37,99,235,.55)',
         }}>
-          Continue to sign in
+          {T('auth.reset.continue')}
         </Link>
       </AuthShell>
     )
   }
 
   return (
-    <AuthShell kicker="Reset access" title="Set a new password" sub="Choose a strong password (8+ characters).">
+    <AuthShell kicker={T('auth.reset.kicker')} title={T('auth.reset.title')} sub={T('auth.reset.sub')}>
       <form onSubmit={onSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-        <Field label="New password">
+        <Field label={T('auth.reset.newPassword')}>
           <FieldInput type="password" required value={password}
                       onChange={e => setPassword(e.target.value)}
                       leading={<Lock size={16} />} />
         </Field>
-        <Field label="Confirm password">
+        <Field label={T('auth.reset.confirmPassword')}>
           <FieldInput type="password" required value={confirm}
                       onChange={e => setConfirm(e.target.value)}
                       leading={<Lock size={16} />} />
@@ -93,7 +95,7 @@ function ResetPasswordInner() {
         )}
         <Btn kind="primary" full type="submit" disabled={loading}
              leading={loading ? <Loader2 size={16} className="animate-spin" /> : null}>
-          {loading ? 'Updating…' : 'Update password'}
+          {loading ? T('auth.reset.updating') : T('auth.reset.submit')}
         </Btn>
       </form>
     </AuthShell>

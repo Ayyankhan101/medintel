@@ -9,6 +9,7 @@ import { Loader2, AlertCircle, ShieldCheck } from 'lucide-react'
 import { SPECIALTY_NAMES } from '@/lib/triage/specialties'
 import { AuthShell, Field, FieldInput } from '@/components/design/AuthShell'
 import { Btn } from '@/components/design/Btn'
+import { useI18n } from '@/lib/i18n/client'
 
 const SPECIALTIES = SPECIALTY_NAMES
 
@@ -41,6 +42,7 @@ const shellInputStyle: React.CSSProperties = {
 }
 
 export default function DoctorRegisterPage() {
+  const { T } = useI18n()
   const router = useRouter()
   const [error,   setError]   = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -65,9 +67,9 @@ export default function DoctorRegisterPage() {
   return (
     <AuthShell
       side="doctor"
-      kicker="Join as a doctor"
-      title="Practice on MedIntel"
-      sub="PMDC license verified · Stripe Connect onboarding next."
+      kicker={T('auth.doctor.kicker')}
+      title={T('auth.doctor.title')}
+      sub={T('auth.doctor.sub')}
     >
       {error && (
         <div style={{
@@ -81,64 +83,64 @@ export default function DoctorRegisterPage() {
 
       <form onSubmit={handleSubmit(onSubmit)} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-          <Field label="Full name" error={errors.fullName?.message}>
-            <FieldInput placeholder="Dr. Aisha Khan" {...register('fullName')} />
+          <Field label={T('auth.doctor.fullName')} error={errors.fullName?.message}>
+            <FieldInput placeholder={T('auth.doctor.namePlaceholder')} {...register('fullName')} />
           </Field>
-          <Field label="PMDC license #" error={errors.licenseNumber?.message}>
-            <FieldInput placeholder="PMDC-1234" {...register('licenseNumber')} />
+          <Field label={T('auth.doctor.license')} error={errors.licenseNumber?.message}>
+            <FieldInput placeholder={T('auth.doctor.licensePlaceholder')} {...register('licenseNumber')} />
           </Field>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-          <Field label="Email" error={errors.email?.message}>
-            <FieldInput type="email" placeholder="you@example.com" {...register('email')} />
+          <Field label={T('common.email')} error={errors.email?.message}>
+            <FieldInput type="email" placeholder={T('common.emailPlaceholder')} {...register('email')} />
           </Field>
-          <Field label="Phone" error={errors.phone?.message}>
-            <FieldInput type="tel" placeholder="+923001234567" {...register('phone')} />
+          <Field label={T('common.phone')} error={errors.phone?.message}>
+            <FieldInput type="tel" placeholder={T('auth.doctor.phonePlaceholder')} {...register('phone')} />
           </Field>
         </div>
 
-        <Field label="Password" error={errors.password?.message}>
-          <FieldInput type="password" placeholder="At least 8 characters" {...register('password')} />
+        <Field label={T('common.password')} error={errors.password?.message}>
+          <FieldInput type="password" placeholder={T('auth.doctor.passwordHint')} {...register('password')} />
         </Field>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-          <Field label="Specialty" error={errors.specialization?.message}>
+          <Field label={T('auth.doctor.specialty')} error={errors.specialization?.message}>
             <select {...register('specialization')} defaultValue="" style={shellInputStyle}>
-              <option value="" disabled>Pick a specialty…</option>
+              <option value="" disabled>{T('auth.doctor.specialtyPlaceholder')}</option>
               {SPECIALTIES.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
           </Field>
-          <Field label="Years of experience" error={errors.yearsExperience?.message}>
+          <Field label={T('auth.doctor.yearsExp')} error={errors.yearsExperience?.message}>
             <FieldInput type="number" min={0} max={80} placeholder="10" {...register('yearsExperience')} />
           </Field>
         </div>
 
-        <Field label="Consultation fee (PKR)" hint="What you charge per online consultation" error={errors.consultationFee?.message}>
+        <Field label={T('auth.doctor.fee')} hint={T('auth.doctor.feeHint')} error={errors.consultationFee?.message}>
           <FieldInput type="number" min={0} placeholder="1500" {...register('consultationFee')} />
         </Field>
 
-        <Field label="Qualifications" hint="Comma-separated: MBBS, FCPS, MRCP…" error={errors.qualifications?.message}>
-          <FieldInput placeholder="MBBS, FCPS" {...register('qualifications')} />
+        <Field label={T('auth.doctor.qualifications')} hint={T('auth.doctor.qualHint')} error={errors.qualifications?.message}>
+          <FieldInput placeholder={T('auth.doctor.qualPlaceholder')} {...register('qualifications')} />
         </Field>
 
-        <Field label="Short bio (optional)" error={errors.bio?.message}>
+        <Field label={T('auth.doctor.bio')} error={errors.bio?.message}>
           <textarea
             {...register('bio')} rows={3}
-            placeholder="Tell patients about your practice…"
+            placeholder={T('auth.doctor.bioPlaceholder')}
             style={{ ...shellInputStyle, height: 'auto', padding: '12px 14px', resize: 'vertical', lineHeight: 1.5 }}
           />
         </Field>
 
         <Btn kind="primary" full type="submit" disabled={loading}
              leading={loading ? <Loader2 size={16} className="animate-spin" /> : <ShieldCheck size={16} />}>
-          {loading ? 'Creating account…' : 'Create doctor account'}
+          {loading ? T('auth.doctor.creating') : T('auth.doctor.submit')}
         </Btn>
       </form>
 
       <p style={{ textAlign: 'center', fontSize: 13, color: 'var(--ink-3)', margin: 0 }}>
-        Are you a patient?{' '}
-        <Link href="/register" style={{ color: 'var(--blue-700)', fontWeight: 600, textDecoration: 'none' }}>Sign up here</Link>
+        {T('auth.doctor.arePatient')}{' '}
+        <Link href="/register" style={{ color: 'var(--blue-700)', fontWeight: 600, textDecoration: 'none' }}>{T('auth.doctor.signupHere')}</Link>
       </p>
     </AuthShell>
   )
