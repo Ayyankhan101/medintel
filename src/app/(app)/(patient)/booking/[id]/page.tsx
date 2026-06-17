@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import { useSearchParams } from 'next/navigation'
 import { PKR } from '@/components/design/helpers'
+import { useI18n } from '@/lib/i18n/client'
 
 interface Appointment {
   id:          string
@@ -29,6 +30,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
   const [err,     setErr]     = useState<string | null>(null)
   const [paying,  setPaying]  = useState(false)
   const [payErr,  setPayErr]  = useState<string | null>(null)
+  const { T } = useI18n()
 
   useEffect(() => {
     fetch(`/api/appointments/${id}`)
@@ -53,15 +55,15 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
       }
       // No redirect (e.g. Stripe Elements path) — surface a message; UI for
       // Stripe-Elements checkout is the legacy /api/escrow/create flow.
-      setPayErr('Checkout returned no redirect URL — try the cards-only checkout.')
+      setPayErr(T('booking.confirm.checkoutError'))
     } catch (e) {
-      setPayErr(e instanceof Error ? e.message : 'Payment failed')
+      setPayErr(e instanceof Error ? e.message : T('booking.confirm.payFailed'))
     } finally {
       setPaying(false)
     }
   }
 
-  if (err) return <Centered><p style={{ margin: 0, fontSize: 13, color: 'var(--red-600)' }}>{err}</p></Centered>
+  if (err) return <Centered><p style={{ margin: 0, fontSize: 13, color: 'var(--red-600)' }}>{err ?? T('booking.confirm.loading')}</p></Centered>
   if (!appt) return <Centered><Loader2 size={28} className="animate-spin" style={{ color: 'var(--ink-4)' }} /></Centered>
 
   const when = new Date(appt.scheduledAt)
@@ -86,10 +88,10 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
         </span>
         <div>
           <h1 style={{ margin: 0, fontSize: 28, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--ink)' }}>
-            You&apos;re booked
+            {T('booking.confirm.booked')}
           </h1>
           <p style={{ margin: '6px 0 0', fontSize: 14, color: 'var(--ink-3)', lineHeight: 1.55 }}>
-            A confirmation email is on the way. Save the calendar invite so you don&apos;t miss it.
+            {T('booking.confirm.emailOnWay')}
           </p>
         </div>
       </div>
@@ -100,7 +102,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
         overflow: 'hidden',
       }}>
         {appt.doctor && (
-          <Row icon={<Stethoscope size={16} />} label="Doctor">
+          <Row icon={<Stethoscope size={16} />} label={T('booking.confirm.doctor')}>
             <Link href={`/doctors/${appt.doctor.id}`}
                   style={{ fontWeight: 600, color: 'var(--ink)', textDecoration: 'none' }}>
               {appt.doctor.user.name ?? 'Doctor'}
@@ -108,19 +110,19 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
             <span style={{ display: 'block', fontSize: 12, color: 'var(--ink-3)' }}>{appt.doctor.specialization}</span>
           </Row>
         )}
-        <Row icon={<Calendar size={16} />} label="When">
+        <Row icon={<Calendar size={16} />} label={T('booking.confirm.when')}>
           <span style={{ fontWeight: 600, color: 'var(--ink)' }}>{fmt}</span>
-          <span style={{ display: 'block', fontSize: 12, color: 'var(--ink-3)' }}>Asia/Karachi · ~30 min</span>
+          <span style={{ display: 'block', fontSize: 12, color: 'var(--ink-3)' }}>{T('booking.confirm.about30')}</span>
         </Row>
         {fee !== undefined && (
-          <Row icon={<ShieldCheck size={16} />} label="Payment">
+          <Row icon={<ShieldCheck size={16} />} label={T('booking.confirm.payment')}>
             <span className="mono" style={{ fontWeight: 700, color: 'var(--ink)' }}>{PKR(Number(fee))}</span>
             <span style={{ display: 'block', fontSize: 12, color: 'var(--ink-3)' }}>
-              Held in escrow until the doctor uploads your prescription.
+              {T('booking.confirm.escrowHeld')}
             </span>
           </Row>
         )}
-        <Row icon={<span className="mono" style={{ fontSize: 10 }}>ID</span>} label="Reference" noBorder>
+        <Row icon={<span className="mono" style={{ fontSize: 10 }}>ID</span>} label={T('booking.confirm.ref')} noBorder>
           <span className="mono" style={{ fontSize: 11, color: 'var(--ink-2)' }}>{appt.id}</span>
         </Row>
       </div>
@@ -132,9 +134,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
         }}>
           <AlertCircle size={18} style={{ color: '#a16207', flex: 'none', marginTop: 2 }} />
           <div style={{ flex: 1, fontSize: 13, color: 'var(--ink-2)' }}>
-            <strong>Payment required.</strong> Your booking is reserved but the doctor won&apos;t see it
-            in their queue until escrow is funded. Choose any method below — we route to JazzCash,
-            EasyPaisa, NayaPay, SadaPay, or card.
+            <strong>{T('booking.confirm.payRequired')}</strong> {T('booking.confirm.payRequiredDetail')}
             {payErr && (
               <div style={{ marginTop: 6, color: 'var(--red-600)' }}>{payErr}</div>
             )}
@@ -148,7 +148,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
           fontSize: 13, color: 'var(--ink-2)',
         }}>
           <CheckCircle2 size={18} style={{ color: 'var(--emerald-500)' }} />
-          Payment received. Held in escrow until your consultation is complete.
+          {T('booking.confirm.payReceived')}
         </div>
       )}
 
@@ -166,7 +166,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
             }}
           >
             {paying ? <Loader2 size={16} className="animate-spin" /> : <CreditCard size={16} />}
-            {paying ? 'Redirecting…' : `Pay ${fee !== undefined ? PKR(Number(fee)) : ''}`}
+            {paying ? T('booking.confirm.redirecting') : `${T('booking.confirm.pay')} ${fee !== undefined ? PKR(Number(fee)) : ''}`}
             {!paying && <ArrowRight size={14} strokeWidth={2.5} />}
           </button>
         ) : (
@@ -180,7 +180,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
             boxShadow: '0 8px 20px -8px rgba(37,99,235,.55)',
           }}
         >
-          <Video size={16} /> Join consultation
+          <Video size={16} /> {T('booking.confirm.joinConsult')}
           <ArrowRight size={14} strokeWidth={2.5} />
         </Link>
         )}
@@ -194,13 +194,13 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
             fontSize: 14, fontWeight: 600, textDecoration: 'none',
           }}
         >
-          <Calendar size={16} /> Add to calendar
+          <Calendar size={16} /> {T('booking.confirm.addCalendar')}
         </a>
       </div>
 
       <div style={{ textAlign: 'center' }}>
         <Link href="/history" style={{ fontSize: 13, color: 'var(--ink-3)', textDecoration: 'none' }}>
-          View all appointments →
+          {T('booking.confirm.viewAll')} →
         </Link>
       </div>
     </div>
