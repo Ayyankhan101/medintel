@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { AlertTriangle, ShieldAlert, MessagesSquare, Loader2, ExternalLink } from 'lucide-react'
 import { PKR } from '@/components/design/helpers'
 import { GlassCard } from '@/components/design/GlassCard'
+import { useI18n } from '@/lib/i18n/client'
 
 interface ModerationData {
   unmatchedCritical: Array<{
@@ -35,6 +36,7 @@ interface ModerationData {
 export default function ModerationPage() {
   const [data, setData]       = useState<ModerationData | null>(null)
   const [loading, setLoading] = useState(true)
+  const { T } = useI18n()
 
   useEffect(() => {
     fetch('/api/admin/moderation')
@@ -49,7 +51,7 @@ export default function ModerationPage() {
     </div>
   )
   if (!data) return (
-    <div style={{ maxWidth: 960, margin: '0 auto', padding: '40px 16px', fontSize: 14, color: 'var(--red-600)' }}>Failed to load</div>
+    <div style={{ maxWidth: 960, margin: '0 auto', padding: '40px 16px', fontSize: 14, color: 'var(--red-600)' }}>{T('admin.moderation.failedLoad')}</div>
   )
 
   return (
@@ -61,19 +63,19 @@ export default function ModerationPage() {
     }}>
       <header>
         <span style={{ fontSize: 'var(--text-xxs)', fontWeight: 700, color: '#a16207', letterSpacing: '.08em', textTransform: 'uppercase' }}>
-          Admin
+          {T('admin.title')}
         </span>
         <h1 style={{ margin: '4px 0 0', fontSize: 'var(--text-heading)', fontWeight: 700, letterSpacing: '-.02em', color: 'var(--ink)' }}>
-          Moderation queue
+          {T('admin.moderation.title')}
         </h1>
         <p style={{ margin: '4px 0 0', fontSize: 'var(--text-xs)', color: 'var(--ink-4)' }}>
           Generated {new Date(data.generatedAt).toLocaleString('en-PK')}
         </p>
       </header>
 
-      <Section title="Unmatched critical triages"
+      <Section title={T('admin.moderation.unmatched')}
                icon={<AlertTriangle size={14} style={{ color: 'var(--red-600)' }} />}
-               empty="No unmatched critical triages in the last 2 hours."
+               empty={T('admin.moderation.noUnmatched')}
                items={data.unmatchedCritical}
                render={t => (
         <GlassCard key={t.id} as="li" tone="red" padding="12px 14px">
@@ -93,16 +95,16 @@ export default function ModerationPage() {
             {t.patient.user.phone && (
               <a href={`tel:${t.patient.user.phone}`}
                  style={{ flex: 'none', fontSize: 'var(--text-sm)', fontWeight: 700, color: 'var(--red-600)', textDecoration: 'none' }}>
-                Call now →
+                {T('admin.moderation.callNow')} →
               </a>
             )}
           </div>
         </GlassCard>
       )} />
 
-      <Section title="Doctor no-show patterns (30d)"
+      <Section title={T('admin.moderation.noShow')}
                icon={<ShieldAlert size={14} style={{ color: '#a16207' }} />}
-               empty="No doctors flagged for repeated no-shows."
+               empty={T('admin.moderation.noFlagged')}
                items={data.noShowDoctors}
                render={d => (
         <GlassCard key={d.id} as="li" tone="amber" padding="12px 14px" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
@@ -114,19 +116,19 @@ export default function ModerationPage() {
           </div>
           <div style={{ textAlign: 'right' }}>
             <p className="mono" style={{ margin: 0, fontSize: 'var(--text-display)', fontWeight: 700, color: '#a16207' }}>{d.noShowCount}</p>
-            <p style={{ margin: 0, fontSize: 'var(--text-xxs)', fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--ink-4)' }}>no-shows</p>
+            <p style={{ margin: 0, fontSize: 'var(--text-xxs)', fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--ink-4)' }}>{T('admin.moderation.noShowLabel')}</p>
           </div>
         </GlassCard>
       )} />
 
-      <Section title="Recent disputes (30d)"
+      <Section title={T('admin.moderation.disputes')}
                icon={<MessagesSquare size={14} style={{ color: 'var(--blue-700)' }} />}
-               empty="No recent disputes."
+               empty={T('admin.moderation.noDisputes')}
                items={data.disputes}
                render={a => {
         const escrowSummary = a.escrow
           ? `${a.escrow.status} · ${PKR(Number(a.escrow.amount))}${a.escrow.refundedAmount ? ` (refunded ${a.escrow.refundedAmount})` : ''}`
-          : 'no escrow'
+          : T('admin.moderation.noEscrow')
         return (
           <GlassCard key={a.id} as="li" padding="12px 14px">
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
@@ -142,7 +144,7 @@ export default function ModerationPage() {
               </div>
               <Link href={`/admin/refunds?id=${a.id}`}
                     style={{ flex: 'none', fontSize: 'var(--text-sm)', fontWeight: 700, color: 'var(--blue-700)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                Review <ExternalLink size={12} />
+                {T('admin.moderation.review')} <ExternalLink size={12} />
               </Link>
             </div>
           </GlassCard>

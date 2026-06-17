@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { useI18n } from '@/lib/i18n/client'
 import {
   TrendingUp, Activity, Heart, Users,
   BarChart2, DollarSign, ChevronDown,
@@ -110,16 +111,17 @@ function Sparkline({ series }: { series: { date: string; count: number }[] }) {
 }
 
 function RecoveryDonut({ byStatus }: { byStatus: Record<string, number> }) {
+  const { T } = useI18n()
   const improved  = byStatus.IMPROVED  ?? 0
   const unchanged = byStatus.UNCHANGED ?? 0
   const worse     = byStatus.WORSE     ?? 0
   const total     = improved + unchanged + worse
-  if (total === 0) return <p style={{ fontSize: 13, color: 'var(--ink-4)', margin: 0 }}>No recovery data yet</p>
+  if (total === 0) return       <p style={{ fontSize: 13, color: 'var(--ink-4)', margin: 0 }}>{T('doctor.analytics.noRecovery')}</p>
 
   const slices: { value: number; color: string; label: string }[] = [
-    { value: improved,  color: '#059669', label: 'Improved'  },
-    { value: unchanged, color: '#d97706', label: 'Unchanged' },
-    { value: worse,     color: '#dc2626', label: 'Worse'     },
+    { value: improved,  color: '#059669', label: T('doctor.analytics.improved')  },
+    { value: unchanged, color: '#d97706', label: T('doctor.analytics.unchanged') },
+    { value: worse,     color: '#dc2626', label: T('doctor.analytics.worse')     },
   ]
 
   // SVG donut — simple arc segments
@@ -169,6 +171,7 @@ function RecoveryDonut({ byStatus }: { byStatus: Record<string, number> }) {
 }
 
 export default function DoctorAnalyticsPage() {
+  const { T } = useI18n()
   const [data, setData]   = useState<Analytics | null>(null)
   const [days, setDays]   = useState(30)
   const [loading, setLoading] = useState(true)
@@ -193,13 +196,13 @@ export default function DoctorAnalyticsPage() {
       <header style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
         <div>
           <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--violet-600)', letterSpacing: '.08em', textTransform: 'uppercase' }}>
-            Doctor console
+            {T('doctor.dash.title')}
           </span>
           <h1 style={{ margin: '4px 0 0', fontSize: 28, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--ink)' }}>
-            Analytics
+            {T('doctor.analytics.title')}
           </h1>
           <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--ink-3)' }}>
-            Your clinical outcomes and consultation data
+            {T('doctor.analytics.sub')}
           </p>
         </div>
 
@@ -217,7 +220,7 @@ export default function DoctorAnalyticsPage() {
             }}
           >
             {DAYS_OPTIONS.map(d => (
-              <option key={d} value={d}>Last {d} days</option>
+              <option key={d} value={d}>{T('doctor.analytics.lastDays').replace('{d}', String(d))}</option>
             ))}
           </select>
           <ChevronDown size={14} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--ink-3)', pointerEvents: 'none' }} />
@@ -244,28 +247,28 @@ export default function DoctorAnalyticsPage() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14 }}>
             <StatCard
               icon={Users}
-              label={`Consultations (${days}d)`}
+              label={T('doctor.analytics.consultCount').replace('{days}', String(days))}
               value={data.overview.inWindow}
               sub={`${data.overview.totalCompletedAllTime} completed all time`}
               tone="blue"
             />
             <StatCard
               icon={Activity}
-              label="Avg severity score"
+              label={T('doctor.analytics.avgSeverity')}
               value={data.severity.avgScore || '—'}
-              sub="Scale 1–10"
+              sub={T('doctor.analytics.scale')}
               tone="violet"
             />
             <StatCard
               icon={Heart}
-              label="Recovery — improved"
+              label={T('doctor.analytics.recovery')}
               value={data.recovery.improvedRate !== null ? `${Math.round(data.recovery.improvedRate * 100)}%` : '—'}
-              sub={data.recovery.total > 0 ? `${data.recovery.total} outcomes recorded` : 'No outcomes yet'}
+              sub={data.recovery.total > 0 ? `${data.recovery.total} outcomes recorded` : T('doctor.analytics.noOutcomes')}
               tone="emerald"
             />
             <StatCard
               icon={DollarSign}
-              label={`Earnings (${days}d)`}
+              label={T('doctor.analytics.earnings').replace('{days}', String(days))}
               value={data.earnings.releasedInWindow > 0 ? `PKR ${data.earnings.releasedInWindow.toLocaleString()}` : '—'}
               sub={`${data.earnings.consultationsInWindow} paid consultations`}
               tone="amber"
@@ -280,7 +283,7 @@ export default function DoctorAnalyticsPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
               <TrendingUp size={15} style={{ color: 'var(--ink-3)' }} />
               <h2 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: 'var(--ink)' }}>
-                Daily consultation volume
+                {T('doctor.analytics.dailyVolume')}
               </h2>
             </div>
             <Sparkline series={data.volumeSeries} />
@@ -300,7 +303,7 @@ export default function DoctorAnalyticsPage() {
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Activity size={15} style={{ color: 'var(--ink-3)' }} />
-                <h2 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: 'var(--ink)' }}>Severity breakdown</h2>
+                <h2 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: 'var(--ink)' }}>{T('doctor.analytics.severityBreakdown')}</h2>
               </div>
               {(['CRITICAL', 'URGENT', 'ROUTINE'] as const).map(lvl => {
                 const count = data.severity.byLevel[lvl] ?? 0
@@ -318,7 +321,7 @@ export default function DoctorAnalyticsPage() {
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Heart size={15} style={{ color: 'var(--ink-3)' }} />
-                <h2 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: 'var(--ink)' }}>Recovery outcomes</h2>
+                <h2 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: 'var(--ink)' }}>{T('doctor.analytics.recoveryOutcomes')}</h2>
               </div>
               <RecoveryDonut byStatus={data.recovery.byStatus} />
             </section>
@@ -331,10 +334,10 @@ export default function DoctorAnalyticsPage() {
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <BarChart2 size={15} style={{ color: 'var(--ink-3)' }} />
-                <h2 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: 'var(--ink)' }}>Top departments</h2>
+                <h2 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: 'var(--ink)' }}>{T('doctor.analytics.topDepts')}</h2>
               </div>
               {data.departments.length === 0 ? (
-                <p style={{ fontSize: 13, color: 'var(--ink-4)', margin: 0 }}>No data yet</p>
+                <p style={{ fontSize: 13, color: 'var(--ink-4)', margin: 0 }}>{T('doctor.analytics.noData')}</p>
               ) : (
                 data.departments.map(d => (
                   <BarRow
@@ -358,10 +361,10 @@ export default function DoctorAnalyticsPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <BarChart2 size={15} style={{ color: 'var(--ink-3)' }} />
               <h2 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: 'var(--ink)' }}>
-                Appointment outcomes — last {days} days
+                {T('doctor.analytics.outcomes').replace('{days}', String(days))}
               </h2>
               <span className="mono" style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--ink-4)' }}>
-                completion {Math.round(data.overview.completionRate * 100)}%
+                {T('doctor.analytics.completionPct').replace('{pct}', String(Math.round(data.overview.completionRate * 100)))}
               </span>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 12 }}>

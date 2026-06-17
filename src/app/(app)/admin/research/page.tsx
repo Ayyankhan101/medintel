@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { FlaskConical, TrendingUp, Heart, BarChart2, Download, ChevronDown, Sparkles } from 'lucide-react'
 import { GlassCard } from '@/components/design/GlassCard'
+import { useI18n } from '@/lib/i18n/client'
 
 interface ResearchData {
   windowDays: number
@@ -38,7 +39,8 @@ function BarRow({ label, count, max, color }: { label: string; count: number; ma
 }
 
 function VolumeChart({ series }: { series: { month: string; total: number; avgSeverity: number }[] }) {
-  if (!series.length) return <p style={{ fontSize: 'var(--text-base)', color: 'var(--ink-4)', margin: 0 }}>No data</p>
+  const { T } = useI18n()
+  if (!series.length) return <p style={{ fontSize: 'var(--text-base)', color: 'var(--ink-4)', margin: 0 }}>{T('admin.research.noData')}</p>
   const maxTotal = Math.max(...series.map(s => s.total), 1)
   return (
     <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: 80 }}>
@@ -61,7 +63,8 @@ function VolumeChart({ series }: { series: { month: string; total: number; avgSe
 }
 
 function RecoveryTable({ rows }: { rows: ResearchData['recoveryByDept'] }) {
-  if (!rows.length) return <p style={{ fontSize: 'var(--text-base)', color: 'var(--ink-4)', margin: 0 }}>No recovery data yet</p>
+  const { T } = useI18n()
+  if (!rows.length) return <p style={{ fontSize: 'var(--text-base)', color: 'var(--ink-4)', margin: 0 }}>{T('admin.research.noRecovery')}</p>
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       {rows.map(r => {
@@ -110,6 +113,7 @@ export default function AdminResearchPage() {
   const [days,    setDays]    = useState(90)
   const [loading, setLoading] = useState(true)
   const [exporting, setExporting] = useState(false)
+  const { T } = useI18n()
 
   useEffect(() => {
     setLoading(true)
@@ -145,12 +149,12 @@ export default function AdminResearchPage() {
     }}>
       <header style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
         <div>
-          <span style={{ fontSize: 'var(--text-xxs)', fontWeight: 700, color: '#a16207', letterSpacing: '.08em', textTransform: 'uppercase' }}>Admin</span>
+          <span style={{ fontSize: 'var(--text-xxs)', fontWeight: 700, color: '#a16207', letterSpacing: '.08em', textTransform: 'uppercase' }}>{T('admin.title')}</span>
           <h1 style={{ margin: '4px 0 0', fontSize: 'var(--text-heading)', fontWeight: 700, letterSpacing: '-.02em', color: 'var(--ink)', display: 'flex', alignItems: 'center', gap: 10 }}>
-            <FlaskConical size={24} style={{ color: 'var(--violet-600)' }} /> Research
+            <FlaskConical size={24} style={{ color: 'var(--violet-600)' }} /> {T('admin.research.title')}
           </h1>
           <p style={{ margin: '4px 0 0', fontSize: 'var(--text-base)', color: 'var(--ink-3)' }}>
-            Anonymized clinical data from consenting patients
+            {T('admin.research.sub')}
           </p>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -166,7 +170,7 @@ export default function AdminResearchPage() {
                 fontFamily: 'var(--font-ui)',
               }}
             >
-              {DAYS_OPTIONS.map(d => <option key={d} value={d}>Last {d} days</option>)}
+              {DAYS_OPTIONS.map(d => <option key={d} value={d}>{T('doctor.analytics.lastDays').replace('{d}', String(d))}</option>)}
             </select>
             <ChevronDown size={13} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--ink-3)', pointerEvents: 'none' }} />
           </div>
@@ -182,7 +186,7 @@ export default function AdminResearchPage() {
               opacity: exporting ? 0.6 : 1,
             }}
           >
-            <Download size={14} /> {exporting ? 'Exporting…' : 'Export JSON'}
+            <Download size={14} /> {exporting ? T('admin.research.exporting') : T('admin.research.exportJSON')}
           </button>
         </div>
       </header>
@@ -194,10 +198,10 @@ export default function AdminResearchPage() {
           {/* Consent KPI */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14 }}>
             {[
-              { label: 'Consented patients', value: data.consent.enrolled, sub: `${data.consent.rate}% of total`, color: 'var(--violet-600)', bg: 'rgba(139,92,246,.10)' },
-              { label: 'Triages in window',  value: data.diseasesByDept.reduce((s, d) => s + d.count, 0), sub: `Last ${days} days`, color: 'var(--blue-700)', bg: 'rgba(37,99,235,.10)' },
-              { label: 'Critical cases',     value: data.severityBreakdown.CRITICAL ?? 0, sub: 'Severity 8–10', color: '#b91c1c', bg: 'rgba(220,38,38,.08)' },
-              { label: 'Outcomes recorded',  value: data.recoveryByDept.reduce((s, r) => s + r.total, 0), sub: 'IMPROVED / UNCHANGED / WORSE', color: '#047857', bg: 'rgba(16,185,129,.12)' },
+              { label: T('admin.research.consented'), value: data.consent.enrolled, sub: `${data.consent.rate}% of total`, color: 'var(--violet-600)', bg: 'rgba(139,92,246,.10)' },
+              { label: T('admin.research.triages'),  value: data.diseasesByDept.reduce((s, d) => s + d.count, 0), sub: `Last ${days} days`, color: 'var(--blue-700)', bg: 'rgba(37,99,235,.10)' },
+              { label: T('admin.research.critical'),     value: data.severityBreakdown.CRITICAL ?? 0, sub: 'Severity 8–10', color: '#b91c1c', bg: 'rgba(220,38,38,.08)' },
+              { label: T('admin.research.outcomes'),  value: data.recoveryByDept.reduce((s, r) => s + r.total, 0), sub: 'IMPROVED / UNCHANGED / WORSE', color: '#047857', bg: 'rgba(16,185,129,.12)' },
             ].map(c => (
               <GlassCard key={c.label} padding={18} hover style={{ display: 'flex', flexDirection: 'column' }}>
                 <div style={{ width: 36, height: 36, borderRadius: 10, background: c.bg, marginBottom: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -215,7 +219,7 @@ export default function AdminResearchPage() {
             <GlassCard as="section" tone="violet" padding={22} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Sparkles size={16} style={{ color: 'var(--violet-600)' }} />
-                <h2 style={{ margin: 0, fontSize: 'var(--text-base)', fontWeight: 700, color: 'var(--ink)' }}>AI Research Insight</h2>
+                <h2 style={{ margin: 0, fontSize: 'var(--text-base)', fontWeight: 700, color: 'var(--ink)' }}>{T('admin.research.insight')}</h2>
                 <span style={{ marginLeft: 'auto', fontSize: 'var(--text-xs)', color: 'var(--ink-4)' }}>
                   {new Date(data.latestInsight.generatedAt).toLocaleDateString('en-PK', { day: 'numeric', month: 'short', year: 'numeric' })} · {data.latestInsight.totalCases} cases
                 </span>
@@ -237,10 +241,10 @@ export default function AdminResearchPage() {
             <GlassCard as="section" padding={20} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <BarChart2 size={15} style={{ color: 'var(--ink-3)' }} />
-                <h2 style={{ margin: 0, fontSize: 'var(--text-base)', fontWeight: 700, color: 'var(--ink)' }}>Disease distribution</h2>
+                <h2 style={{ margin: 0, fontSize: 'var(--text-base)', fontWeight: 700, color: 'var(--ink)' }}>{T('admin.research.diseaseDist')}</h2>
               </div>
               {data.diseasesByDept.length === 0
-                ? <p style={{ fontSize: 'var(--text-base)', color: 'var(--ink-4)', margin: 0 }}>No data</p>
+                ? <p style={{ fontSize: 'var(--text-base)', color: 'var(--ink-4)', margin: 0 }}>{T('admin.research.noData')}</p>
                 : data.diseasesByDept.map(d => (
                   <BarRow key={d.dept} label={d.dept} count={d.count} max={data.diseasesByDept[0].count} color="var(--blue-600)" />
                 ))}
@@ -250,7 +254,7 @@ export default function AdminResearchPage() {
             <GlassCard as="section" padding={20} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <TrendingUp size={15} style={{ color: 'var(--ink-3)' }} />
-                <h2 style={{ margin: 0, fontSize: 'var(--text-base)', fontWeight: 700, color: 'var(--ink)' }}>Severity breakdown</h2>
+                <h2 style={{ margin: 0, fontSize: 'var(--text-base)', fontWeight: 700, color: 'var(--ink)' }}>{T('admin.research.severityBreakdown')}</h2>
               </div>
               {(['CRITICAL', 'URGENT', 'ROUTINE'] as const).map(lvl => {
                 const count = data.severityBreakdown[lvl] ?? 0
@@ -264,7 +268,7 @@ export default function AdminResearchPage() {
             <GlassCard as="section" padding={20} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Heart size={15} style={{ color: 'var(--ink-3)' }} />
-                <h2 style={{ margin: 0, fontSize: 'var(--text-base)', fontWeight: 700, color: 'var(--ink)' }}>Treatment success by specialty</h2>
+                <h2 style={{ margin: 0, fontSize: 'var(--text-base)', fontWeight: 700, color: 'var(--ink)' }}>{T('admin.research.treatmentSuccess')}</h2>
               </div>
               <RecoveryTable rows={data.recoveryByDept} />
             </GlassCard>
@@ -274,7 +278,7 @@ export default function AdminResearchPage() {
           <GlassCard as="section" padding={20} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <TrendingUp size={15} style={{ color: 'var(--ink-3)' }} />
-              <h2 style={{ margin: 0, fontSize: 'var(--text-base)', fontWeight: 700, color: 'var(--ink)' }}>Monthly case volume</h2>
+              <h2 style={{ margin: 0, fontSize: 'var(--text-base)', fontWeight: 700, color: 'var(--ink)' }}>{T('admin.research.monthlyVolume')}</h2>
             </div>
             <VolumeChart series={data.volumeSeries} />
           </GlassCard>

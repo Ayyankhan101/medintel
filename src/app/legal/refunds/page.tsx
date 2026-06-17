@@ -1,11 +1,12 @@
-import type { Metadata } from 'next'
+'use client'
 
-export const metadata: Metadata = { title: 'Refund & Cancellation Policy — MedIntel' }
+import { useI18n } from '@/lib/i18n/client'
 
 export default function RefundsPage() {
+  const { T } = useI18n()
   return (
     <article>
-      <h1>Refund &amp; Cancellation Policy</h1>
+      <h1>{T('legal.refund')}</h1>
       <p><em>Last updated: {new Date().toLocaleDateString('en-PK', { year: 'numeric', month: 'long', day: 'numeric' })}</em></p>
 
       <h2>1. How payment works</h2>

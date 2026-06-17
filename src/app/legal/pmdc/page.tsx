@@ -1,11 +1,12 @@
-import type { Metadata } from 'next'
+'use client'
 
-export const metadata: Metadata = { title: 'PMDC Disclaimer — MedIntel' }
+import { useI18n } from '@/lib/i18n/client'
 
 export default function PMDCPage() {
+  const { T } = useI18n()
   return (
     <article>
-      <h1>PMDC Disclaimer &amp; Scope of Practice</h1>
+      <h1>{T('legal.pmdc')}</h1>
       <p><em>Last updated: {new Date().toLocaleDateString('en-PK', { year: 'numeric', month: 'long', day: 'numeric' })}</em></p>
 
       <h2>Not a substitute for in-person care</h2>

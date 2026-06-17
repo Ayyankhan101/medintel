@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { useI18n } from '@/lib/i18n/client'
 import { AppointmentQueue } from '@/components/doctor/AppointmentQueue'
 import { Users, CalendarDays, Clock3, CheckCircle2, TrendingUp } from 'lucide-react'
 
@@ -17,6 +18,7 @@ const CARD_TONES = {
 type Tone = keyof typeof CARD_TONES
 
 export default function DoctorDashboardPage() {
+  const { T } = useI18n()
   const [stats,  setStats]  = useState<Stats | null>(null)
   const [online, setOnline] = useState(false)
   const [busy,   setBusy]   = useState(false)
@@ -63,10 +65,10 @@ export default function DoctorDashboardPage() {
   }
 
   const cards: { Icon: IconCmp; label: string; value: number; tone: Tone }[] = stats ? [
-    { Icon: CalendarDays, label: 'Today',     value: stats.today,     tone: 'blue'    },
-    { Icon: Users,        label: 'This week', value: stats.week,      tone: 'violet'  },
-    { Icon: Clock3,       label: 'Pending',   value: stats.pending,   tone: 'amber'   },
-    { Icon: CheckCircle2, label: 'Completed', value: stats.completed, tone: 'emerald' },
+    { Icon: CalendarDays, label: T('doctor.dash.today'),     value: stats.today,     tone: 'blue'    },
+    { Icon: Users,        label: T('doctor.dash.week'),      value: stats.week,      tone: 'violet'  },
+    { Icon: Clock3,       label: T('doctor.dash.pending'),   value: stats.pending,   tone: 'amber'   },
+    { Icon: CheckCircle2, label: T('doctor.dash.completed'), value: stats.completed, tone: 'emerald' },
   ] : []
 
   return (
@@ -79,10 +81,10 @@ export default function DoctorDashboardPage() {
       <header style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
         <div>
           <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--violet-600)', letterSpacing: '.08em', textTransform: 'uppercase' }}>
-            Doctor console
+            {T('doctor.dash.title')}
           </span>
           <h1 style={{ margin: '4px 0 0', fontSize: 28, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--ink)' }}>
-            Dashboard
+            {T('doctor.dash.dashboard')}
           </h1>
           <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--ink-3)' }}>
             {new Date().toLocaleDateString('en-PK', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
@@ -99,7 +101,7 @@ export default function DoctorDashboardPage() {
             color: online ? '#047857' : 'var(--ink-3)',
             cursor: busy ? 'wait' : 'pointer',
           }}
-          title={online ? 'You are visible to patients for Consult-Now' : 'Click to go online and accept instant consultations'}
+          title={online ? T('doctor.dash.consultNow') : T('doctor.dash.goOnline')}
         >
           <span style={{
             display: 'inline-block', width: 28, height: 16, borderRadius: 999,
@@ -113,7 +115,7 @@ export default function DoctorDashboardPage() {
             }} />
           </span>
           <span style={{ fontSize: 11, fontWeight: 600 }}>
-            {online ? 'Available now' : 'Offline'}
+            {online ? T('doctor.dash.available') : T('doctor.dash.offline')}
           </span>
         </button>
       </header>
@@ -156,7 +158,7 @@ export default function DoctorDashboardPage() {
           display: 'inline-flex', alignItems: 'center', gap: 8,
         }}>
           <TrendingUp size={16} style={{ color: 'var(--ink-3)' }} />
-          Appointment queue
+          {T('doctor.dash.queue')}
         </h2>
         <AppointmentQueue />
       </div>

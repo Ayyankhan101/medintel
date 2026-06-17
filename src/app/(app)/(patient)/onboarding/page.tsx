@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, ArrowRight, Check, Shield, Ear, Users } from 'lucide-react'
 import { Btn } from '@/components/design/Btn'
+import { useI18n } from '@/lib/i18n/client'
 
 type LangId = 'en' | 'ur' | 'ps' | 'pa' | 'sd'
 
@@ -32,6 +33,7 @@ interface Identity {
 
 export default function OnboardingPage() {
   const router = useRouter()
+  const { T } = useI18n()
   const [step, setStep]   = useState(0)
   const [lang, setLang]   = useState<LangId>('ur')
   const [phone, setPhone] = useState('')
@@ -75,7 +77,7 @@ export default function OnboardingPage() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
         <Stepper step={step} total={STEPS.length} labels={STEPS as unknown as string[]} />
         <span className="mono" style={{ fontSize: 11, color: 'var(--ink-4)', letterSpacing: '.06em', textTransform: 'uppercase' }}>
-          Step {step + 1} of {STEPS.length}
+          {T('onboarding.stepLabel').replace('{n}', String(step + 1)).replace('{total}', String(STEPS.length))}
         </span>
       </div>
 
@@ -98,7 +100,7 @@ export default function OnboardingPage() {
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
         {step > 0
-          ? <Btn kind="ghost" leading={<ArrowLeft size={16} />} onClick={back}>Back</Btn>
+          ? <Btn kind="ghost" leading={<ArrowLeft size={16} />} onClick={back}>{T('common.back')}</Btn>
           : <span />}
         <Btn
           kind="primary"
@@ -106,7 +108,7 @@ export default function OnboardingPage() {
           onClick={next}
           trailing={<ArrowRight size={16} strokeWidth={2} />}
         >
-          {step === STEPS.length - 1 ? 'Start consult' : 'Continue'}
+          {step === STEPS.length - 1 ? T('onboarding.startConsult') : T('common.continue')}
         </Btn>
       </div>
     </div>
@@ -141,17 +143,18 @@ function Stepper({ step, total, labels }: { step: number; total: number; labels:
 
 /* ───── step 1: language ───── */
 function LangStep({ lang, onPick }: { lang: LangId; onPick: (id: LangId) => void }) {
+  const { T } = useI18n()
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
       <header>
         <h1 style={{ margin: 0, fontSize: 28, fontWeight: 700, letterSpacing: '-.02em', lineHeight: 1.15 }}>
-          What language do you speak at home?
+          {T('onboarding.lang.heading')}
         </h1>
         <p className="urdu" dir="rtl" style={{ margin: '8px 0 0', fontSize: 18, color: 'var(--ink-2)' }}>
           آپ گھر میں کون سی زبان بولتے ہیں؟
         </p>
         <p style={{ margin: '10px 0 0', color: 'var(--ink-3)', fontSize: 14, lineHeight: 1.55, maxWidth: 480 }}>
-          We&apos;ll match you with doctors who speak it. You can change this any time.
+          {T('onboarding.lang.sub')}
         </p>
       </header>
 
@@ -228,6 +231,7 @@ function PhoneStep({
   otp: string;   setOtp:   (v: string) => void
   sent: boolean; sendOtp:  () => void
 }) {
+  const { T } = useI18n()
   const onOtpChange = (i: number, e: React.ChangeEvent<HTMLInputElement>) => {
     const v = e.target.value.replace(/\D/g, '').slice(0, 1)
     const next = otp.padEnd(6, ' ').split('')
@@ -244,16 +248,16 @@ function PhoneStep({
     <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
       <header>
         <h1 style={{ margin: 0, fontSize: 28, fontWeight: 700, letterSpacing: '-.02em' }}>
-          Your mobile number
+          {T('onboarding.phone.heading')}
         </h1>
         <p style={{ margin: '8px 0 0', color: 'var(--ink-3)', fontSize: 14, lineHeight: 1.55 }}>
-          We text a one-time code. We never share your number.
+          {T('onboarding.phone.sub')}
         </p>
       </header>
 
       <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--ink-3)', letterSpacing: '.06em', textTransform: 'uppercase' }}>
-          Mobile number
+          {T('onboarding.mobileLabel')}
         </span>
         <div style={{
           display: 'flex', alignItems: 'center',
@@ -298,10 +302,10 @@ function PhoneStep({
           letterSpacing: '.06em', textTransform: 'uppercase',
           display: 'flex', justifyContent: 'space-between',
         }}>
-          <span>Verification code · 6 digits</span>
+          <span>{T('onboarding.codeLabel')}</span>
           {sent && (
             <span style={{ color: 'var(--blue-700)', textTransform: 'none', letterSpacing: 0, fontWeight: 500 }}>
-              Sent to +92 {phone || '300 1234567'}
+              {T('onboarding.sentTo').replace('{phone}', phone || '300 1234567')}
             </span>
           )}
         </span>
@@ -329,7 +333,7 @@ function PhoneStep({
         </div>
       </div>
 
-      {!sent && <Btn kind="primary" onClick={sendOtp}>Send code</Btn>}
+      {!sent && <Btn kind="primary" onClick={sendOtp}>{T('onboarding.sendCode')}</Btn>}
 
       <div style={{
         background: 'rgba(37,99,235,.05)',
@@ -340,8 +344,7 @@ function PhoneStep({
       }}>
         <Shield size={16} strokeWidth={2} style={{ color: 'var(--blue-600)', flex: 'none', marginTop: 1 }} />
         <span>
-          PTA-compliant SMS. By continuing you agree to our terms and acknowledge that
-          MedIntel is regulated under the PMDC Telemedicine Guidelines (2022).
+          {T('onboarding.ptaCompliance')}
         </span>
       </div>
     </div>
@@ -355,18 +358,19 @@ function IdentityStep({
   data: Identity
   set:  <K extends keyof Identity>(k: K, v: Identity[K]) => void
 }) {
+  const { T } = useI18n()
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
       <header>
         <h1 style={{ margin: 0, fontSize: 28, fontWeight: 700, letterSpacing: '-.02em' }}>
-          A few details about you
+          {T('onboarding.identity.heading')}
         </h1>
         <p style={{ margin: '8px 0 0', color: 'var(--ink-3)', fontSize: 14 }}>
-          Doctors use these to prescribe safely.
+          {T('onboarding.identity.sub')}
         </p>
       </header>
 
-      <FormRow label="Your name (as on CNIC)">
+      <FormRow label={T('onboarding.nameLabel')}>
         <input
           value={data.name}
           onChange={e => set('name', e.target.value)}
@@ -376,7 +380,7 @@ function IdentityStep({
       </FormRow>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-        <FormRow label="Age">
+        <FormRow label={T('onboarding.ageLabel')}>
           <input
             type="number" min={0} max={120}
             value={data.age}
@@ -385,7 +389,7 @@ function IdentityStep({
             style={inputStyle}
           />
         </FormRow>
-        <FormRow label="Sex">
+        <FormRow label={T('onboarding.sexLabel')}>
           <div style={{
             display: 'flex', gap: 6, padding: 4,
             background: 'var(--bg-soft)',
@@ -414,7 +418,7 @@ function IdentityStep({
         </FormRow>
       </div>
 
-      <FormRow label="City">
+      <FormRow label={T('onboarding.cityLabel')}>
         <select
           value={data.city}
           onChange={e => set('city', e.target.value)}
@@ -424,7 +428,7 @@ function IdentityStep({
         </select>
       </FormRow>
 
-      <FormRow label="Known allergies (optional)">
+      <FormRow label={T('onboarding.allergiesLabel')}>
         <input
           value={data.allergies}
           onChange={e => set('allergies', e.target.value)}
@@ -440,7 +444,7 @@ function IdentityStep({
           onChange={e => set('consent', e.target.checked)}
           style={{ marginTop: 3, accentColor: 'var(--blue-600)' }}
         />
-        <span>I agree to share these details with treating doctors only, encrypted in transit and at rest.</span>
+        <span>{T('onboarding.consentText')}</span>
       </label>
 
       <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, fontSize: 13, color: 'var(--ink-2)', cursor: 'pointer' }}>
@@ -450,11 +454,7 @@ function IdentityStep({
           onChange={e => set('researchConsent', e.target.checked)}
           style={{ marginTop: 3, accentColor: 'var(--violet-600)' }}
         />
-        <span>
-          <strong style={{ color: 'var(--ink)' }}>Optional: </strong>
-          Allow anonymized, de-identified versions of my health data to be used for medical research.
-          Your name, CNIC, and contact details are never shared.
-        </span>
+        <span>{T('onboarding.researchConsent')}</span>
       </label>
     </div>
   )
@@ -462,11 +462,12 @@ function IdentityStep({
 
 /* ───── step 4: welcome ───── */
 function WelcomeStep({ name }: { name: string }) {
+  const { T } = useI18n()
   const first = name.trim().split(' ')[0]
   const bullets = [
-    { Icon: Shield, t: 'PMDC-verified doctors',     s: 'License-checked every 90 days' },
-    { Icon: Ear,    t: 'Spoken in your language',   s: '5 Pakistani languages, live translation' },
-    { Icon: Users,  t: 'Escrow protection',         s: 'We hold fees until Rx is issued' },
+    { Icon: Shield, t: '' + T('nav.verified'),           s: T('onboarding.welcome.bullet1') },
+    { Icon: Ear,    t: T('landing.feat.voiceTitle'),     s: T('onboarding.welcome.bullet2') },
+    { Icon: Users,  t: T('landing.preview.escrow'),      s: T('onboarding.welcome.bullet3') },
   ]
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 18 }}>
@@ -480,11 +481,10 @@ function WelcomeStep({ name }: { name: string }) {
       </span>
       <div>
         <h1 style={{ margin: 0, fontSize: 30, fontWeight: 700, letterSpacing: '-.02em' }}>
-          Welcome{first ? `, ${first}` : ''}
+          {T('onboarding.welcome.heading').replace('{comma}', first ? ',' : '').replace('{name}', first || '')}
         </h1>
         <p style={{ margin: '10px 0 0', color: 'var(--ink-2)', fontSize: 15, lineHeight: 1.55, maxWidth: 460 }}>
-          You&apos;re set up. When you&apos;re ready, tap the mic and tell us what&apos;s bothering you.
-          A doctor will see you in your language, usually within ten minutes.
+          {T('onboarding.welcome.sub')}
         </p>
       </div>
 

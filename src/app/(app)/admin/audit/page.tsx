@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { Loader2 } from 'lucide-react'
 import { GlassCard } from '@/components/design/GlassCard'
+import { useI18n } from '@/lib/i18n/client'
 
 interface Log {
   id:         string
@@ -20,6 +21,7 @@ export default function AuditPage() {
   const [logs, setLogs] = useState<Log[]>([])
   const [filter, setFilter] = useState('')
   const [loading, setLoading] = useState(true)
+  const { T } = useI18n()
 
   useEffect(() => {
     setLoading(true)
@@ -40,10 +42,10 @@ export default function AuditPage() {
       <header style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
         <div>
           <span style={{ fontSize: 'var(--text-xxs)', fontWeight: 700, color: '#a16207', letterSpacing: '.08em', textTransform: 'uppercase' }}>
-            Admin
+            {T('admin.title')}
           </span>
           <h1 style={{ margin: '4px 0 0', fontSize: 'var(--text-heading)', fontWeight: 700, letterSpacing: '-.02em', color: 'var(--ink)' }}>
-            Audit log
+            {T('admin.audit.title')}
           </h1>
         </div>
         <select
@@ -56,13 +58,13 @@ export default function AuditPage() {
             fontSize: 14, fontFamily: 'var(--font-ui)', outline: 'none',
           }}
         >
-          {ACTIONS.map(a => <option key={a} value={a}>{a || 'All actions'}</option>)}
+          {ACTIONS.map(a => <option key={a} value={a}>{a || T('admin.audit.allActions')}</option>)}
         </select>
       </header>
 
       {loading && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--ink-3)', fontSize: 'var(--text-base)' }}>
-          <Loader2 size={16} className="animate-spin" /> Loading…
+          <Loader2 size={16} className="animate-spin" /> {T('admin.loading')}
         </div>
       )}
 
@@ -71,7 +73,7 @@ export default function AuditPage() {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-base)' }}>
             <thead style={{ background: 'var(--bg-soft)' }}>
               <tr>
-                {['When', 'Action', 'Entity', 'Actor', 'Detail'].map(h => (
+                {[T('admin.audit.when'), T('admin.audit.action'), T('admin.audit.entity'), T('admin.audit.actor'), T('admin.audit.detail')].map(h => (
                   <th key={h} style={{
                     padding: '10px 14px', textAlign: 'left',
                     fontSize: 'var(--text-xxs)', fontWeight: 700, color: 'var(--ink-3)',
@@ -113,7 +115,7 @@ export default function AuditPage() {
           </table>
         </div>
         {!loading && logs.length === 0 && (
-          <div style={{ textAlign: 'center', padding: '40px 0', fontSize: 'var(--text-base)', color: 'var(--ink-3)' }}>No entries.</div>
+          <div style={{ textAlign: 'center', padding: '40px 0', fontSize: 'var(--text-base)', color: 'var(--ink-3)' }}>{T('admin.noEntries')}</div>
         )}
       </GlassCard>
     </div>

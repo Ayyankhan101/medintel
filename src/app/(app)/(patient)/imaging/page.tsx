@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import { Btn } from '@/components/design/Btn'
 import { SeverityPill } from '@/components/design/badges'
+import { useI18n } from '@/lib/i18n/client'
 
 interface Findings {
   imageType:          string
@@ -17,6 +18,7 @@ interface Findings {
 }
 
 export default function ImagingPage() {
+  const { T } = useI18n()
   const [file,     setFile]     = useState<File | null>(null)
   const [preview,  setPreview]  = useState<string | null>(null)
   const [findings, setFindings] = useState<Findings | null>(null)
@@ -57,13 +59,13 @@ export default function ImagingPage() {
     }}>
       <header>
         <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--blue-700)', letterSpacing: '.08em', textTransform: 'uppercase' }}>
-          Image triage
+          {T('imaging.kicker')}
         </span>
         <h1 style={{ margin: '4px 0 0', fontSize: 28, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--ink)', display: 'inline-flex', alignItems: 'center', gap: 10 }}>
-          <ImageIcon size={22} style={{ color: 'var(--blue-700)' }} /> AI image review
+          <ImageIcon size={22} style={{ color: 'var(--blue-700)' }} /> {T('imaging.title')}
         </h1>
         <p style={{ margin: '6px 0 0', fontSize: 14, color: 'var(--ink-3)', lineHeight: 1.55 }}>
-          Upload an X-ray, skin photo, or eye photo. Our AI describes what it sees — it does <strong>not</strong> diagnose.
+          {T('imaging.sub')}
         </p>
       </header>
 
@@ -83,10 +85,10 @@ export default function ImagingPage() {
         >
           <Upload size={26} style={{ color: 'var(--ink-4)', marginBottom: 8 }} />
           <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: 'var(--ink-2)' }}>
-            {file ? file.name : 'Click to select an image'}
+            {file ? file.name : T('imaging.dropLabel')}
           </p>
           <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--ink-4)' }}>
-            JPG, PNG, WebP, or HEIC · max 8 MB
+            {T('imaging.dropHint')}
           </p>
           <input
             type="file"
@@ -106,7 +108,7 @@ export default function ImagingPage() {
 
         <Btn kind="primary" full disabled={!file || loading} onClick={analyse}
              leading={loading ? <Loader2 size={16} className="animate-spin" /> : null}>
-          {loading ? 'Analysing…' : 'Analyse image'}
+          {loading ? T('imaging.analysingBtn') : T('imaging.analyseBtn')}
         </Btn>
 
         {err && (
@@ -136,13 +138,13 @@ export default function ImagingPage() {
               fontSize: 12, color: '#a16207',
             }}>
               <ShieldAlert size={13} style={{ marginTop: 2, flex: 'none' }} />
-              AI confidence was low — please re-upload a clearer image or describe your concern in /intake.
+              {T('imaging.fallbackWarning')}
             </div>
           )}
 
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--ink-3)', letterSpacing: '.08em', textTransform: 'uppercase' }}>
-              Image type
+              {T('imaging.imageType')}
             </span>
             <span className="mono" style={{
               fontSize: 11, padding: '3px 10px', borderRadius: 999,
@@ -152,7 +154,7 @@ export default function ImagingPage() {
 
           <div>
             <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: 'var(--ink-3)', letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 6 }}>
-              Observations
+              {T('imaging.observations')}
             </p>
             <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 4, fontSize: 14, color: 'var(--ink-2)' }}>
               {findings.observations.map((o, i) => <li key={i}>• {o}</li>)}
@@ -162,7 +164,7 @@ export default function ImagingPage() {
           {findings.redFlags.length > 0 && (
             <div>
               <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: 'var(--red-600)', letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 6 }}>
-                Red flags
+                {T('imaging.redFlags')}
               </p>
               <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 4, fontSize: 14, color: 'var(--red-600)' }}>
                 {findings.redFlags.map((r, i) => <li key={i}>• {r}</li>)}
@@ -176,13 +178,13 @@ export default function ImagingPage() {
             gap: 14, flexWrap: 'wrap',
           }}>
             <div>
-              <p style={{ margin: 0, fontSize: 11, color: 'var(--ink-3)' }}>Urgency</p>
+              <p style={{ margin: 0, fontSize: 11, color: 'var(--ink-3)' }}>{T('imaging.urgency')}</p>
               <div style={{ marginTop: 4 }}>
                 <SeverityPill level={findings.urgencyHint === 'CRITICAL' ? 'EMERGENCY' : findings.urgencyHint === 'URGENT' ? 'URGENT' : 'ROUTINE'} />
               </div>
             </div>
             <div style={{ textAlign: 'right' }}>
-              <p style={{ margin: 0, fontSize: 11, color: 'var(--ink-3)' }}>Suggested specialty</p>
+              <p style={{ margin: 0, fontSize: 11, color: 'var(--ink-3)' }}>{T('imaging.suggestedSpecialty')}</p>
               <p style={{
                 margin: '4px 0 0', fontSize: 13, fontWeight: 700, color: 'var(--ink)',
                 display: 'inline-flex', alignItems: 'center', gap: 6, justifyContent: 'flex-end',
@@ -208,7 +210,7 @@ export default function ImagingPage() {
               boxShadow: '0 8px 20px -8px rgba(37,99,235,.55)',
             }}
           >
-            Find a {findings.suggestedSpecialty} <ArrowRight size={14} strokeWidth={2.5} />
+            {T('imaging.findBtn').replace('{specialty}', findings.suggestedSpecialty)} <ArrowRight size={14} strokeWidth={2.5} />
           </Link>
         </div>
       )}

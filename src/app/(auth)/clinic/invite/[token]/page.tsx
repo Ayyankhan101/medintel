@@ -5,10 +5,12 @@ import { useRouter } from 'next/navigation'
 import { CheckCircle2, AlertCircle, Loader2, ArrowRight } from 'lucide-react'
 import { AuthShell } from '@/components/design/AuthShell'
 import { Btn } from '@/components/design/Btn'
+import { useI18n } from '@/lib/i18n/client'
 
 export default function Page({ params }: { params: Promise<{ token: string }> }) {
   const { token } = use(params)
   const router = useRouter()
+  const { T } = useI18n()
   const [busy, setBusy] = useState(false)
   const [err,  setErr]  = useState<string | null>(null)
   const [step, setStep] = useState<string | null>(null)
@@ -24,12 +26,12 @@ export default function Page({ params }: { params: Promise<{ token: string }> })
     const d = await r.json().catch(() => ({}))
     setBusy(false)
     if (r.ok) { setOk({ name: d.clinic?.name ?? 'the clinic' }); return }
-    setErr(d.error ?? 'Could not accept invite')
+    setErr(d.error ?? T('invite.failed'))
     setStep(d.step ?? null)
   }
 
   if (ok) return (
-    <AuthShell side="clinic" kicker="Welcome aboard" title={`Welcome to ${ok.name}`} sub="Your account is now linked to the clinic.">
+    <AuthShell side="clinic" kicker={T('invite.successKicker')} title={T('invite.successTitle').replace('{name}', ok.name)} sub={T('invite.successSub')}>
       <div style={{
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12,
         textAlign: 'center',
@@ -39,7 +41,7 @@ export default function Page({ params }: { params: Promise<{ token: string }> })
         <CheckCircle2 size={28} style={{ color: 'var(--emerald-500)' }} />
       </div>
       <Link href="/doctor/dashboard" style={{ textDecoration: 'none' }}>
-        <Btn kind="primary" full trailing={<ArrowRight size={16} />}>Go to dashboard</Btn>
+        <Btn kind="primary" full trailing={<ArrowRight size={16} />}>{T('invite.goToDash')}</Btn>
       </Link>
     </AuthShell>
   )
@@ -47,9 +49,9 @@ export default function Page({ params }: { params: Promise<{ token: string }> })
   return (
     <AuthShell
       side="clinic"
-      kicker="Clinic invite"
-      title="You're invited to a clinic"
-      sub="Sign in with your doctor account to accept this invitation."
+      kicker={T('invite.kicker')}
+      title={T('invite.title')}
+      sub={T('invite.sub')}
     >
       {err && (
         <div style={{
@@ -66,12 +68,12 @@ export default function Page({ params }: { params: Promise<{ token: string }> })
                 style={{ background: 'none', border: 0, padding: 0, cursor: 'pointer',
                   color: 'var(--blue-700)', textDecoration: 'underline', fontSize: 13, textAlign: 'left' }}
               >
-                Sign in
+                {T('invite.stepLogin')}
               </button>
             )}
             {step === 'role' && (
               <span style={{ fontSize: 12, color: 'var(--ink-3)' }}>
-                Only DOCTOR accounts can be invited to a clinic. If you don&apos;t have one, ask the inviter to send the invite to your doctor email.
+                {T('invite.stepRole')}
               </span>
             )}
           </div>
@@ -80,15 +82,15 @@ export default function Page({ params }: { params: Promise<{ token: string }> })
 
       <Btn kind="primary" full onClick={accept} disabled={busy}
            leading={busy ? <Loader2 size={16} className="animate-spin" /> : null}>
-        {busy ? 'Accepting…' : 'Accept invite'}
+        {busy ? T('invite.accepting') : T('invite.accept')}
       </Btn>
 
       <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--ink-4)', margin: 0 }}>
-        Not a doctor on MedIntel yet?{' '}
+        {T('invite.notDoctor')}{' '}
         <Link href="/register/doctor" style={{ color: 'var(--ink-2)', textDecoration: 'underline' }}>
-          Create a doctor account
+          {T('invite.createDoctor')}
         </Link>{' '}
-        first, then return to this page.
+        {T('invite.return')}
       </p>
     </AuthShell>
   )

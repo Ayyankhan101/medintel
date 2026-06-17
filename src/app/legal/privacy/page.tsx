@@ -1,11 +1,12 @@
-import type { Metadata } from 'next'
+'use client'
 
-export const metadata: Metadata = { title: 'Privacy Policy — MedIntel' }
+import { useI18n } from '@/lib/i18n/client'
 
 export default function PrivacyPage() {
+  const { T } = useI18n()
   return (
     <article>
-      <h1>Privacy Policy</h1>
+      <h1>{T('legal.privacy')}</h1>
       <p><em>Last updated: {new Date().toLocaleDateString('en-PK', { year: 'numeric', month: 'long', day: 'numeric' })}</em></p>
 
       <p>MedIntel takes patient data seriously. This Policy explains what we collect, why, and how we protect it under Pakistan&apos;s Personal Data Protection Bill (PECA-adjacent) and PMDC telemedicine guidance.</p>

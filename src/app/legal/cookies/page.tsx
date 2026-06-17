@@ -1,11 +1,12 @@
-import type { Metadata } from 'next'
+'use client'
 
-export const metadata: Metadata = { title: 'Cookie Policy — MedIntel' }
+import { useI18n } from '@/lib/i18n/client'
 
 export default function CookiesPage() {
+  const { T } = useI18n()
   return (
     <article>
-      <h1>Cookie Policy</h1>
+      <h1>{T('legal.consent')}</h1>
       <p><em>Last updated: {new Date().toLocaleDateString('en-PK', { year: 'numeric', month: 'long', day: 'numeric' })}</em></p>
 
       <h2>1. What we use cookies for</h2>

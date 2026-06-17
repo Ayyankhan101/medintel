@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { X, Download } from 'lucide-react'
+import { useI18n } from '@/lib/i18n/client'
 
 type BipEvent = Event & {
   prompt: () => Promise<void>
@@ -12,6 +13,7 @@ const DISMISS_KEY = 'medintel-install-dismissed-at'
 const DISMISS_TTL_MS = 30 * 24 * 60 * 60_000  // 30 days
 
 export function InstallPrompt() {
+  const { T } = useI18n()
   const [evt,  setEvt]  = useState<BipEvent | null>(null)
   const [show, setShow] = useState(false)
 
@@ -67,22 +69,22 @@ export function InstallPrompt() {
         <Download className="w-5 h-5 text-blue-600" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-slate-900">Install MedIntel</p>
+        <p className="text-sm font-semibold text-slate-900">{T('install.title')}</p>
         <p className="text-xs text-slate-600 mt-0.5">
-          Add to your home screen for one-tap access and offline support.
+          {T('install.body')}
         </p>
         <div className="mt-2 flex gap-2">
           <button
             onClick={install}
             className="inline-flex items-center px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700"
           >
-            Install
+            {T('install.install')}
           </button>
           <button
             onClick={dismiss}
             className="inline-flex items-center px-3 py-1.5 rounded-lg text-slate-600 text-xs font-medium hover:bg-slate-100"
           >
-            Not now
+            {T('install.dismiss')}
           </button>
         </div>
       </div>

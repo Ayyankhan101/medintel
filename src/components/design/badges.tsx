@@ -1,9 +1,13 @@
+'use client'
+
 import * as React from 'react'
 import { ShieldCheck } from 'lucide-react'
 import { StatusPill } from './StatusPill'
+import { useI18n } from '@/lib/i18n/client'
 
 export function VerifiedBadge({ tier = 3, compact = false, label }: { tier?: 1 | 2 | 3; compact?: boolean; label?: string }) {
-  const tierLabel = tier === 3 ? 'Tier 3' : tier === 2 ? 'Tier 2' : 'Tier 1'
+  const { T } = useI18n()
+  const tierLabel = T('badge.verifiedTier').replace('{tier}', String(tier))
   return (
     <span style={{
       display: 'inline-flex', alignItems: 'center', gap: 6,
@@ -16,7 +20,7 @@ export function VerifiedBadge({ tier = 3, compact = false, label }: { tier?: 1 |
       border: '1px solid rgba(13,148,136,.22)',
     }}>
       <ShieldCheck size={compact ? 11 : 12} strokeWidth={2.5} />
-      {label ?? `Verified · ${tierLabel}`}
+      {label ?? tierLabel}
     </span>
   )
 }
@@ -42,39 +46,43 @@ export function ClinicPlanPill({ plan }: { plan: ClinicPlan }) {
 }
 
 export function KYDBadge({ status }: { status: 'PENDING' | 'VERIFIED' | 'REJECTED' }) {
+  const { T } = useI18n()
   const map = {
-    PENDING:  { tone: 'amber'   as const, label: 'KYD pending'  },
-    VERIFIED: { tone: 'emerald' as const, label: 'KYD verified' },
-    REJECTED: { tone: 'red'     as const, label: 'KYD rejected' },
+    PENDING:  { tone: 'amber'   as const, label: T('badge.kydPending')  },
+    VERIFIED: { tone: 'emerald' as const, label: T('badge.kydVerified') },
+    REJECTED: { tone: 'red'     as const, label: T('badge.kydRejected') },
   }[status]
   return <StatusPill tone={map.tone}>{map.label}</StatusPill>
 }
 
 export function SeverityPill({ level }: { level: 'ROUTINE' | 'URGENT' | 'EMERGENCY' }) {
+  const { T } = useI18n()
   const map = {
-    ROUTINE:   { tone: 'emerald' as const, label: 'Routine'   },
-    URGENT:    { tone: 'amber'   as const, label: 'Urgent'    },
-    EMERGENCY: { tone: 'red'     as const, label: 'Emergency' },
+    ROUTINE:   { tone: 'emerald' as const, label: T('badge.routine')   },
+    URGENT:    { tone: 'amber'   as const, label: T('badge.urgent')    },
+    EMERGENCY: { tone: 'red'     as const, label: T('badge.emergency') },
   }[level]
   return <StatusPill tone={map.tone} dot={map.tone === 'red'}>{map.label}</StatusPill>
 }
 
 export function AppointmentStatusPill({ status }: { status: 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'REFUNDED' }) {
+  const { T } = useI18n()
   const map = {
-    SCHEDULED:   { tone: 'blue'    as const, label: 'Scheduled'  },
-    IN_PROGRESS: { tone: 'emerald' as const, label: 'Live now'   },
-    COMPLETED:   { tone: 'neutral' as const, label: 'Completed'  },
-    CANCELLED:   { tone: 'neutral' as const, label: 'Cancelled'  },
-    REFUNDED:    { tone: 'amber'   as const, label: 'Refunded'   },
+    SCHEDULED:   { tone: 'blue'    as const, label: T('badge.scheduled') },
+    IN_PROGRESS: { tone: 'emerald' as const, label: T('badge.liveNow')   },
+    COMPLETED:   { tone: 'neutral' as const, label: T('badge.completed') },
+    CANCELLED:   { tone: 'neutral' as const, label: T('badge.cancelled') },
+    REFUNDED:    { tone: 'amber'   as const, label: T('badge.refunded')  },
   }[status]
   return <StatusPill tone={map.tone}>{map.label}</StatusPill>
 }
 
 export function EscrowStatusPill({ status }: { status: 'HELD' | 'RELEASED' | 'REFUNDED' }) {
+  const { T } = useI18n()
   const map = {
-    HELD:     { tone: 'amber'   as const, label: 'Escrow held' },
-    RELEASED: { tone: 'emerald' as const, label: 'Released'    },
-    REFUNDED: { tone: 'neutral' as const, label: 'Refunded'    },
+    HELD:     { tone: 'amber'   as const, label: T('badge.escrowHeld') },
+    RELEASED: { tone: 'emerald' as const, label: T('badge.released')   },
+    REFUNDED: { tone: 'neutral' as const, label: T('badge.refunded')   },
   }[status]
   return <StatusPill tone={map.tone}>{map.label}</StatusPill>
 }

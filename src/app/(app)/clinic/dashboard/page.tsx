@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { useI18n } from '@/lib/i18n/client'
 import {
   Building2, MessageSquareText, PhoneCall, Stethoscope, Globe,
   Loader2, CreditCard, Sparkles, UserPlus, X, Mail, Clock, BarChart3, Download,
@@ -40,6 +41,7 @@ export default function ClinicDashboard() {
   const [data,    setData]    = useState<ClinicData | null>(null)
   const [loading, setLoading] = useState(true)
   const [err,     setErr]     = useState<string | null>(null)
+  const { T } = useI18n()
 
   useEffect(() => {
     fetch('/api/clinic/me')
@@ -73,20 +75,20 @@ export default function ClinicDashboard() {
         </span>
         <div>
           <span style={{ fontSize: 11, fontWeight: 700, color: CLINIC_KICKER.color, letterSpacing: '.08em', textTransform: 'uppercase' }}>
-            Clinic console
+            {T('clinic.console')}
           </span>
           <h1 style={{ margin: '2px 0 0', fontSize: 26, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--ink)' }}>
             {clinic.name}
           </h1>
           <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--ink-3)', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-            <ClinicPlanPill plan={clinic.plan} /> · {clinic._count.doctors} doctor(s)
+             <ClinicPlanPill plan={clinic.plan} /> · {clinic._count.doctors} {T('clinic.doctors')}
           </p>
         </div>
       </header>
 
       <Card>
         <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 8 }}>
-          <h2 style={cardTitle}>Minutes this month</h2>
+          <h2 style={cardTitle}>{T('clinic.minutesMonth')}</h2>
           <p style={{ margin: 0, fontSize: 13, color: 'var(--ink-3)' }}>
             <strong style={{ color: 'var(--ink)' }}>{clinic.minutesUsed.toLocaleString()}</strong>{' '}/{' '}
             {clinic.minutesQuota.toLocaleString()}
@@ -97,7 +99,7 @@ export default function ClinicDashboard() {
         </div>
         {pct >= 90 && (
           <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--red-600)' }}>
-            Approaching your monthly quota — upgrade your plan to avoid interruption.
+            {T('clinic.approachingQuota')}
           </p>
         )}
       </Card>
@@ -111,12 +113,12 @@ export default function ClinicDashboard() {
               borderRadius: 16, padding: 16, boxShadow: 'var(--shadow-card)',
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 10, fontWeight: 700, color: 'var(--ink-3)', letterSpacing: '.08em', textTransform: 'uppercase' }}>
-                {CHANNEL_ICON[ch]} {ch}
+                {CHANNEL_ICON[ch]} {T(`clinic.channel${ch.charAt(0).toUpperCase()}${ch.slice(1)}`)}
               </div>
               <p className="mono" style={{ margin: '10px 0 0', fontSize: 22, fontWeight: 700, color: 'var(--ink)' }}>
                 {(row?.minutes ?? 0).toLocaleString()}
               </p>
-              <p style={{ margin: '2px 0 0', fontSize: 11, color: 'var(--ink-4)' }}>minutes / 30 days</p>
+              <p style={{ margin: '2px 0 0', fontSize: 11, color: 'var(--ink-4)' }}>{T('clinic.minutes30')}</p>
             </div>
           )
         })}
@@ -133,13 +135,13 @@ export default function ClinicDashboard() {
       <DoctorBreakdownCard />
 
       <Card>
-        <h2 style={cardTitle}>Channels</h2>
-        <Row label="WhatsApp number" value={clinic.whatsappNumber} />
-        <Row label="Voice number"    value={clinic.voiceNumber} />
-        <Row label="Public slug"     value={`/c/${clinic.slug}`} />
+        <h2 style={cardTitle}>{T('clinic.channels')}</h2>
+        <Row label={T('clinic.whatsappNumber')} value={clinic.whatsappNumber} />
+        <Row label={T('clinic.voiceNumber')} value={clinic.voiceNumber} />
+        <Row label={T('clinic.publicSlug')} value={`/c/${clinic.slug}`} />
         <p style={{ margin: '10px 0 0', fontSize: 12, color: 'var(--ink-4)' }}>
           <a href="/clinic/settings" style={{ color: 'var(--ink-2)', fontWeight: 600, textDecoration: 'underline' }}>
-            Edit brand &amp; channels →
+            {T('clinic.editBrand')}
           </a>
         </p>
       </Card>
@@ -183,6 +185,7 @@ function BillingCard({ plan, hasSubscription, periodEnd }: {
   hasSubscription: boolean
   periodEnd: string | null
 }) {
+  const { T } = useI18n()
   const [busy, setBusy] = useState<'STARTER' | 'STANDARD' | 'portal' | null>(null)
   const [err,  setErr]  = useState<string | null>(null)
 
@@ -209,13 +212,13 @@ function BillingCard({ plan, hasSubscription, periodEnd }: {
   return (
     <Card>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-        <h2 style={cardTitle}><CreditCard size={14} /> Billing</h2>
+        <h2 style={cardTitle}><CreditCard size={14} /> {T('clinic.billing')}</h2>
         <ClinicPlanPill plan={plan} />
       </div>
 
       {periodEnd && (
         <p style={{ margin: '0 0 12px', fontSize: 12, color: 'var(--ink-3)' }}>
-          Current period ends {new Date(periodEnd).toLocaleDateString('en-PK', { dateStyle: 'medium' })}.
+          {T('clinic.currentPeriod')} {new Date(periodEnd).toLocaleDateString('en-PK', { dateStyle: 'medium' })}.
         </p>
       )}
 
@@ -225,17 +228,17 @@ function BillingCard({ plan, hasSubscription, periodEnd }: {
         {hasSubscription ? (
           <Btn kind="primary" onClick={portal} disabled={busy !== null}
                leading={busy === 'portal' ? <Loader2 size={14} className="animate-spin" /> : <CreditCard size={14} />}>
-            Manage billing
+            {T('clinic.manageBilling')}
           </Btn>
         ) : (
           <>
             <Btn kind="secondary" onClick={() => checkout('STARTER')} disabled={busy !== null}
                  leading={busy === 'STARTER' ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}>
-              Activate Starter
+              {T('clinic.activateStarter')}
             </Btn>
             <Btn kind="primary" onClick={() => checkout('STANDARD')} disabled={busy !== null}
                  leading={busy === 'STANDARD' ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}>
-              Upgrade to Standard
+              {T('clinic.upgradeStandard')}
             </Btn>
           </>
         )}
@@ -247,7 +250,7 @@ function BillingCard({ plan, hasSubscription, periodEnd }: {
              border: '1px solid var(--border)',
              fontSize: 14, fontWeight: 600, textDecoration: 'none',
            }}>
-          Talk to sales (Enterprise)
+          {T('clinic.talkSales')}
         </a>
       </div>
     </Card>
@@ -259,6 +262,7 @@ interface Doctor { id: string; specialization: string; consultationFee: string |
 interface Invite { id: string; email: string; expiresAt: string; createdAt: string }
 
 function RosterCard() {
+  const { T } = useI18n()
   const [doctors, setDoctors] = useState<Doctor[]>([])
   const [invites, setInvites] = useState<Invite[]>([])
   const [loading, setLoading] = useState(true)
@@ -301,14 +305,14 @@ function RosterCard() {
   return (
     <Card>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-        <h2 style={cardTitle}><Stethoscope size={14} /> Doctors</h2>
+        <h2 style={cardTitle}><Stethoscope size={14} /> {T('clinic.doctors')}</h2>
         <span style={{ fontSize: 11, color: 'var(--ink-4)' }}>
-          {doctors.length} active · {invites.length} pending
+          {doctors.length} {T('clinic.active')} · {invites.length} {T('clinic.pendingInvites')}
         </span>
       </div>
 
       <form onSubmit={invite} style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
-        <input type="email" required placeholder="doctor@clinic.pk"
+        <input type="email" required placeholder={T('clinic.doctorEmail')}
                value={email} onChange={e => setEmail(e.target.value)}
                style={{
                  flex: 1, minWidth: 200, padding: '10px 14px',
@@ -318,7 +322,7 @@ function RosterCard() {
                }} />
         <Btn kind="primary" type="submit" disabled={busy}
              leading={busy ? <Loader2 size={14} className="animate-spin" /> : <UserPlus size={14} />}>
-          Invite
+          {T('clinic.invite')}
         </Btn>
       </form>
 
@@ -326,12 +330,12 @@ function RosterCard() {
       {loading && (
         <p style={{ margin: 0, fontSize: 12, color: 'var(--ink-3)' }}>
           <Loader2 size={12} className="animate-spin" style={{ display: 'inline-block', marginRight: 4, verticalAlign: 'middle' }} />
-          Loading roster…
+          {T('clinic.loadingRoster')}
         </p>
       )}
 
       {!loading && doctors.length === 0 && invites.length === 0 && (
-        <p style={{ margin: 0, fontSize: 13, color: 'var(--ink-3)' }}>No doctors yet. Invite your first one above.</p>
+        <p style={{ margin: 0, fontSize: 13, color: 'var(--ink-3)' }}>{T('clinic.noDoctors')}</p>
       )}
 
       {doctors.length > 0 && (
@@ -348,7 +352,7 @@ function RosterCard() {
                 </p>
               </div>
               <span style={{ fontSize: 10, fontWeight: 700, color: '#047857', letterSpacing: '.06em', textTransform: 'uppercase' }}>
-                Active
+                {T('clinic.active')}
               </span>
             </li>
           ))}
@@ -358,7 +362,7 @@ function RosterCard() {
       {invites.length > 0 && (
         <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
           <p style={{ margin: 0, fontSize: 10, fontWeight: 700, color: 'var(--ink-4)', letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 6 }}>
-            Pending invites
+            {T('clinic.pendingInvites')}
           </p>
           <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
             {invites.map(i => (
@@ -369,7 +373,7 @@ function RosterCard() {
                   <Mail size={13} style={{ flex: 'none' }} />
                   <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{i.email}</span>
                   <span style={{ fontSize: 10, color: 'var(--ink-4)', display: 'inline-flex', alignItems: 'center', gap: 2, flex: 'none' }}>
-                    <Clock size={10} /> expires {new Date(i.expiresAt).toLocaleDateString('en-PK', { dateStyle: 'medium' })}
+                    <Clock size={10} /> {T('clinic.expires')} {new Date(i.expiresAt).toLocaleDateString('en-PK', { dateStyle: 'medium' })}
                   </span>
                 </div>
                 <button onClick={() => revoke(i.id)} title="Revoke"
@@ -405,6 +409,7 @@ interface BreakdownRow {
 }
 
 function DoctorBreakdownCard() {
+  const { T } = useI18n()
   const [rows, setRows]       = useState<BreakdownRow[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -419,15 +424,15 @@ function DoctorBreakdownCard() {
     <Card>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
         <h2 style={cardTitle}>
-          <BarChart3 size={14} /> Per-doctor breakdown
-          <span style={{ fontWeight: 400, color: 'var(--ink-3)', fontSize: 11, marginLeft: 6 }}>(last 30 days)</span>
+          <BarChart3 size={14} /> {T('clinic.perDoctorBreakdown')}
+          <span style={{ fontWeight: 400, color: 'var(--ink-3)', fontSize: 11, marginLeft: 6 }}>{T('clinic.last30Days')}</span>
         </h2>
         <a href="/api/clinic/usage/export.csv"
            style={{
              display: 'inline-flex', alignItems: 'center', gap: 4,
              fontSize: 12, fontWeight: 600, color: 'var(--blue-700)', textDecoration: 'none',
            }}>
-          <Download size={12} /> CSV
+          <Download size={12} /> {T('clinic.csv')}
         </a>
       </div>
       {loading ? (
@@ -435,13 +440,13 @@ function DoctorBreakdownCard() {
           <Loader2 size={12} className="animate-spin" style={{ display: 'inline-block', verticalAlign: 'middle' }} /> Loading…
         </p>
       ) : rows.length === 0 ? (
-        <p style={{ margin: 0, fontSize: 13, color: 'var(--ink-3)' }}>No doctors in this clinic yet.</p>
+        <p style={{ margin: 0, fontSize: 13, color: 'var(--ink-3)' }}>{T('clinic.noDoctorsInClinic')}</p>
       ) : (
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                {['Doctor', 'Done', 'Cancel', 'Refund', 'No-show', 'Rating', 'Revenue (PKR)'].map((h, i) => (
+                {[T('clinic.tableDoctor'), T('clinic.tableDone'), T('clinic.tableCancel'), T('clinic.tableRefund'), T('clinic.tableNoShow'), T('clinic.tableRating'), T('clinic.tableRevenue')].map((h, i) => (
                   <th key={h} style={{
                     padding: '8px 12px 8px 0', textAlign: i === 0 ? 'left' : 'right',
                     fontSize: 10, fontWeight: 700, color: 'var(--ink-3)',

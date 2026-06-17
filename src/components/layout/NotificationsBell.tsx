@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Bell, Check } from 'lucide-react'
+import { useI18n } from '@/lib/i18n/client'
 
 interface Notif {
   id:        string
@@ -19,6 +20,7 @@ const REFRESH_MS = 60_000
 export function NotificationsBell() {
   const [items,  setItems]  = useState<Notif[]>([])
   const [unread, setUnread] = useState(0)
+  const { T } = useI18n()
   const [open,   setOpen]   = useState(false)
 
   const load = useCallback(async () => {
@@ -51,7 +53,7 @@ export function NotificationsBell() {
     <div className="relative">
       <button
         type="button"
-        aria-label={unread > 0 ? `${unread} unread notifications` : 'Notifications'}
+        aria-label={unread > 0 ? T('notification.unread').replace('{n}', String(unread)) : T('notification.title')}
         onClick={() => setOpen(v => !v)}
         className="relative inline-flex items-center justify-center w-9 h-9 rounded-full text-slate-600 hover:bg-slate-100"
       >
@@ -66,15 +68,15 @@ export function NotificationsBell() {
       {open && (
         <div className="absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-lg z-50">
           <div className="flex items-center justify-between px-3 py-2 border-b border-slate-100">
-            <span className="text-sm font-semibold text-slate-900">Notifications</span>
+            <span className="text-sm font-semibold text-slate-900">{T('notification.title')}</span>
             {unread > 0 && (
               <button onClick={markAllRead} className="text-xs text-blue-600 hover:underline inline-flex items-center gap-1">
-                <Check size={12} /> Mark all read
+                <Check size={12} /> {T('notification.markRead')}
               </button>
             )}
           </div>
           {items.length === 0 ? (
-            <div className="px-3 py-8 text-center text-sm text-slate-400">You&apos;re all caught up</div>
+            <div className="px-3 py-8 text-center text-sm text-slate-400">{T('notification.empty')}</div>
           ) : (
             <ul className="divide-y divide-slate-100">
               {items.map(n => {

@@ -4,6 +4,7 @@ import { signOut } from 'next-auth/react'
 import { Copy, Check, Loader2, ShieldCheck, Mail, Phone, Calendar, IdCard, Trash2, Download } from 'lucide-react'
 import { Btn } from '@/components/design/Btn'
 import { PKR } from '@/components/design/helpers'
+import { useI18n } from '@/lib/i18n/client'
 
 interface Me {
   id:            string
@@ -31,6 +32,7 @@ export default function ProfilePage() {
   const [me, setMe]         = useState<Me | null>(null)
   const [err, setErr]       = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+  const { T } = useI18n()
 
   useEffect(() => {
     fetch('/api/me')
@@ -59,7 +61,7 @@ export default function ProfilePage() {
   )
   if (!me) return (
     <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, color: 'var(--ink-3)' }}>
-      <Loader2 size={16} className="animate-spin" /> Loading…
+      <Loader2 size={16} className="animate-spin" /> {T('profile.loading')}
     </div>
   )
 
@@ -72,9 +74,9 @@ export default function ProfilePage() {
     }}>
       <header>
         <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--blue-700)', letterSpacing: '.08em', textTransform: 'uppercase' }}>
-          Account
+          {T('profile.account')}
         </span>
-        <h1 style={{ margin: '4px 0 0', fontSize: 28, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--ink)' }}>Profile</h1>
+        <h1 style={{ margin: '4px 0 0', fontSize: 28, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--ink)' }}>{T('profile.title')}</h1>
         <p style={{ margin: '4px 0 0', fontSize: 14, color: 'var(--ink-3)' }}>{me.name ?? me.email}</p>
       </header>
 
@@ -86,29 +88,29 @@ export default function ProfilePage() {
           display: 'flex', flexDirection: 'column', gap: 10,
         }}>
           <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: 'var(--blue-700)', letterSpacing: '.08em', textTransform: 'uppercase' }}>
-            Your MedIntel patient code
+            {T('profile.medIntelCode')}
           </p>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
             <p className="mono" style={{ margin: 0, fontSize: 26, fontWeight: 700, color: 'var(--ink)', letterSpacing: '.06em' }}>
               {me.medIntelCode}
             </p>
             <Btn kind="secondary" onClick={copyCode} leading={copied ? <Check size={14} style={{ color: 'var(--emerald-500)' }} /> : <Copy size={14} />}>
-              {copied ? 'Copied' : 'Copy'}
+              {copied ? T('profile.copied') : T('profile.copy')}
             </Btn>
           </div>
           <p style={{ margin: 0, fontSize: 12, color: 'var(--ink-3)' }}>
-            Share this with any doctor or hospital to give them access to your records.
+            {T('profile.shareCode')}
           </p>
         </div>
       )}
 
-      <Section title="Account">
-        <Row icon={<Mail size={14} />}     label="Email"  value={me.email} />
-        {me.phone && <Row icon={<Phone size={14} />} label="Phone" value={me.phone} />}
-        <Row icon={<IdCard size={14} />}   label="Role"   value={me.role} />
-        <Row icon={<Calendar size={14} />} label="Joined" value={new Date(me.createdAt).toLocaleDateString('en-PK', { dateStyle: 'long' })} />
+      <Section title={T('profile.account')}>
+        <Row icon={<Mail size={14} />}     label={T('profile.email')}  value={me.email} />
+        {me.phone && <Row icon={<Phone size={14} />} label={T('profile.phone')} value={me.phone} />}
+        <Row icon={<IdCard size={14} />}   label={T('profile.role')}   value={me.role} />
+        <Row icon={<Calendar size={14} />} label={T('profile.joined')} value={new Date(me.createdAt).toLocaleDateString('en-PK', { dateStyle: 'long' })} />
         {me.kycStatus === 'VERIFIED' && (
-          <Row icon={<ShieldCheck size={14} style={{ color: 'var(--emerald-500)' }} />} label="KYC" value="Verified" />
+          <Row icon={<ShieldCheck size={14} style={{ color: 'var(--emerald-500)' }} />} label={T('profile.kyc')} value={T('profile.kyc')} />
         )}
       </Section>
 
@@ -119,14 +121,14 @@ export default function ProfilePage() {
       <DangerZone />
 
       {me.doctor && (
-        <Section title="Practice">
-          <Row label="PMDC license"   value={me.doctor.licenseNumber} mono />
-          <Row label="Specialty"      value={me.doctor.specialization} />
-          <Row label="Experience"     value={`${me.doctor.yearsExperience} years`} />
-          <Row label="Consult fee"    value={PKR(Number(me.doctor.consultationFee))} mono />
-          <Row label="KYD status"     value={me.doctor.kydStatus} />
-          <Row label="Trust badge"    value={me.doctor.trustBadge ? 'Awarded' : 'Not awarded'} />
-          <Row label="Stripe payouts" value={me.doctor.stripeAccountId ? 'Connected' : 'Not connected'} />
+        <Section title={T('profile.practice')}>
+          <Row label={T('profile.pmdc')}   value={me.doctor.licenseNumber} mono />
+          <Row label={T('profile.specialty')}      value={me.doctor.specialization} />
+          <Row label={T('profile.experience')}     value={`${me.doctor.yearsExperience} years`} />
+          <Row label={T('profile.consultFee')}    value={PKR(Number(me.doctor.consultationFee))} mono />
+          <Row label={T('profile.kydStatus')}     value={me.doctor.kydStatus} />
+          <Row label={T('profile.trustBadge')}    value={me.doctor.trustBadge ? T('profile.awarded') : T('profile.notAwarded')} />
+          <Row label={T('profile.stripePayouts')} value={me.doctor.stripeAccountId ? T('profile.connected') : T('profile.notConnected')} />
         </Section>
       )}
     </div>
@@ -157,16 +159,16 @@ function Row({ icon, label, value, mono }: { icon?: React.ReactNode; label: stri
 }
 
 function DataExport() {
+  const { T } = useI18n()
   return (
     <section style={{
       background: 'var(--bg-elev)', border: '1px solid var(--border)',
       borderRadius: 22, padding: 20, boxShadow: 'var(--shadow-card)',
       display: 'flex', flexDirection: 'column', gap: 10,
     }}>
-      <h2 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: 'var(--ink)' }}>Your data</h2>
+      <h2 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: 'var(--ink)' }}>{T('profile.yourData')}</h2>
       <p style={{ margin: 0, fontSize: 12, color: 'var(--ink-3)', lineHeight: 1.55 }}>
-        Download everything we hold on you — profile, appointments, prescriptions,
-        triages, medical records, reviews. JSON format, machine-readable.
+        {T('profile.exportHint')}
       </p>
       <a
         href="/api/patient/export"
@@ -179,13 +181,14 @@ function DataExport() {
           color: 'var(--ink)', fontSize: 13, fontWeight: 600, textDecoration: 'none',
         }}
       >
-        <Download size={14} /> Export my data
+        <Download size={14} /> {T('profile.exportBtn')}
       </a>
     </section>
   )
 }
 
 function ResearchConsent() {
+  const { T } = useI18n()
   const [enabled, setEnabled] = useState<boolean | null>(null)
   const [busy,    setBusy]    = useState(false)
   const [err,     setErr]     = useState<string | null>(null)
@@ -217,11 +220,9 @@ function ResearchConsent() {
       borderRadius: 22, padding: 20, boxShadow: 'var(--shadow-card)',
       display: 'flex', flexDirection: 'column', gap: 10,
     }}>
-      <h2 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: 'var(--ink)' }}>Research participation</h2>
+      <h2 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: 'var(--ink)' }}>{T('profile.research')}</h2>
       <p style={{ margin: 0, fontSize: 12, color: 'var(--ink-3)', lineHeight: 1.55 }}>
-        Help improve healthcare in Pakistan. When on, your <strong>anonymized</strong> triage and outcome
-        data may be included in aggregated research insights. No names, emails, phones, or addresses are shared.
-        You can opt out anytime.
+        {T('profile.researchHint')}
       </p>
       <label style={{ display: 'inline-flex', alignItems: 'center', gap: 10, fontSize: 13, color: 'var(--ink)' }}>
         <input
@@ -230,7 +231,7 @@ function ResearchConsent() {
           checked={enabled ?? false}
           onChange={toggle}
         />
-        <span>{enabled ? 'Sharing anonymized data — thank you' : 'Not sharing — opt in if you like'}</span>
+        <span>{enabled ? T('profile.sharingYes') : T('profile.sharingNo')}</span>
       </label>
       {err && <p style={{ margin: 0, fontSize: 12, color: 'var(--red-600)' }}>{err}</p>}
     </section>
@@ -238,6 +239,7 @@ function ResearchConsent() {
 }
 
 function DangerZone() {
+  const { T } = useI18n()
   const [confirm, setConfirm] = useState('')
   const [busy, setBusy]       = useState(false)
   const [err, setErr]         = useState<string | null>(null)
@@ -267,11 +269,10 @@ function DangerZone() {
         margin: 0, fontSize: 14, fontWeight: 700, color: 'var(--red-600)',
         display: 'inline-flex', alignItems: 'center', gap: 8,
       }}>
-        <Trash2 size={16} /> Delete account
+        <Trash2 size={16} /> {T('profile.deleteAccount')}
       </h2>
       <p style={{ margin: 0, fontSize: 12, color: 'var(--ink-3)', lineHeight: 1.55 }}>
-        Permanently deletes your personal information. Prescriptions, audit logs, and other regulated
-        medical records are retained as required by PMDC and the Drugs Act 1976. Type{' '}
+        {T('profile.deleteHint')}{' '}
         <code className="mono" style={{ background: 'var(--bg-soft)', padding: '1px 6px', borderRadius: 4 }}>
           DELETE MY ACCOUNT
         </code>{' '}
@@ -295,7 +296,7 @@ function DangerZone() {
         leading={busy ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
         style={{ background: 'var(--red-600)', boxShadow: '0 4px 12px -4px rgba(239,68,68,.55)' }}
       >
-        Delete my account
+        {T('profile.deleteBtn')}
       </Btn>
     </section>
   )

@@ -1,11 +1,12 @@
-import type { Metadata } from 'next'
+'use client'
 
-export const metadata: Metadata = { title: 'Terms of Service — MedIntel' }
+import { useI18n } from '@/lib/i18n/client'
 
 export default function TermsPage() {
+  const { T } = useI18n()
   return (
     <article>
-      <h1>Terms of Service</h1>
+      <h1>{T('legal.terms')}</h1>
       <p><em>Last updated: {new Date().toLocaleDateString('en-PK', { year: 'numeric', month: 'long', day: 'numeric' })}</em></p>
 
       <p>Welcome to MedIntel. These Terms govern your use of our voice-first telemedicine platform operating in the Islamic Republic of Pakistan.</p>

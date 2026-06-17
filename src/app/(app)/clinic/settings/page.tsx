@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, Save, Palette, Phone, MessageSquareText, Building2, ExternalLink, Loader2 } from 'lucide-react'
 import { Btn } from '@/components/design/Btn'
+import { useI18n } from '@/lib/i18n/client'
 
 type Clinic = {
   id:             string
@@ -20,6 +21,7 @@ export default function ClinicSettingsPage() {
   const [saving, setSaving]     = useState(false)
   const [error, setError]       = useState<string | null>(null)
   const [success, setSuccess]   = useState(false)
+  const { T } = useI18n()
 
   const [name, setName]                     = useState('')
   const [brandColor, setBrandColor]         = useState('')
@@ -57,8 +59,8 @@ export default function ClinicSettingsPage() {
     setTimeout(() => setSuccess(false), 2500)
   }
 
-  if (loading) return <Wrap><p style={{ fontSize: 13, color: 'var(--ink-3)' }}>Loading…</p></Wrap>
-  if (!clinic) return <Wrap><p style={{ fontSize: 13, color: 'var(--red-600)' }}>No clinic linked to this account.</p></Wrap>
+  if (loading) return <Wrap><p style={{ fontSize: 13, color: 'var(--ink-3)' }}>{T('admin.loading')}</p></Wrap>
+  if (!clinic) return <Wrap><p style={{ fontSize: 13, color: 'var(--red-600)' }}>{T('clinic.settings.noClinic')}</p></Wrap>
 
   const previewColor = /^#[0-9a-fA-F]{6}$/.test(brandColor) ? brandColor : '#2563eb'
 
@@ -72,19 +74,19 @@ export default function ClinicSettingsPage() {
       <div>
         <Link href="/clinic/dashboard"
               style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--ink-3)', textDecoration: 'none' }}>
-          <ArrowLeft size={14} /> Back to dashboard
+          <ArrowLeft size={14} /> {T('clinic.settings.backDash')}
         </Link>
       </div>
 
       <header>
         <span style={{ fontSize: 11, fontWeight: 700, color: '#0d9488', letterSpacing: '.08em', textTransform: 'uppercase' }}>
-          Clinic console
+          {T('clinic.console')}
         </span>
         <h1 style={{ margin: '4px 0 0', fontSize: 28, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--ink)' }}>
-          Settings
+          {T('clinic.settings.title')}
         </h1>
         <p style={{ margin: '6px 0 0', fontSize: 13, color: 'var(--ink-3)' }}>
-          Brand and contact details shown on your public profile at{' '}
+          {T('clinic.settings.sub')}{' '}
           <Link href={`/c/${clinic.slug}`} target="_blank"
                 style={{ color: 'var(--ink-2)', textDecoration: 'underline', display: 'inline-flex', alignItems: 'center', gap: 2 }}>
             /c/{clinic.slug} <ExternalLink size={12} />
@@ -93,22 +95,22 @@ export default function ClinicSettingsPage() {
       </header>
 
       <form onSubmit={save} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-        <Section icon={<Building2 size={14} />} title="Identity">
-          <Field label="Clinic name">
+        <Section icon={<Building2 size={14} />} title={T('clinic.settings.identity')}>
+          <Field label={T('clinic.settings.name')}>
             <input
               type="text" required minLength={2} maxLength={80}
               value={name} onChange={e => setName(e.target.value)}
               style={inputStyle}
             />
           </Field>
-          <Field label="Public slug" hint="Set at signup, immutable.">
+          <Field label={T('clinic.settings.slug')} hint={T('clinic.settings.slugHint')}>
             <input type="text" value={clinic.slug} disabled
                    style={{ ...inputStyle, background: 'var(--bg-soft)', color: 'var(--ink-3)' }} />
           </Field>
         </Section>
 
-        <Section icon={<Palette size={14} />} title="Brand color">
-          <Field label="Hex color" hint="Used for the hero gradient on /c/[slug]. Leave blank for MedIntel blue.">
+        <Section icon={<Palette size={14} />} title={T('clinic.settings.brandColor')}>
+          <Field label={T('clinic.settings.hexColor')} hint={T('clinic.settings.colorHint')}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <input type="color" value={previewColor}
                      onChange={e => setBrandColor(e.target.value)}
@@ -129,22 +131,22 @@ export default function ClinicSettingsPage() {
             background: `linear-gradient(135deg, ${previewColor}, ${previewColor}cc)`,
             color: '#fff',
           }}>
-            <p style={{ margin: 0, fontSize: 10, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', opacity: 0.9 }}>Preview</p>
+            <p style={{ margin: 0, fontSize: 10, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', opacity: 0.9 }}>{T('clinic.settings.preview')}</p>
             <p style={{ margin: '4px 0 0', fontSize: 20, fontWeight: 700 }}>{name || clinic.name}</p>
           </div>
         </Section>
 
-        <Section icon={<Phone size={14} />} title="Contact channels">
+        <Section icon={<Phone size={14} />} title={T('clinic.settings.contactChannels')}>
           <p style={{ margin: '0 0 12px', fontSize: 11, color: 'var(--ink-3)' }}>
-            E.164 format (e.g. <code className="mono">+923001234567</code>). Leave blank to hide the button.
+            {T('clinic.settings.e164Hint')}
           </p>
-          <Field label={<span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><MessageSquareText size={13} /> WhatsApp number</span>}>
+          <Field label={<span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><MessageSquareText size={13} /> {T('clinic.settings.whatsapp')}</span>}>
             <input type="tel" value={whatsappNumber}
                    onChange={e => setWhatsappNumber(e.target.value)}
                    placeholder="+923001234567" pattern="^\+[1-9]\d{7,14}$"
                    style={{ ...inputStyle, fontFamily: 'var(--font-mono)' }} />
           </Field>
-          <Field label={<span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Phone size={13} /> Voice number</span>}>
+          <Field label={<span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Phone size={13} /> {T('clinic.settings.voice')}</span>}>
             <input type="tel" value={voiceNumber}
                    onChange={e => setVoiceNumber(e.target.value)}
                    placeholder="+923001234567" pattern="^\+[1-9]\d{7,14}$"
@@ -153,12 +155,12 @@ export default function ClinicSettingsPage() {
         </Section>
 
         {error   && <p style={{ margin: 0, fontSize: 13, color: 'var(--red-600)' }}>{error}</p>}
-        {success && <p style={{ margin: 0, fontSize: 13, color: '#047857' }}>Saved.</p>}
+        {success && <p style={{ margin: 0, fontSize: 13, color: '#047857' }}>{T('clinic.settings.saved')}</p>}
 
         <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
           <Btn kind="primary" type="submit" disabled={saving}
                leading={saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}>
-            {saving ? 'Saving…' : 'Save changes'}
+            {saving ? T('clinic.settings.saving') : T('clinic.settings.save')}
           </Btn>
         </div>
       </form>

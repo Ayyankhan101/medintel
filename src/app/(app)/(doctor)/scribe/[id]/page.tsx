@@ -1,5 +1,6 @@
 'use client'
 import { use, useEffect, useState } from 'react'
+import { useI18n } from '@/lib/i18n/client'
 import Link from 'next/link'
 import {
   Loader2, Mic, Sparkles, CheckCircle2, ShieldAlert, Save,
@@ -24,14 +25,15 @@ interface Note {
 
 type RecoveryStatus = 'IMPROVED' | 'UNCHANGED' | 'WORSE'
 
-const RECOVERY_OPTIONS: { value: RecoveryStatus; label: string; color: string; bg: string }[] = [
-  { value: 'IMPROVED',  label: 'Improved',  color: '#047857', bg: 'rgba(16,185,129,.12)' },
-  { value: 'UNCHANGED', label: 'Unchanged', color: '#a16207', bg: 'rgba(245,158,11,.12)' },
-  { value: 'WORSE',     label: 'Worse',     color: '#b91c1c', bg: 'rgba(220,38,38,.10)'  },
-]
-
 export default function Page({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
+  const { T } = useI18n()
+  const RECOVERY_OPTIONS: { value: RecoveryStatus; label: string; color: string; bg: string }[] = [
+    { value: 'IMPROVED',  label: T('scribe.improved'),  color: '#047857', bg: 'rgba(16,185,129,.12)' },
+    { value: 'UNCHANGED', label: T('scribe.unchanged'), color: '#a16207', bg: 'rgba(245,158,11,.12)' },
+    { value: 'WORSE',     label: T('scribe.worse'),     color: '#b91c1c', bg: 'rgba(220,38,38,.10)'  },
+  ]
+
   const [note,           setNote]           = useState<Note | null>(null)
   const [draft,          setDraft]          = useState<Partial<Note>>({})
   const [transcript,     setTranscript]     = useState('')
@@ -112,7 +114,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
 
   if (loading) return (
     <div style={{ maxWidth: 920, margin: '0 auto', padding: '40px 16px', display: 'flex', alignItems: 'center', gap: 8, color: 'var(--ink-3)' }}>
-      <Loader2 size={16} className="animate-spin" /> Loading scribe…
+      <Loader2 size={16} className="animate-spin" /> {T('scribe.loading')}
     </div>
   )
 
@@ -126,16 +128,16 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
       <div>
         <Link href="/doctor/dashboard"
               style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--ink-3)', textDecoration: 'none' }}>
-          <ArrowLeft size={14} /> Back
+          <ArrowLeft size={14} /> {T('scribe.back')}
         </Link>
         <h1 style={{
           margin: '12px 0 0', fontSize: 28, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--ink)',
           display: 'inline-flex', alignItems: 'center', gap: 10,
         }}>
-          <Stethoscope size={22} style={{ color: 'var(--blue-700)' }} /> Clinical scribe
+          <Stethoscope size={22} style={{ color: 'var(--blue-700)' }} /> {T('scribe.title')}
         </h1>
         <p style={{ margin: '6px 0 0', fontSize: 13, color: 'var(--ink-3)' }}>
-          AI assists — you stay in charge. Nothing enters the patient&apos;s record until you approve.
+          {T('scribe.sub')}
         </p>
       </div>
 
@@ -159,14 +161,14 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
           display: 'inline-flex', alignItems: 'center', gap: 6,
           fontSize: 13, fontWeight: 700, color: 'var(--ink)',
         }}>
-          <Mic size={14} style={{ color: 'var(--ink-3)' }} /> Transcript
+          <Mic size={14} style={{ color: 'var(--ink-3)' }} /> {T('scribe.transcript')}
         </label>
         <textarea
           id="transcript-area"
           rows={8}
           value={transcript}
           onChange={e => setTranscript(e.target.value)}
-          placeholder="Paste the consultation transcript here, or upload audio from the video room (coming soon)."
+          placeholder={T('scribe.pasteHere')}
           style={{
             width: '100%', padding: '12px 14px', borderRadius: 12,
             border: '1px solid var(--border)',
@@ -180,7 +182,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
         />
         <Btn kind="primary" onClick={generate} disabled={working === 'gen'}
              leading={working === 'gen' ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}>
-          {note ? 'Re-generate SOAP' : 'Generate SOAP'}
+          {note ? T('scribe.regenerateSOAP') : T('scribe.generateSOAP')}
         </Btn>
       </section>
 
@@ -192,7 +194,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <Heart size={15} style={{ color: 'var(--ink-3)' }} />
-            <h2 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: 'var(--ink)' }}>Patient recovery outcome</h2>
+            <h2 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: 'var(--ink)' }}>{T('scribe.patientOutcome')}</h2>
             {recoveryStatus && (
               <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--ink-3)' }}>
                 Current: <strong style={{ color: 'var(--ink)' }}>{recoveryStatus}</strong>
@@ -200,7 +202,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
             )}
           </div>
           <p style={{ margin: 0, fontSize: 13, color: 'var(--ink-3)' }}>
-            Record how the patient responded to treatment. Used in your clinical analytics.
+            {T('scribe.outcomeHint')}
           </p>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {RECOVERY_OPTIONS.map(opt => {
@@ -221,7 +223,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
                   }}
                 >
                   {working === 'recovery' && recoveryStatus === opt.value
-                    ? 'Saving…'
+                    ? T('scribe.saving')
                     : opt.label}
                 </button>
               )
@@ -236,15 +238,15 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
           borderRadius: 22, padding: 20, boxShadow: 'var(--shadow-card)',
           display: 'flex', flexDirection: 'column', gap: 14,
         }}>
-          <SoapField label="Subjective" value={draft.subjective ?? ''} onChange={v => setDraft(d => ({ ...d, subjective: v }))} />
-          <SoapField label="Objective"  value={draft.objective ?? ''}  onChange={v => setDraft(d => ({ ...d, objective: v }))} />
-          <SoapField label="Assessment" value={draft.assessment ?? ''} onChange={v => setDraft(d => ({ ...d, assessment: v }))} />
-          <SoapField label="Plan"       value={draft.plan ?? ''}       onChange={v => setDraft(d => ({ ...d, plan: v }))} />
+          <SoapField label={T('scribe.soapSubjective')} value={draft.subjective ?? ''} onChange={v => setDraft(d => ({ ...d, subjective: v }))} />
+          <SoapField label={T('scribe.soapObjective')}  value={draft.objective ?? ''}  onChange={v => setDraft(d => ({ ...d, objective: v }))} />
+          <SoapField label={T('scribe.soapAssessment')} value={draft.assessment ?? ''} onChange={v => setDraft(d => ({ ...d, assessment: v }))} />
+          <SoapField label={T('scribe.soapPlan')}       value={draft.plan ?? ''}       onChange={v => setDraft(d => ({ ...d, plan: v }))} />
 
           {(draft.icdHints ?? []).length > 0 && (
             <div>
               <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: 'var(--ink-2)', marginBottom: 8 }}>
-                ICD hints (verify before billing)
+                {T('scribe.icdHints')}
               </p>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                 {(draft.icdHints ?? []).map((h, i) => (
@@ -265,22 +267,22 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
             gap: 12, flexWrap: 'wrap',
           }}>
             <div style={{ fontSize: 11, color: 'var(--ink-3)' }}>
-              Model: <code className="mono">{note.modelUsed ?? '—'}</code> · Language: {note.language}
+              {T('scribe.model')}: <code className="mono">{note.modelUsed ?? '—'}</code> · {T('scribe.language')}: {note.language}
               {note.approvedAt && (
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginLeft: 10, color: '#047857' }}>
-                  <CheckCircle2 size={13} /> Approved {new Date(note.approvedAt).toLocaleString('en-PK')}
+                  <CheckCircle2 size={13} /> {T('scribe.approved')} {new Date(note.approvedAt).toLocaleString('en-PK')}
                 </span>
               )}
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
               <Btn kind="secondary" onClick={() => save(false)} disabled={working !== null}
                    leading={working === 'save' ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}>
-                Save draft
+                {T('scribe.saveDraft')}
               </Btn>
               <Btn kind="primary" onClick={() => save(true)} disabled={working !== null}
                    style={{ background: 'var(--emerald-500)', boxShadow: '0 4px 12px -4px rgba(16,185,129,.55)' }}
                    leading={working === 'approve' ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}>
-                Approve &amp; sign
+                {T('scribe.approveSign')}
               </Btn>
             </div>
           </div>

@@ -4,11 +4,12 @@ import { useSearchParams } from 'next/navigation'
 import { CheckCircle2, CreditCard, Loader2, ExternalLink, Clock } from 'lucide-react'
 import { DEFAULT_AVAILABILITY, type Availability } from '@/lib/availability'
 import { Btn } from '@/components/design/Btn'
-
-const DAY_LABELS = ['', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+import { useI18n } from '@/lib/i18n/client'
 
 function SettingsContent() {
   const params  = useSearchParams()
+  const { T } = useI18n()
+  const DAY_LABELS = ['', T('doctor.settings.mon'), T('doctor.settings.tue'), T('doctor.settings.wed'), T('doctor.settings.thu'), T('doctor.settings.fri'), T('doctor.settings.sat'), T('doctor.settings.sun')]
   const success = params.get('onboard') === 'success'
 
   const [loading,  setLoading]  = useState(false)
@@ -70,13 +71,13 @@ function SettingsContent() {
     }}>
       <header>
         <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--violet-600)', letterSpacing: '.08em', textTransform: 'uppercase' }}>
-          Doctor console
+          {T('doctor.dash.title')}
         </span>
         <h1 style={{ margin: '4px 0 0', fontSize: 28, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--ink)' }}>
-          Settings
+          {T('doctor.settings.title')}
         </h1>
         <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--ink-3)' }}>
-          Manage your account and payment details.
+          {T('doctor.settings.sub')}
         </p>
       </header>
 
@@ -88,16 +89,15 @@ function SettingsContent() {
         }}>
           <CheckCircle2 size={18} style={{ color: 'var(--emerald-500)', flex: 'none', marginTop: 1 }} />
           <div style={{ fontSize: 13, color: 'var(--ink-2)' }}>
-            <p style={{ margin: 0, fontWeight: 700, color: '#047857' }}>Stripe onboarding complete!</p>
-            <p style={{ margin: '2px 0 0' }}>You can now receive consultation payments directly to your bank account.</p>
+            <p style={{ margin: 0, fontWeight: 700, color: '#047857' }}>{T('doctor.settings.stripeComplete')}</p>
+            <p style={{ margin: '2px 0 0' }}>{T('doctor.settings.stripeDetail')}</p>
           </div>
         </div>
       )}
 
-      <Section icon={<CreditCard size={18} />} title="Payment setup">
+      <Section icon={<CreditCard size={18} />} title={T('doctor.settings.paymentSetup')}>
         <p style={{ margin: 0, fontSize: 13, color: 'var(--ink-3)', lineHeight: 1.55 }}>
-          Connect your Stripe account to receive payments from consultations.
-          Funds are held in escrow and released automatically once you upload a prescription.
+          {T('doctor.settings.stripeConnect')}
         </p>
         {error && (
           <div style={{
@@ -107,17 +107,17 @@ function SettingsContent() {
         )}
         <Btn kind="primary" onClick={startOnboarding} disabled={loading}
              leading={loading ? <Loader2 size={14} className="animate-spin" /> : <ExternalLink size={14} />}>
-          {loading ? 'Redirecting…' : success ? 'Update Stripe account' : 'Connect with Stripe'}
+          {loading ? T('doctor.settings.redirecting') : success ? T('doctor.settings.updateStripe') : T('doctor.settings.connectStripe')}
         </Btn>
       </Section>
 
-      <Section icon={<Clock size={18} />} title="Working hours">
+      <Section icon={<Clock size={18} />} title={T('doctor.settings.workingHours')}>
         <p style={{ margin: 0, fontSize: 13, color: 'var(--ink-3)', lineHeight: 1.55 }}>
-          Patients can only book inside this window (Asia/Karachi time). Leave blank to be always available.
+          {T('doctor.settings.hoursHint')}
         </p>
         <div>
           <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: 'var(--ink-3)', letterSpacing: '.04em', textTransform: 'uppercase', marginBottom: 8 }}>
-            Days
+            {T('doctor.settings.days')}
           </p>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
             {[1,2,3,4,5,6,7].map(d => {
@@ -141,7 +141,7 @@ function SettingsContent() {
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--ink-3)', letterSpacing: '.04em', textTransform: 'uppercase' }}>Start hour</span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--ink-3)', letterSpacing: '.04em', textTransform: 'uppercase' }}>{T('doctor.settings.startHour')}</span>
             <input
               type="number" min={0} max={23} value={av.startHour}
               onChange={e => setAv(a => ({ ...a, startHour: Math.max(0, Math.min(23, parseInt(e.target.value || '0', 10))) }))}
@@ -149,7 +149,7 @@ function SettingsContent() {
             />
           </label>
           <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--ink-3)', letterSpacing: '.04em', textTransform: 'uppercase' }}>End hour</span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--ink-3)', letterSpacing: '.04em', textTransform: 'uppercase' }}>{T('doctor.settings.endHour')}</span>
             <input
               type="number" min={1} max={24} value={av.endHour}
               onChange={e => setAv(a => ({ ...a, endHour: Math.max(1, Math.min(24, parseInt(e.target.value || '1', 10))) }))}
@@ -159,11 +159,11 @@ function SettingsContent() {
         </div>
 
         {avErr   && <p style={{ margin: 0, fontSize: 12, color: 'var(--red-600)' }}>{avErr}</p>}
-        {avSaved && <p style={{ margin: 0, fontSize: 12, color: '#047857' }}>Saved.</p>}
+        {avSaved && <p style={{ margin: 0, fontSize: 12, color: '#047857' }}>{T('doctor.settings.saved')}</p>}
 
         <Btn kind="primary" onClick={saveAvailability} disabled={avSaving}
              leading={avSaving ? <Loader2 size={14} className="animate-spin" /> : null}>
-          {avSaving ? 'Saving…' : 'Save availability'}
+          {avSaving ? T('doctor.settings.saving') : T('doctor.settings.save')}
         </Btn>
       </Section>
     </div>

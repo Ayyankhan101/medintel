@@ -5,6 +5,7 @@ import { AlertTriangle, Info, Loader2 } from 'lucide-react'
 import { DoctorCard } from '@/components/triage/DoctorCard'
 import { SeverityPill } from '@/components/design/badges'
 import type { SeverityLevel } from '@/lib/triage'
+import { useI18n } from '@/lib/i18n/client'
 
 interface Doctor {
   id: string
@@ -21,6 +22,7 @@ interface Doctor {
 function DoctorListContent() {
   const router          = useRouter()
   const params          = useSearchParams()
+  const { T }           = useI18n()
   const triageId        = params.get('triageId') ?? ''
   const department      = params.get('dept') ?? 'General Medicine'
   const severity        = params.get('severity') as SeverityLevel | null
@@ -34,11 +36,11 @@ function DoctorListContent() {
     fetch(`/api/doctors?department=${encodeURIComponent(department)}`)
       .then(r => r.json())
       .then(data => {
-        if (Array.isArray(data)) setDoctors(data)
-        else setError('Failed to load doctors')
+        setDoctors(Array.isArray(data) ? data : [])
+        setError(Array.isArray(data) ? null : T('doctors.loadFailed'))
         setLoading(false)
       })
-      .catch(() => { setError('Failed to load doctors'); setLoading(false) })
+      .catch(() => { setError(T('doctors.loadFailed')); setLoading(false) })
   }, [department])
 
   function handleBook(doctorId: string) {
@@ -62,13 +64,13 @@ function DoctorListContent() {
       <header style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
         <div>
           <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--blue-700)', letterSpacing: '.08em', textTransform: 'uppercase' }}>
-            Pick your doctor
+            {T('doctors.kicker')}
           </span>
           <h1 style={{ margin: '4px 0 0', fontSize: 28, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--ink)' }}>
             {department}
           </h1>
           <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--ink-3)' }}>
-            Showing KYD-verified specialists available today.
+            {T('doctors.sub')}
           </p>
         </div>
         {severity && (
@@ -78,14 +80,12 @@ function DoctorListContent() {
 
       {severity === 'CRITICAL' && (
         <Banner tone="red" Icon={AlertTriangle}>
-          <strong>The AI flagged this as potentially urgent.</strong> If this is a
-          life-threatening emergency, call <strong>1122</strong> immediately. Otherwise,
-          a trust-badged specialist is recommended — but the choice is yours.
+          {T('doctors.banner.critical')}
         </Banner>
       )}
       {severity && severity !== 'CRITICAL' && (
         <Banner tone="blue" Icon={Info}>
-          AI suggestion only — pick any doctor you prefer. They make the clinical decisions.
+          {T('doctors.banner.info')}
         </Banner>
       )}
 
@@ -109,8 +109,8 @@ function DoctorListContent() {
 
       {!loading && !error && doctors.length === 0 && (
         <div style={{ textAlign: 'center', padding: '40px 0', display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <p style={{ margin: 0, color: 'var(--ink-2)', fontSize: 14 }}>No verified {department} specialists found yet.</p>
-          <p style={{ margin: 0, color: 'var(--ink-4)', fontSize: 12 }}>Try a broader search or contact support.</p>
+          <p style={{ margin: 0, color: 'var(--ink-2)', fontSize: 14 }}>{T('doctors.empty').replace('{dept}', department)}</p>
+          <p style={{ margin: 0, color: 'var(--ink-4)', fontSize: 12 }}>{T('doctors.emptySub')}</p>
         </div>
       )}
 

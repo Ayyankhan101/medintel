@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Users, Stethoscope, Calendar, Banknote, ShieldAlert, ArrowRight, Loader2 } from 'lucide-react'
+import { useI18n } from '@/lib/i18n/client'
 import { GlassCard } from '@/components/design/GlassCard'
 
 interface Stats {
@@ -23,6 +24,7 @@ const TONES = {
 export default function AdminDashboardPage() {
   const [stats, setStats] = useState<Stats | null>(null)
   const [err, setErr] = useState<string | null>(null)
+  const { T } = useI18n()
 
   useEffect(() => {
     fetch('/api/admin/stats')
@@ -44,7 +46,7 @@ export default function AdminDashboardPage() {
   )
   if (!stats) return (
     <div style={{ maxWidth: 920, margin: '0 auto', padding: '60px 16px', display: 'flex', alignItems: 'center', gap: 8, color: 'var(--ink-3)' }}>
-      <Loader2 size={16} className="animate-spin" /> Loading…
+      <Loader2 size={16} className="animate-spin" /> {T('admin.loading')}
     </div>
   )
 
@@ -57,18 +59,18 @@ export default function AdminDashboardPage() {
     }}>
       <header>
         <span style={{ fontSize: 'var(--text-xxs)', fontWeight: 700, color: '#a16207', letterSpacing: '.08em', textTransform: 'uppercase' }}>
-          Admin
+          {T('admin.title')}
         </span>
         <h1 style={{ margin: '4px 0 0', fontSize: 'var(--text-heading)', fontWeight: 700, letterSpacing: '-.02em', color: 'var(--ink)' }}>
-          Overview
+          {T('admin.overview')}
         </h1>
       </header>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
-        <Stat Icon={Users}       tone="blue"    label="Patients"         value={stats.patients} />
-        <Stat Icon={Stethoscope} tone="emerald" label="Verified doctors" value={stats.doctors.verified} />
-        <Stat Icon={Calendar}    tone="amber"   label="Appointments"     value={stats.appointments.total} />
-        <Stat Icon={Banknote}    tone="violet"  label="Escrow held"      value={stats.escrow.held} />
+        <Stat Icon={Users}       tone="blue"    label={T('admin.patients')}         value={stats.patients} />
+        <Stat Icon={Stethoscope} tone="emerald" label={T('admin.verifiedDoctors')} value={stats.doctors.verified} />
+        <Stat Icon={Calendar}    tone="amber"   label={T('admin.appointments')}     value={stats.appointments.total} />
+        <Stat Icon={Banknote}    tone="violet"  label={T('admin.escrowHeld')}      value={stats.escrow.held} />
       </div>
 
       <Link href="/admin/doctors?status=PENDING"
@@ -90,26 +92,26 @@ export default function AdminDashboardPage() {
           </span>
           <div>
             <p style={{ margin: 0, fontWeight: 700, color: 'var(--ink)' }}>
-              {stats.doctors.pending} doctors waiting for verification
+              {T('admin.doctorsWaiting')}
             </p>
             <p style={{ margin: '2px 0 0', fontSize: 'var(--text-sm)', color: 'var(--ink-3)' }}>
-              Review credentials and approve or reject.
+              {T('admin.reviewCredentials')}
             </p>
           </div>
         </div>
         <ArrowRight size={16} style={{ color: 'var(--ink-4)' }} />
       </Link>
 
-      <Section title="Doctors">
-        <Breakdown label="Pending"  value={stats.doctors.pending}  color="#a16207" />
-        <Breakdown label="Verified" value={stats.doctors.verified} color="#047857" />
-        <Breakdown label="Rejected" value={stats.doctors.rejected} color="var(--red-600)" />
+      <Section title={T('admin.doctors')}>
+        <Breakdown label={T('admin.pending')}  value={stats.doctors.pending}  color="#a16207" />
+        <Breakdown label={T('admin.verified')} value={stats.doctors.verified} color="#047857" />
+        <Breakdown label={T('admin.rejected')} value={stats.doctors.rejected} color="var(--red-600)" />
       </Section>
 
-      <Section title="Appointments">
-        <Breakdown label="Total"     value={stats.appointments.total}     color="var(--ink)" />
-        <Breakdown label="Completed" value={stats.appointments.completed} color="#047857" />
-        <Breakdown label="Cancelled" value={stats.appointments.cancelled} color="var(--red-600)" />
+      <Section title={T('admin.appointments')}>
+        <Breakdown label={T('admin.total')}     value={stats.appointments.total}     color="var(--ink)" />
+        <Breakdown label={T('admin.completed')} value={stats.appointments.completed} color="#047857" />
+        <Breakdown label={T('admin.cancelled')} value={stats.appointments.cancelled} color="var(--red-600)" />
       </Section>
     </div>
   )

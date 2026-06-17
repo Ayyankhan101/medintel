@@ -1,11 +1,10 @@
-import type { Metadata } from 'next'
+'use client'
+import { useI18n } from '@/lib/i18n/client'
 import Link from 'next/link'
 
-export const metadata: Metadata = {
-  title: 'MedIntel — Offline',
-}
-
 export default function OfflinePage() {
+  const { T } = useI18n()
+
   return (
     <main className="min-h-screen flex flex-col items-center justify-center gap-6 px-4 text-center">
       <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center">
@@ -15,13 +14,12 @@ export default function OfflinePage() {
       </div>
 
       <div className="space-y-2">
-        <h1 className="text-2xl font-bold text-gray-900">انٹرنیٹ نہیں ہے</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{T('offline.title')}</h1>
         <p className="text-gray-500 text-sm max-w-xs">
-          No internet connection. Please check your network and try again.
+          {T('offline.body')}
         </p>
       </div>
 
-      {/* Emergency contacts — always visible offline */}
       <div className="w-full max-w-sm rounded-xl border border-red-200 bg-red-50 p-4 text-left space-y-2">
         <p className="text-xs font-semibold text-red-700 uppercase tracking-wide">Emergency</p>
         <a href="tel:1122" className="flex items-center gap-2 text-sm font-medium text-red-800">
@@ -39,7 +37,7 @@ export default function OfflinePage() {
         href="/"
         className="text-blue-600 text-sm underline underline-offset-2"
       >
-        Try again
+        {T('offline.retry')}
       </Link>
     </main>
   )

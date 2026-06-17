@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Users, Search } from 'lucide-react'
 import { AppointmentStatusPill, SeverityPill } from '@/components/design/badges'
+import { useI18n } from '@/lib/i18n/client'
 
 interface Appointment {
   id: string
@@ -18,6 +19,7 @@ interface Appointment {
 
 export default function DoctorPatientsPage() {
   const router = useRouter()
+  const { T } = useI18n()
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [loading,      setLoading]      = useState(true)
   const [filter,       setFilter]       = useState<string>('ALL')
@@ -52,13 +54,13 @@ export default function DoctorPatientsPage() {
       <header style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
         <div>
           <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--violet-600)', letterSpacing: '.08em', textTransform: 'uppercase' }}>
-            Doctor console
+            {T('doctor.dash.title')}
           </span>
           <h1 style={{ margin: '4px 0 0', fontSize: 28, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--ink)' }}>
-            My patients
+            {T('doctor.patients.title')}
           </h1>
           <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--ink-3)' }}>
-            All appointments assigned to you.
+            {T('doctor.patients.sub')}
           </p>
         </div>
         <div style={{
@@ -67,7 +69,7 @@ export default function DoctorPatientsPage() {
           background: 'rgba(37,99,235,.08)', border: '1px solid rgba(37,99,235,.20)',
         }}>
           <Users size={13} style={{ color: 'var(--blue-700)' }} />
-          <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--blue-700)' }}>{appointments.length} total</span>
+          <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--blue-700)' }}>{T('doctor.patients.total').replace('{n}', String(appointments.length))}</span>
         </div>
       </header>
 
@@ -84,7 +86,7 @@ export default function DoctorPatientsPage() {
                 fontSize: 12, fontWeight: 600, cursor: 'pointer',
                 transition: 'all 200ms var(--ease-out-quart)',
               }}>
-              {s === 'ALL' ? 'All' : s.replace('_', ' ')}
+              {s === 'ALL' ? T('doctor.patients.filterAll') : s.replace('_', ' ')}
             </button>
           )
         })}
@@ -95,7 +97,7 @@ export default function DoctorPatientsPage() {
         <input
           value={search}
           onChange={e => setSearch(e.target.value)}
-          placeholder="Search by name, email, or MedIntel code…"
+          placeholder={T('doctor.patients.search')}
           style={{
             width: '100%', padding: '12px 14px 12px 40px',
             borderRadius: 12, border: '1px solid var(--border)',
@@ -131,9 +133,9 @@ export default function DoctorPatientsPage() {
           }}>
             <Users size={28} />
           </span>
-          <p style={{ margin: 0, fontWeight: 600, color: 'var(--ink-2)' }}>No patients found</p>
+          <p style={{ margin: 0, fontWeight: 600, color: 'var(--ink-2)' }}>{T('doctor.patients.empty')}</p>
           <p style={{ margin: '4px 0 0', fontSize: 13 }}>
-            {filter !== 'ALL' ? 'Try changing the filter' : 'Patients will appear here once appointments are booked.'}
+            {filter !== 'ALL' ? T('doctor.patients.changeFilter') : T('doctor.patients.waiting')}
           </p>
         </div>
       )}
@@ -192,7 +194,7 @@ export default function DoctorPatientsPage() {
                 <span style={{ fontSize: 11, color: 'var(--ink-4)' }}>
                   {new Date(a.scheduledAt).toLocaleDateString('en-PK', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                 </span>
-                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--blue-700)' }}>Open consultation →</span>
+                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--blue-700)' }}>{T('doctor.patients.openConsult')}</span>
               </div>
             </div>
           )

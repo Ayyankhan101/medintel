@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useI18n } from '@/lib/i18n/client'
 import { Search, AlertCircle, Loader2, CheckCircle2 } from 'lucide-react'
 import { Btn } from '@/components/design/Btn'
 import { EscrowStatusPill, AppointmentStatusPill } from '@/components/design/badges'
@@ -35,6 +36,7 @@ export default function AdminRefundsPage() {
   const [busy, setBusy]     = useState(false)
   const [error, setError]   = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  const { T } = useI18n()
 
   async function lookup() {
     setError(null); setSuccess(null); setSnap(null); setLoading(true)
@@ -81,13 +83,13 @@ export default function AdminRefundsPage() {
     }}>
       <header>
         <span style={{ fontSize: 'var(--text-xxs)', fontWeight: 700, color: '#a16207', letterSpacing: '.08em', textTransform: 'uppercase' }}>
-          Admin
+          {T('admin.title')}
         </span>
         <h1 style={{ margin: '4px 0 0', fontSize: 'var(--text-heading)', fontWeight: 700, letterSpacing: '-.02em', color: 'var(--ink)' }}>
-          Refunds &amp; disputes
+          {T('admin.refunds.title')}
         </h1>
         <p style={{ margin: '4px 0 0', fontSize: 'var(--text-base)', color: 'var(--ink-3)' }}>
-          Look up an appointment, issue a full or partial refund.
+          {T('admin.refunds.lookup')}
         </p>
       </header>
 
@@ -96,7 +98,7 @@ export default function AdminRefundsPage() {
         <input
           type="text" value={query}
           onChange={e => setQuery(e.target.value)}
-          placeholder="Appointment ID (cuid)"
+          placeholder={T('admin.refunds.apptId')}
           style={{
             flex: 1, padding: '10px 14px',
             borderRadius: 12, border: '1px solid var(--border)',
@@ -108,7 +110,7 @@ export default function AdminRefundsPage() {
         />
         <Btn kind="primary" type="submit" disabled={!query.trim() || loading}
              leading={loading ? <Loader2 size={14} className="animate-spin" /> : <Search size={14} />}>
-          Look up
+          {T('admin.refunds.lookupBtn')}
         </Btn>
       </form>
 
@@ -139,31 +141,31 @@ export default function AdminRefundsPage() {
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '6px 18px' }}>
-            <Row k="Patient"       v={`${snap.patient.user.name ?? '—'} · ${snap.patient.user.email}`} />
-            <Row k="Phone"         v={snap.patient.user.phone ?? '—'} />
-            <Row k="Doctor"        v={snap.doctor ? `Dr. ${snap.doctor.user.name ?? '—'} · ${snap.doctor.user.email}` : '—'} />
-            <Row k="MedIntel code" v={snap.patient.user.medIntelCode ?? '—'} mono />
-            {snap.cancellationReason && <Row k="Cancel reason" v={snap.cancellationReason} />}
-            {snap.cancelledBy        && <Row k="Cancelled by"  v={snap.cancelledBy} />}
+            <Row k={T('admin.refunds.patient')}       v={`${snap.patient.user.name ?? '—'} · ${snap.patient.user.email}`} />
+            <Row k={T('admin.refunds.phone')}         v={snap.patient.user.phone ?? '—'} />
+            <Row k={T('admin.refunds.doctor')}        v={snap.doctor ? `Dr. ${snap.doctor.user.name ?? '—'} · ${snap.doctor.user.email}` : '—'} />
+            <Row k={T('admin.refunds.medIntelCode')} v={snap.patient.user.medIntelCode ?? '—'} mono />
+            {snap.cancellationReason && <Row k={T('admin.refunds.cancelReason')} v={snap.cancellationReason} />}
+            {snap.cancelledBy        && <Row k={T('admin.refunds.cancelledBy')}  v={snap.cancelledBy} />}
           </div>
 
           <div style={{ borderTop: '1px solid var(--border)', paddingTop: 14 }}>
-            <h3 style={{ margin: 0, fontSize: 'var(--text-sm)', fontWeight: 700, color: 'var(--ink)', marginBottom: 10 }}>Escrow</h3>
+            <h3 style={{ margin: 0, fontSize: 'var(--text-sm)', fontWeight: 700, color: 'var(--ink)', marginBottom: 10 }}>{T('admin.refunds.escrow')}</h3>
             {escrow ? (
               <>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
                   <EscrowStatusPill status={escrow.status} />
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '6px 18px' }}>
-                  <Row k="Total"           v={PKR(total)} mono />
-                  <Row k="Refunded so far" v={PKR(refunded)} mono />
-                  <Row k="Remaining"       v={PKR(remaining)} mono />
-                  <Row k="PaymentIntent"   v={escrow.stripePaymentIntentId} mono />
-                  {escrow.refundReason && <Row k="Last reason" v={escrow.refundReason} />}
+                  <Row k={T('admin.refunds.total')}           v={PKR(total)} mono />
+                  <Row k={T('admin.refunds.refunded')} v={PKR(refunded)} mono />
+                  <Row k={T('admin.refunds.remaining')}       v={PKR(remaining)} mono />
+                  <Row k={T('admin.refunds.paymentIntent')}   v={escrow.stripePaymentIntentId} mono />
+                  {escrow.refundReason && <Row k={T('admin.refunds.lastReason')} v={escrow.refundReason} />}
                 </div>
               </>
             ) : (
-              <p style={{ margin: 0, fontSize: 'var(--text-base)', color: 'var(--ink-3)' }}>No escrow attached to this appointment.</p>
+              <p style={{ margin: 0, fontSize: 'var(--text-base)', color: 'var(--ink-3)' }}>{T('admin.refunds.noEscrow')}</p>
             )}
           </div>
 
@@ -173,10 +175,10 @@ export default function AdminRefundsPage() {
                     borderTop: '1px solid var(--border)', paddingTop: 14,
                     display: 'flex', flexDirection: 'column', gap: 12,
                   }}>
-              <h3 style={{ margin: 0, fontSize: 'var(--text-sm)', fontWeight: 700, color: 'var(--ink)' }}>Issue refund</h3>
+              <h3 style={{ margin: 0, fontSize: 'var(--text-sm)', fontWeight: 700, color: 'var(--ink)' }}>{T('admin.refunds.issueRefund')}</h3>
               <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-3)', letterSpacing: '.04em', textTransform: 'uppercase' }}>
-                  Amount (PKR) — blank for full
+                  {T('admin.refunds.amount')}
                 </span>
                 <input
                   type="number" min={1} max={remaining} value={amount}
@@ -192,7 +194,7 @@ export default function AdminRefundsPage() {
               </label>
               <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-3)', letterSpacing: '.04em', textTransform: 'uppercase' }}>
-                  Reason (required)
+                  {T('admin.refunds.reason')}
                 </span>
                 <textarea
                   value={reason} onChange={e => setReason(e.target.value)}
@@ -211,7 +213,7 @@ export default function AdminRefundsPage() {
                    disabled={busy || reason.trim().length < 3}
                    style={{ background: 'var(--red-600)', boxShadow: '0 4px 12px -4px rgba(239,68,68,.55)' }}
                    leading={busy ? <Loader2 size={14} className="animate-spin" /> : null}>
-                Issue refund
+                {T('admin.refunds.issueRefund')}
               </Btn>
             </form>
           )}

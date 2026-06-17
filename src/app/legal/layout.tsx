@@ -1,7 +1,11 @@
+'use client'
+
 import Link from 'next/link'
 import { Activity, ArrowLeft } from 'lucide-react'
+import { useI18n } from '@/lib/i18n/client'
 
 export default function LegalLayout({ children }: { children: React.ReactNode }) {
+  const { T } = useI18n()
   return (
     <div className="min-h-screen bg-white dark:bg-slate-950">
       <header className="border-b border-slate-100 dark:border-slate-800 sticky top-0 z-30 bg-white/90 dark:bg-slate-950/90 backdrop-blur">
@@ -13,7 +17,7 @@ export default function LegalLayout({ children }: { children: React.ReactNode })
             <span className="font-bold text-sm text-slate-900 dark:text-slate-100">MedIntel</span>
           </Link>
           <Link href="/" className="text-xs text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 inline-flex items-center gap-1">
-            <ArrowLeft className="w-3 h-3" /> Home
+            <ArrowLeft className="w-3 h-3" /> {T('legalLayout.home')}
           </Link>
         </div>
       </header>
@@ -22,11 +26,11 @@ export default function LegalLayout({ children }: { children: React.ReactNode })
       </main>
       <footer className="border-t border-slate-100 dark:border-slate-800 py-6 text-center text-xs text-slate-400">
         <nav className="space-x-4">
-          <Link href="/legal/terms"   className="hover:text-slate-700 dark:hover:text-slate-200">Terms</Link>
-          <Link href="/legal/privacy" className="hover:text-slate-700 dark:hover:text-slate-200">Privacy</Link>
-          <Link href="/legal/pmdc"    className="hover:text-slate-700 dark:hover:text-slate-200">PMDC disclaimer</Link>
+          <Link href="/legal/terms"   className="hover:text-slate-700 dark:hover:text-slate-200">{T('landing.footer.terms')}</Link>
+          <Link href="/legal/privacy" className="hover:text-slate-700 dark:hover:text-slate-200">{T('landing.footer.privacy')}</Link>
+          <Link href="/legal/pmdc"    className="hover:text-slate-700 dark:hover:text-slate-200">{T('landing.footer.pmdc')}</Link>
         </nav>
-        <p className="mt-3 text-slate-400">© {new Date().getFullYear()} MedIntel · Karachi, Pakistan</p>
+        <p className="mt-3 text-slate-400">{T('legalLayout.copyright').replace('{year}', String(new Date().getFullYear()))}</p>
       </footer>
     </div>
   )

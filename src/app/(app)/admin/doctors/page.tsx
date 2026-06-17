@@ -2,6 +2,7 @@
 import { Suspense, useEffect, useState, useCallback } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Check, X, Loader2, ShieldCheck } from 'lucide-react'
+import { useI18n } from '@/lib/i18n/client'
 import { Btn } from '@/components/design/Btn'
 import { KYDBadge } from '@/components/design/badges'
 import { PKR } from '@/components/design/helpers'
@@ -38,6 +39,7 @@ export default function AdminDoctorsPage() {
 
 function AdminDoctorsInner() {
   const search = useSearchParams()
+  const { T } = useI18n()
   const initial = (search.get('status') ?? 'PENDING') as Filter
   const [filter, setFilter] = useState<Filter>(initial)
   const [doctors, setDoctors] = useState<Doctor[]>([])
@@ -61,9 +63,9 @@ function AdminDoctorsInner() {
   useEffect(() => { load() }, [load])
 
   async function decide(id: string, approve: boolean) {
-    const reason = approve ? '' : prompt('Reason for rejection:')
+    const reason = approve ? '' : prompt(T('admin.doctors.rejectionReason'))
     if (!approve && !reason) return
-    const trustBadge = approve ? confirm('Award trust badge (Tier 3)?') : false
+    const trustBadge = approve ? confirm(T('admin.doctors.trustBadgeConfirm')) : false
     setBusyId(id)
     try {
       const res = await fetch(`/api/admin/doctors/${id}/verify`, {
@@ -90,10 +92,10 @@ function AdminDoctorsInner() {
       <header style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
         <div>
           <span style={{ fontSize: 'var(--text-xxs)', fontWeight: 700, color: '#a16207', letterSpacing: '.08em', textTransform: 'uppercase' }}>
-            Admin
+            {T('admin.title')}
           </span>
           <h1 style={{ margin: '4px 0 0', fontSize: 'var(--text-heading)', fontWeight: 700, letterSpacing: '-.02em', color: 'var(--ink)' }}>
-            Doctor verification
+            {T('admin.doctors.verification')}
           </h1>
         </div>
         <div style={{
@@ -114,7 +116,7 @@ function AdminDoctorsInner() {
                   cursor: 'pointer',
                   transition: 'all 200ms var(--ease-out-quart)',
                 }}>
-                {f}
+                {f === 'PENDING' ? T('admin.doctors.pending') : f === 'VERIFIED' ? T('admin.doctors.verified') : f === 'REJECTED' ? T('admin.doctors.rejected') : T('admin.doctors.all')}
               </button>
             )
           })}
@@ -129,13 +131,13 @@ function AdminDoctorsInner() {
       )}
       {loading && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--ink-3)' }}>
-          <Loader2 size={16} className="animate-spin" /> Loading…
+          <Loader2 size={16} className="animate-spin" /> {T('admin.loading')}
         </div>
       )}
 
       {!loading && doctors.length === 0 && (
         <GlassCard padding={40} style={{ textAlign: 'center', color: 'var(--ink-3)', fontSize: 14 }}>
-          No doctors in this state.
+          {T('admin.doctors.empty')}
         </GlassCard>
       )}
 
@@ -145,7 +147,7 @@ function AdminDoctorsInner() {
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
               <div style={{ flex: 1, minWidth: 280 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                  <p style={{ margin: 0, fontWeight: 700, color: 'var(--ink)', fontSize: 'var(--text-base)' }}>Dr. {d.user.name ?? '—'}</p>
+                  <p style={{ margin: 0, fontWeight: 700, color: 'var(--ink)', fontSize: 'var(--text-base)' }}>{T('admin.doctors.dr')} {d.user.name ?? '—'}</p>
                   {d.trustBadge && (
                     <span title="Trust badge" style={{ color: 'var(--amber-500)' }}>
                       <ShieldCheck size={16} strokeWidth={2.5} />
@@ -160,14 +162,14 @@ function AdminDoctorsInner() {
                   display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
                   gap: '4px 16px',
                 }}>
-                  <Field label="PMDC"           value={d.licenseNumber} mono />
-                  <Field label="Specialty"      value={d.specialization} />
-                  <Field label="Experience"     value={`${d.yearsExperience} yrs`} />
-                  <Field label="Fee"            value={PKR(Number(d.consultationFee))} mono />
-                  <Field label="Qualifications" value={d.qualifications ?? '—'} />
-                  <Field label="Bookings"       value={String(d._count.appointments)} />
-                  <Field label="Stripe"         value={d.stripeAccountId ? 'connected' : 'not connected'} />
-                  <Field label="Joined"         value={new Date(d.user.createdAt).toLocaleDateString('en-PK')} />
+                  <Field label={T('admin.doctors.pmdc')}           value={d.licenseNumber} mono />
+                  <Field label={T('admin.doctors.specialty')}      value={d.specialization} />
+                  <Field label={T('admin.doctors.experience')}     value={`${d.yearsExperience} ${T('admin.doctors.yrs')}`} />
+                  <Field label={T('admin.doctors.fee')}            value={PKR(Number(d.consultationFee))} mono />
+                  <Field label={T('admin.doctors.qualifications')} value={d.qualifications ?? '—'} />
+                  <Field label={T('admin.doctors.bookings')}       value={String(d._count.appointments)} />
+                  <Field label={T('admin.doctors.stripe')}         value={d.stripeAccountId ? T('admin.doctors.connected') : T('admin.doctors.notConnected')} />
+                  <Field label={T('admin.doctors.joined')}         value={new Date(d.user.createdAt).toLocaleDateString('en-PK')} />
                 </div>
                 {d.bio && <p style={{ margin: '12px 0 0', fontSize: 'var(--text-sm)', color: 'var(--ink-3)', fontStyle: 'italic' }}>{d.bio}</p>}
               </div>
@@ -178,14 +180,14 @@ function AdminDoctorsInner() {
                        onClick={() => decide(d.id, true)}
                        style={{ background: 'var(--emerald-500)', boxShadow: '0 4px 12px -4px rgba(16,185,129,.55)' }}
                        leading={busyId === d.id ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}>
-                    Approve
+                    {T('admin.doctors.approve')}
                   </Btn>
                   <Btn kind="primary"
                        disabled={busyId === d.id}
                        onClick={() => decide(d.id, false)}
                        style={{ background: 'var(--red-600)', boxShadow: '0 4px 12px -4px rgba(239,68,68,.55)' }}
                        leading={<X size={14} />}>
-                    Reject
+                    {T('admin.doctors.reject')}
                   </Btn>
                 </div>
               )}

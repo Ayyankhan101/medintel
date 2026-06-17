@@ -4,16 +4,24 @@ import Link from 'next/link'
 import { Loader2, AlertCircle, CheckCircle2, ArrowRight } from 'lucide-react'
 import { AuthShell, Field, FieldInput } from '@/components/design/AuthShell'
 import { Btn } from '@/components/design/Btn'
+import { useI18n } from '@/lib/i18n/client'
 
 type Plan = 'STARTER' | 'STANDARD' | 'ENTERPRISE'
 
-const PLANS: { id: Plan; name: string; minutes: string; price: string; tagline: string }[] = [
-  { id: 'STARTER',    name: 'Starter',    minutes: '2,000 / mo',  price: 'PKR 25,000/mo',  tagline: 'Small clinics getting started' },
-  { id: 'STANDARD',   name: 'Standard',   minutes: '8,000 / mo',  price: 'PKR 80,000/mo',  tagline: 'Most popular for group practices' },
-  { id: 'ENTERPRISE', name: 'Enterprise', minutes: '25,000 / mo', price: 'Custom',         tagline: 'Hospital networks, SLA + CSM' },
+const PLAN_TAGLINES: Record<string, string> = {
+  STARTER:    'clinicReg.planStarter',
+  STANDARD:   'clinicReg.planStandard',
+  ENTERPRISE: 'clinicReg.planEnterprise',
+}
+
+const PLANS: { id: Plan; name: string; minutes: string; price: string }[] = [
+  { id: 'STARTER',    name: 'Starter',    minutes: '2,000 / mo',  price: 'PKR 25,000/mo'  },
+  { id: 'STANDARD',   name: 'Standard',   minutes: '8,000 / mo',  price: 'PKR 80,000/mo'  },
+  { id: 'ENTERPRISE', name: 'Enterprise', minutes: '25,000 / mo', price: 'Custom'         },
 ]
 
 export default function ClinicRegisterPage() {
+  const { T } = useI18n()
   const [form, setForm] = useState({
     clinicName: '',
     fullName:   '',
@@ -52,7 +60,7 @@ export default function ClinicRegisterPage() {
   }
 
   if (done) return (
-    <AuthShell side="clinic" kicker="All set" title="Clinic created">
+    <AuthShell side="clinic" kicker={T('clinicReg.successKicker')} title={T('clinicReg.successTitle')}>
       <div style={{
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14,
         textAlign: 'center',
@@ -61,12 +69,11 @@ export default function ClinicRegisterPage() {
       }}>
         <CheckCircle2 size={28} style={{ color: 'var(--emerald-500)' }} />
         <p style={{ margin: 0, fontSize: 14, color: 'var(--ink-2)' }}>
-          Check your email to verify your account. Once verified, sign in to access the
-          clinic dashboard at <code style={{ fontFamily: 'var(--font-mono)', color: 'var(--ink)' }}>/c/{done.slug}</code>.
+          {T('clinicReg.successSub').replace('{path}', `/c/${done.slug}`)}
         </p>
       </div>
       <Link href="/login" style={{ textDecoration: 'none' }}>
-        <Btn kind="primary" full trailing={<ArrowRight size={16} />}>Continue to sign in</Btn>
+        <Btn kind="primary" full trailing={<ArrowRight size={16} />}>{T('clinicReg.continue')}</Btn>
       </Link>
     </AuthShell>
   )
@@ -74,9 +81,9 @@ export default function ClinicRegisterPage() {
   return (
     <AuthShell
       side="clinic"
-      kicker="For clinics"
-      title="Create your clinic"
-      sub="No credit card required. Switch plans any time."
+      kicker={T('clinicReg.kicker')}
+      title={T('clinicReg.title')}
+      sub={T('clinicReg.sub')}
     >
       {error && (
         <div style={{
@@ -89,28 +96,28 @@ export default function ClinicRegisterPage() {
       )}
 
       <form onSubmit={onSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-        <Field label="Clinic name">
+        <Field label={T('clinicReg.clinicName')}>
           <FieldInput required value={form.clinicName} onChange={e => set('clinicName', e.target.value)} placeholder="Karachi Heart Center" />
         </Field>
-        <Field label="Your full name">
+        <Field label={T('clinicReg.fullName')}>
           <FieldInput required value={form.fullName} onChange={e => set('fullName', e.target.value)} placeholder="Dr. Ayesha Khan" />
         </Field>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-          <Field label="Email">
+          <Field label={T('clinicReg.email')}>
             <FieldInput type="email" required value={form.email} onChange={e => set('email', e.target.value)} placeholder="you@clinic.pk" />
           </Field>
-          <Field label="Phone">
+          <Field label={T('clinicReg.phone')}>
             <FieldInput type="tel" required value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="+92 300 ..." />
           </Field>
         </div>
 
-        <Field label="Password (8+ chars)">
+        <Field label={T('clinicReg.password')}>
           <FieldInput type="password" required value={form.password} onChange={e => set('password', e.target.value)} />
         </Field>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink-2)' }}>Plan</span>
+          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink-2)' }}>{T('clinicReg.plan')}</span>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
             {PLANS.map(p => {
               const active = form.plan === p.id
@@ -132,7 +139,7 @@ export default function ClinicRegisterPage() {
                   <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>{p.name}</p>
                   <p style={{ margin: '2px 0 0', fontSize: 11, color: 'var(--ink-4)' }}>{p.minutes}</p>
                   <p style={{ margin: '6px 0 0', fontSize: 12, fontWeight: 600, color: 'var(--ink-2)' }}>{p.price}</p>
-                  <p style={{ margin: '4px 0 0', fontSize: 11, color: 'var(--ink-4)', lineHeight: 1.3 }}>{p.tagline}</p>
+                  <p style={{ margin: '4px 0 0', fontSize: 11, color: 'var(--ink-4)', lineHeight: 1.3 }}>{T(PLAN_TAGLINES[p.id])}</p>
                 </button>
               )
             })}
@@ -141,13 +148,13 @@ export default function ClinicRegisterPage() {
 
         <Btn kind="primary" full type="submit" disabled={loading}
              leading={loading ? <Loader2 size={16} className="animate-spin" /> : null}>
-          {loading ? 'Creating clinic…' : 'Create clinic'}
+          {loading ? T('clinicReg.creating') : T('clinicReg.submit')}
         </Btn>
       </form>
 
       <p style={{ textAlign: 'center', fontSize: 13, color: 'var(--ink-3)', margin: 0 }}>
-        Already have an account?{' '}
-        <Link href="/login" style={{ color: 'var(--blue-700)', fontWeight: 600, textDecoration: 'none' }}>Sign in</Link>
+        {T('clinicReg.hasAccount')}{' '}
+        <Link href="/login" style={{ color: 'var(--blue-700)', fontWeight: 600, textDecoration: 'none' }}>{T('common.signIn')}</Link>
       </p>
     </AuthShell>
   )
