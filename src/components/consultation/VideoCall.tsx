@@ -6,6 +6,7 @@ import {
   ParticipantLoop, ParticipantName,
 } from '@livekit/components-react'
 import '@livekit/components-styles'
+import { useI18n } from '@/lib/i18n/client'
 
 interface Props {
   token: string
@@ -34,6 +35,7 @@ function LocalVideo() {
 }
 
 export function VideoCall({ token, roomName, onCallEnd }: Props) {
+  const { T } = useI18n()
   const [connected, setConnected] = useState(false)
 
   return (
@@ -59,7 +61,7 @@ export function VideoCall({ token, roomName, onCallEnd }: Props) {
           <div className="absolute inset-0 flex items-center justify-center text-white bg-gray-900/80 z-20">
             <div className="text-center space-y-3">
               <div className="w-10 h-10 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto" />
-              <p className="text-sm">Connecting to consultation room...</p>
+              <p className="text-sm">{T('consult.connecting')}</p>
             </div>
           </div>
         )}

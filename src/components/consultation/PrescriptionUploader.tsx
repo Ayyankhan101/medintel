@@ -5,6 +5,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { CheckCircle2 } from 'lucide-react'
+import { useI18n } from '@/lib/i18n/client'
 
 interface Props {
   appointmentId: string
@@ -12,6 +13,7 @@ interface Props {
 }
 
 export function PrescriptionUploader({ appointmentId, onUploaded }: Props) {
+  const { T } = useI18n()
   const [text, setText]       = useState('')
   const [file, setFile]       = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
@@ -28,7 +30,7 @@ export function PrescriptionUploader({ appointmentId, onUploaded }: Props) {
       let s3Key = ''
 
       if (file) {
-        setStatus('Uploading file...')
+        setStatus(T('rx.uploadingFile'))
         const contentType = file.type || 'application/pdf'
         const presignRes  = await fetch('/api/voice/presign', {
           method:  'POST',
@@ -40,7 +42,7 @@ export function PrescriptionUploader({ appointmentId, onUploaded }: Props) {
         s3Key = key
       }
 
-      setStatus('Saving prescription and releasing payment...')
+      setStatus(T('rx.savingPayment'))
       const res = await fetch('/api/prescriptions', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -49,13 +51,13 @@ export function PrescriptionUploader({ appointmentId, onUploaded }: Props) {
 
       if (!res.ok) {
         const data = await res.json()
-        throw new Error(data.error ?? 'Upload failed')
+        throw new Error(data.error ?? T('rx.uploadFailed'))
       }
 
       setStatus('done')
       onUploaded()
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Upload failed')
+      setError(e instanceof Error ? e.message : T('rx.uploadFailed'))
     } finally {
       setLoading(false)
     }
@@ -66,8 +68,8 @@ export function PrescriptionUploader({ appointmentId, onUploaded }: Props) {
       <div className="flex items-center gap-3 p-4 bg-green-50 border border-green-200 rounded-xl text-green-800">
         <CheckCircle2 className="w-6 h-6 shrink-0" />
         <div>
-          <p className="font-semibold">Prescription uploaded</p>
-          <p className="text-sm">Payment has been released to your account.</p>
+          <p className="font-semibold">{T('rx.uploaded')}</p>
+          <p className="text-sm">{T('rx.released')}</p>
         </div>
       </div>
     )
@@ -76,25 +78,25 @@ export function PrescriptionUploader({ appointmentId, onUploaded }: Props) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4 p-4 border rounded-xl bg-green-50">
       <div>
-        <h3 className="font-semibold text-green-900">Upload Prescription</h3>
+        <h3 className="font-semibold text-green-900">{T('rx.title')}</h3>
         <p className="text-sm text-green-700 mt-0.5">
-          Payment releases to your account automatically once you submit.
+          {T('rx.hint')}
         </p>
       </div>
 
       <div>
-        <Label>Prescription Text <span className="text-red-500">*</span></Label>
+        <Label>{T('rx.textLabel')} <span className="text-red-500">*</span></Label>
         <Textarea
           value={text}
           onChange={e => setText(e.target.value)}
-          placeholder="Rx: Aspirin 75mg once daily for 30 days&#10;Advice: Rest, avoid fatty foods&#10;Follow-up: 2 weeks"
+          placeholder={T('rx.textPlaceholder')}
           className="min-h-[140px] bg-white"
           required
         />
       </div>
 
       <div>
-        <Label>Attach File (optional)</Label>
+        <Label>{T('rx.fileLabel')}</Label>
         <Input
           type="file"
           accept="image/*,application/pdf"
@@ -110,7 +112,7 @@ export function PrescriptionUploader({ appointmentId, onUploaded }: Props) {
         disabled={loading || !text.trim()}
         className="w-full bg-green-600 hover:bg-green-700"
       >
-        {loading ? status : 'Upload Prescription & Collect Payment'}
+        {loading ? status : T('rx.submit')}
       </Button>
     </form>
   )

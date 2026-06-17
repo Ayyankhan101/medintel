@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { ShieldCheck, Star, Clock, ArrowRight, Loader2, AlertCircle } from 'lucide-react'
 import { Btn } from '@/components/design/Btn'
 import { PKR } from '@/components/design/helpers'
+import { useI18n } from '@/lib/i18n/client'
 
 interface Doctor {
   id: string
@@ -18,6 +19,7 @@ interface Doctor {
 }
 
 function BookingContent() {
+  const { T } = useI18n()
   const router   = useRouter()
   const params   = useSearchParams()
   const doctorId = params.get('doctorId') ?? ''
@@ -29,15 +31,15 @@ function BookingContent() {
   const [error,   setError]   = useState<string | null>(null)
 
   useEffect(() => {
-    if (!doctorId) { setError('No doctor selected'); setLoading(false); return }
+    if (!doctorId) { setError(T('book.noDoctor')); setLoading(false); return }
     fetch(`/api/doctors/${doctorId}`)
       .then(r => r.json())
       .then(data => { setDoctor(data); setLoading(false) })
-      .catch(() => { setError('Could not load doctor details'); setLoading(false) })
+      .catch(() => { setError(T('book.cantLoad')); setLoading(false) })
   }, [doctorId])
 
   async function confirmBooking() {
-    if (!doctorId) { setError('No doctor selected'); return }
+    if (!doctorId) { setError(T('book.noDoctor')); return }
     setBooking(true); setError(null)
     try {
       const res = await fetch('/api/appointments', {
@@ -51,10 +53,10 @@ function BookingContent() {
       })
       const raw  = await res.text()
       const data = raw ? JSON.parse(raw) : {}
-      if (!res.ok) throw new Error(data.error ?? 'Booking failed')
+      if (!res.ok) throw new Error(data.error ?? T('book.failed'))
       router.push(`/booking/${data.appointmentId}`)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Booking failed')
+      setError(e instanceof Error ? e.message : T('book.failed'))
       setBooking(false)
     }
   }
@@ -63,7 +65,7 @@ function BookingContent() {
     return (
       <div style={{ minHeight: '60vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14 }}>
         <Loader2 size={32} className="animate-spin" style={{ color: 'var(--blue-600)' }} />
-        <p style={{ margin: 0, fontSize: 13, color: 'var(--ink-3)' }}>Loading doctor details…</p>
+        <p style={{ margin: 0, fontSize: 13, color: 'var(--ink-3)' }}>{T('book.loading')}</p>
       </div>
     )
   }
@@ -88,13 +90,13 @@ function BookingContent() {
     }}>
       <header>
         <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--blue-700)', letterSpacing: '.08em', textTransform: 'uppercase' }}>
-          Confirm booking
+          {T('book.kicker')}
         </span>
         <h1 style={{ margin: '4px 0 0', fontSize: 26, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--ink)' }}>
-          Review and proceed
+          {T('book.title')}
         </h1>
         <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--ink-3)' }}>
-          Check details before payment.
+          {T('book.sub')}
         </p>
       </header>
 
@@ -123,7 +125,7 @@ function BookingContent() {
                   border: '1px solid rgba(13,148,136,.22)',
                   fontSize: 10, fontWeight: 700, letterSpacing: '.04em',
                 }}>
-                  <ShieldCheck size={10} strokeWidth={2.5} /> KYD VERIFIED
+                  <ShieldCheck size={10} strokeWidth={2.5} /> {T('book.kydVerified')}
                 </span>
               )}
             </div>
@@ -136,7 +138,7 @@ function BookingContent() {
                 </span>
               )}
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                <Clock size={12} /> {doctor.yearsExperience} yrs exp
+                <Clock size={12} /> {T('book.yrsExp').replace('{y}', String(doctor.yearsExperience))}
               </span>
             </div>
             {doctor.bio && (
@@ -149,7 +151,7 @@ function BookingContent() {
           borderTop: '1px solid var(--border)', paddingTop: 14,
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         }}>
-          <span style={{ fontSize: 13, color: 'var(--ink-3)' }}>Consultation fee</span>
+          <span style={{ fontSize: 13, color: 'var(--ink-3)' }}>{T('book.consultFee')}</span>
           <span className="mono" style={{ fontSize: 22, fontWeight: 700, color: 'var(--ink)', letterSpacing: '-.01em' }}>
             {PKR(Number(doctor.consultationFee))}
           </span>
@@ -162,11 +164,11 @@ function BookingContent() {
         fontSize: 13, color: 'var(--ink-2)',
         display: 'flex', flexDirection: 'column', gap: 10,
       }}>
-        <span style={{ fontWeight: 700, color: 'var(--ink)' }}>What happens next</span>
+        <span style={{ fontWeight: 700, color: 'var(--ink)' }}>{T('book.whatNext')}</span>
         <ol style={{ margin: 0, paddingLeft: 18, display: 'flex', flexDirection: 'column', gap: 6, lineHeight: 1.5 }}>
-          <li>Payment held in escrow — released only after prescription is uploaded</li>
-          <li>Join the video consultation with your doctor</li>
-          <li>Prescription saved to your Medical Vault automatically</li>
+          <li>{T('book.step1')}</li>
+          <li>{T('book.step2')}</li>
+          <li>{T('book.step3')}</li>
         </ol>
       </div>
 
@@ -177,11 +179,11 @@ function BookingContent() {
            onClick={confirmBooking}
            leading={booking ? <Loader2 size={16} className="animate-spin" /> : null}
            trailing={booking ? null : <ArrowRight size={16} strokeWidth={2} />}>
-        {booking ? 'Confirming…' : 'Confirm & proceed to payment'}
+        {booking ? T('book.confirming') : T('book.confirmPay')}
       </Btn>
 
       <Btn kind="secondary" full onClick={() => router.back()}>
-        Go back
+        {T('book.goBack')}
       </Btn>
     </div>
   )
