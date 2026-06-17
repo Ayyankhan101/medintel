@@ -1,6 +1,8 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useI18n } from '@/lib/i18n/client'
+
+export const dynamic = 'force-dynamic'
 import {
   TrendingUp, Activity, Heart, Users,
   BarChart2, DollarSign, ChevronDown,
